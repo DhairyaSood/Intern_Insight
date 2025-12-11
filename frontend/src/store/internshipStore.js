@@ -122,9 +122,10 @@ export const useInternshipStore = create((set, get) => ({
       filtered = filtered.filter(internship => {
         // Check if internship matches ANY of the search terms
         return searchTerms.some(searchTerm => {
-          // Search in title, company, description
+          // Search in title, organization (company), and description
           const textMatch = 
             internship.title?.toLowerCase().includes(searchTerm) ||
+            internship.organization?.toLowerCase().includes(searchTerm) ||
             internship.company?.toLowerCase().includes(searchTerm) ||
             internship.description?.toLowerCase().includes(searchTerm);
           

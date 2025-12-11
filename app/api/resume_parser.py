@@ -1,6 +1,6 @@
 """
 Resume Parser API - Backend OCR with AI-powered extraction
-Uses EasyOCR + OpenRouter AI for accurate structured parsing
+Uses PaddleOCR + OpenRouter AI for accurate structured parsing
 """
 from flask import request
 from app.utils.response_helpers import success_response, error_response
@@ -11,19 +11,19 @@ import os
 import json
 
 try:
-    import easyocr
+    from paddleocr import PaddleOCR
     from PIL import Image
     
-    # Initialize EasyOCR reader (cached globally for performance)
-    reader = easyocr.Reader(['en'], gpu=False)  # CPU mode for Render
+    # Initialize PaddleOCR (cached globally for performance)
+    ocr = PaddleOCR(use_angle_cls=True, lang='en', use_gpu=False, show_log=False)
     OCR_AVAILABLE = True
-    app_logger.info("EasyOCR initialized successfully")
+    app_logger.info("PaddleOCR initialized successfully")
 except ImportError:
     OCR_AVAILABLE = False
-    app_logger.warning("EasyOCR not available. Resume parsing will use basic extraction only.")
+    app_logger.warning("PaddleOCR not available. Resume parsing will use basic extraction only.")
 except Exception as e:
     OCR_AVAILABLE = False
-    app_logger.warning(f"EasyOCR initialization failed: {e}")
+    app_logger.warning(f"PaddleOCR initialization failed: {e}")
 
 try:
     import requests
@@ -100,9 +100,23 @@ def parse_resume():
 
 
 def extract_text_from_image(image_path):
-    \"\"\"Extract text from image using EasyOCR\"\"\"
-    try:\n        # Use EasyOCR to read text from image\n        result = reader.readtext(image_path)\n        \n        # Combine all detected text\n        text = ' '.join([detection[1] for detection in result])\n        \n        return text\n    except Exception as e:\n        app_logger.error(f\"OCR extraction failed: {e}\")\n        return \"\"
-        return ""
+    \"\"\"Extract text from image using PaddleOCR\"\"\"
+    try:
+        # Use PaddleOCR to read text from image
+        result = ocr.ocr(image_path, cls=True)
+        
+        # Combine all detected text
+        text_lines = []
+        if result and result[0]:
+            for line in result[0]:
+                if line and len(line) > 1:
+                    text_lines.append(line[1][0])  # line[1][0] contains the text
+        
+        text = ' '.join(text_lines)
+        return text
+    except Exception as e:
+        app_logger.error(f\"OCR extraction failed: {e}\")
+        return \"\"
 
 
 def extract_with_ai(ocr_text):
