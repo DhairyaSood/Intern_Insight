@@ -42,10 +42,11 @@ venv.bak/
 .env
 .env.local
 .env.development
-.env.production
 .env.test
 config_local.py
 local_settings.py
+
+# Note: .env.production is tracked for Render deployment
 
 # Logging - Important for this project!
 logs/
