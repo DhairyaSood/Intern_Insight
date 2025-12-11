@@ -4,10 +4,11 @@ Profile management API endpoints
 Handles user profile creation, updating, and retrieval
 """
 
-from flask import request, jsonify, session
+from flask import request, jsonify
 from app.core.database import db_manager
 from app.utils.logger import app_logger
 from app.utils.response_helpers import success_response, error_response
+from app.utils.jwt_auth import token_required, get_current_user
 import json
 import os
 import uuid
@@ -17,20 +18,30 @@ def generate_candidate_id():
     """Generate a unique candidate ID"""
     return f"CAND_{uuid.uuid4().hex[:8]}"
 
+@token_required
 def create_or_update_profile():
     """Create or update user profile"""
     try:
-        # Check if user is logged in
-        if not session.get('logged_in'):
-            return error_response("Authentication required", 401)
+        # Get authenticated user from JWT
+        user = get_current_user()
+        username = user.get('username')
         
-        username = session.get('username')
         if not username:
-            return error_response("Username not found in session", 401)
+            return error_response("Username not found in token", 401)
         
         data = request.get_json()
         if not data:
             return error_response("No profile data provided", 400)
+        
+        # Normalize field names (support both old and new formats)
+        if 'skills' in data and 'skills_possessed' not in data:
+            data['skills_possessed'] = data['skills']
+        if 'location' in data and 'location_preference' not in data:
+            data['location_preference'] = data['location']
+        elif 'city' in data and 'location_preference' not in data:
+            data['location_preference'] = data['city']
+        if 'education' in data and 'education_level' not in data:
+            data['education_level'] = data['education']
         
         # Validate required fields
         required_fields = ['name', 'skills_possessed', 'location_preference', 'education_level']
@@ -63,10 +74,13 @@ def create_or_update_profile():
             "candidate_id": candidate_id,
             "username": username,
             "name": data['name'],
+            "email": data.get('email', ''),
+            "phone": data.get('phone', ''),
             "skills_possessed": data['skills_possessed'] if isinstance(data['skills_possessed'], list) else [data['skills_possessed']],
             "location_preference": data['location_preference'],
             "education_level": data['education_level'],
             "field_of_study": data.get('field_of_study', ''),
+            "experience": data.get('experience', ''),
             "sector_interests": data.get('sector_interests', []) if isinstance(data.get('sector_interests'), list) else [data.get('sector_interests', '')],
             "created_at": existing_profile.get('created_at', datetime.utcnow().isoformat()) if existing_profile else datetime.utcnow().isoformat(),
             "updated_at": datetime.utcnow().isoformat()
@@ -83,11 +97,6 @@ def create_or_update_profile():
                 app_logger.info(f"Upserted profile for {username} in MongoDB")
             except Exception as e:
                 app_logger.warning(f"Failed to save profile to MongoDB: {e}")
-        
-        # Strict Atlas mode: do not write JSON files
-        
-        # Store candidate_id in session for future use
-        session['candidate_id'] = candidate_id
         
         return success_response(
             {
@@ -126,14 +135,25 @@ def get_profile_by_username(username):
         return error_response("Internal server error", 500)
 
 def get_profile_by_candidate_id(candidate_id):
-    """Get profile by candidate ID"""
+    """Get profile by candidate ID (or MongoDB _id)"""
     try:
         # Try MongoDB
         profile = None
         db = db_manager.get_db()
         if db is not None:
             try:
+                # First try by candidate_id field
                 profile = db.profiles.find_one({"candidate_id": candidate_id})
+                
+                # If not found, try by MongoDB _id (for backward compatibility)
+                if not profile:
+                    try:
+                        from bson import ObjectId
+                        if ObjectId.is_valid(candidate_id):
+                            profile = db.profiles.find_one({"_id": ObjectId(candidate_id)})
+                    except:
+                        pass
+                
                 if profile and '_id' in profile:
                     profile['_id'] = str(profile['_id'])  # Convert ObjectId to string
             except Exception as e:

@@ -1,23 +1,45 @@
-# app/api/auth.py
 """
-Authentication API endpoints
-Handles user registration, login, and profile management
+Authentication API routes with JWT
+Modern token-based authentication for Intern Insight
 """
-
-from flask import request, jsonify, session
+from flask import request
 from app.core.database import db_manager
-from app.utils.logger import app_logger
 from app.utils.response_helpers import success_response, error_response
+from app.utils.logger import app_logger
+from app.utils.jwt_auth import generate_token, token_required, get_current_user
+import bcrypt
 import hashlib
-import json
-import os
+from werkzeug.security import check_password_hash
 
 def hash_password(password):
-    """Simple password hashing"""
-    return hashlib.sha256(password.encode()).hexdigest()
+    """Hash password using bcrypt with salt"""
+    salt = bcrypt.gensalt()
+    hashed = bcrypt.hashpw(password.encode('utf-8'), salt)
+    return hashed.decode('utf-8')
+
+def verify_password(password, hashed):
+    """Verify password against multiple hash formats for backward compatibility"""
+    try:
+        # Try bcrypt first (new format - starts with $2b$)
+        if hashed.startswith('$2b$') or hashed.startswith('$2a$'):
+            return bcrypt.checkpw(password.encode('utf-8'), hashed.encode('utf-8'))
+        
+        # Try Werkzeug scrypt (starts with scrypt:)
+        if hashed.startswith('scrypt:'):
+            return check_password_hash(hashed, password)
+        
+        # Try SHA-256 (old format - 64 character hex string)
+        if len(hashed) == 64 and not hashed.startswith('$'):
+            sha256_hash = hashlib.sha256(password.encode()).hexdigest()
+            return sha256_hash == hashed
+        
+        return False
+    except Exception as e:
+        app_logger.error(f"Password verification error: {e}")
+        return False
 
 def signup():
-    """User registration endpoint"""
+    """User registration with JWT"""
     try:
         data = request.get_json()
         if not data:
@@ -26,6 +48,7 @@ def signup():
         username = data.get('username', '').strip()
         password = data.get('password', '').strip()
         
+        # Validation
         if not username or not password:
             return error_response("Username and password are required", 400)
         
@@ -35,50 +58,45 @@ def signup():
         if len(password) < 6:
             return error_response("Password must be at least 6 characters", 400)
         
+        hashed_password = hash_password(password)
+        
         # Check if user already exists
         db = db_manager.get_db()
-        if db is not None:
-            try:
-                existing_user = db.login_info.find_one({"username": username})
-                if existing_user:
-                    return error_response("Username already exists", 409)
-            except Exception as e:
-                app_logger.warning(f"MongoDB user check failed: {e}")
+        if db is None:
+            return error_response("Database connection failed", 500)
         
-        # Strict Atlas mode: do not read JSON files for user existence
+        existing_user = db.login_info.find_one({"username": username})
+        if existing_user:
+            return error_response("Username already exists", 409)
         
         # Create new user
-        hashed_password = hash_password(password)
-        new_user = {
+        user_doc = {
             "username": username,
-            "password": hashed_password
+            "password": hashed_password,
         }
         
-        # Save to MongoDB
-        if db is not None:
-            try:
-                db.login_info.insert_one(new_user.copy())
-                app_logger.info(f"User {username} saved to MongoDB")
-            except Exception as e:
-                app_logger.warning(f"Failed to save user to MongoDB: {e}")
+        result = db.login_info.insert_one(user_doc)
+        candidate_id = str(result.inserted_id)
         
-        # Strict Atlas mode: do not write JSON files
-        
-        # Auto-login on signup so profile creation can proceed without extra step
-        session['username'] = username
-        session['logged_in'] = True
+        app_logger.info(f"User {username} registered successfully")
         
         return success_response(
-            {"username": username, "logged_in": True, "message": "User created successfully"},
-            "Registration successful"
+            {
+                "username": username,
+                "candidate_id": candidate_id,
+                "message": "Account created successfully"
+            },
+            "Signup successful"
         )
         
     except Exception as e:
         app_logger.error(f"Signup error: {e}")
-        return error_response("Internal server error during registration", 500)
+        import traceback
+        app_logger.error(f"Traceback: {traceback.format_exc()}")
+        return error_response(f"Internal server error during signup: {str(e)}", 500)
 
 def login():
-    """User login endpoint"""
+    """User login with JWT token generation"""
     try:
         data = request.get_json()
         if not data:
@@ -90,32 +108,43 @@ def login():
         if not username or not password:
             return error_response("Username and password are required", 400)
         
-        hashed_password = hash_password(password)
-        
-        # Check MongoDB first
-        user_found = False
+        # Verify credentials
         db = db_manager.get_db()
-        if db is not None:
-            try:
-                user = db.login_info.find_one({"username": username, "password": hashed_password})
-                if user:
-                    user_found = True
-            except Exception as e:
-                app_logger.warning(f"MongoDB login check failed: {e}")
+        if db is None:
+            return error_response("Database connection failed", 500)
         
-        # Strict Atlas mode: do not read JSON files for login
+        user = db.login_info.find_one({"username": username})
         
-        if not user_found:
+        if not user:
+            app_logger.warning(f"Login attempt for non-existent user: {username}")
             return error_response("Invalid username or password", 401)
         
-        # Set session
-        session['username'] = username
-        session['logged_in'] = True
+        stored_hash = user.get('password', '')
+        app_logger.info(f"Login attempt for {username}, hash type: {stored_hash[:10]}..., length: {len(stored_hash)}")
+        
+        password_valid = verify_password(password, stored_hash)
+        app_logger.info(f"Password verification result for {username}: {password_valid}")
+        
+        if not password_valid:
+            return error_response("Invalid username or password", 401)
+        
+        candidate_id = str(user['_id'])
+        
+        # Generate JWT token
+        token = generate_token({
+            'username': username,
+            'candidate_id': candidate_id
+        })
         
         app_logger.info(f"User {username} logged in successfully")
         
         return success_response(
-            {"username": username, "logged_in": True},
+            {
+                "token": token,
+                "username": username,
+                "candidate_id": candidate_id,
+                "logged_in": True
+            },
             "Login successful"
         )
         
@@ -124,33 +153,41 @@ def login():
         return error_response("Internal server error during login", 500)
 
 def logout():
-    """User logout endpoint"""
+    """User logout (client-side token deletion)"""
     try:
-        username = session.get('username', 'Unknown')
-        session.clear()
-        
-        app_logger.info(f"User {username} logged out")
-        
+        # With JWT, logout is handled client-side by deleting the token
         return success_response(
-            {"message": "Logged out successfully"},
+            {"logged_out": True},
             "Logout successful"
         )
-        
     except Exception as e:
         app_logger.error(f"Logout error: {e}")
         return error_response("Internal server error during logout", 500)
 
+@token_required
 def check_login_status():
-    """Check if user is logged in"""
+    """Check authentication status using JWT"""
     try:
-        logged_in = session.get('logged_in', False)
-        username = session.get('username', None)
+        user = get_current_user()
         
         return success_response({
-            "logged_in": logged_in,
-            "username": username
+            "logged_in": True,
+            "username": user['username'],
+            "candidate_id": user['candidate_id']
         })
         
     except Exception as e:
-        app_logger.error(f"Login status check error: {e}")
+        app_logger.error(f"Status check error: {e}")
         return error_response("Failed to check login status", 500)
+
+@token_required
+def verify():
+    """Verify JWT token validity"""
+    try:
+        user = get_current_user()
+        return success_response({
+            "valid": True,
+            "user": user
+        })
+    except Exception as e:
+        return error_response("Token verification failed", 401)

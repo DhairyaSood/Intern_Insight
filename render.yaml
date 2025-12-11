@@ -1,6 +1,7 @@
 services:
+  # Backend API Service
   - type: web
-    name: pm-intern
+    name: pm-intern-backend
     env: python
     plan: free
     region: oregon
@@ -25,9 +26,25 @@ services:
         sync: false
       # CORS origins for your frontend URL(s), comma-separated
       - key: CORS_ORIGINS
-        value: "https://your-frontend.example.com,https://pm-intern.onrender.com"
+        value: "https://pm-intern-frontend.onrender.com,https://pm-intern-backend.onrender.com"
       # Session cookie settings (if serving frontend on different domain use None + Secure)
       - key: SESSION_COOKIE_SAMESITE
-        value: Lax
+        value: None
       - key: SESSION_COOKIE_SECURE
         value: "True"
+
+  # Frontend Static Site
+  - type: web
+    name: pm-intern-frontend
+    env: static
+    plan: free
+    region: oregon
+    buildCommand: cd frontend && npm install && npm run build
+    staticPublishPath: ./frontend/build
+    envVars:
+      - key: REACT_APP_API_BASE_URL
+        value: https://pm-intern-backend.onrender.com/api
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html

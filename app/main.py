@@ -94,28 +94,22 @@ def create_app(config_name=None):
         }, 200 if status == "healthy" else 503
     
     @app.route('/')
-    def home():
-        """Redirect root to the frontend UI"""
-        from flask import redirect
-        return redirect('/frontend/pages/index.html')
-    
-    # Static file serving for frontend
-    @app.route('/frontend/<path:filename>')
-    def serve_frontend(filename):
-        """Serve frontend static files"""
-        import os
-        from flask import send_from_directory
-        
-        frontend_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'frontend')
-        return send_from_directory(frontend_dir, filename)
-    
-    # Redirect root to main page
-    @app.route('/index.html')
-    @app.route('/main')
-    def index():
-        """Redirect to main frontend page"""
-        from flask import redirect
-        return redirect('/frontend/pages/index.html')
+    def api_info():
+        """API information page"""
+        return {
+            'message': 'Intern Insight API',
+            'version': 'v1',
+            'status': 'running',
+            'endpoints': {
+                'auth': '/api/auth/*',
+                'internships': '/api/internships',
+                'profiles': '/api/profiles',
+                'recommendations': '/api/recommendations',
+                'cities': '/api/cities'
+            },
+            'frontend': 'React app should be running separately on port 3000',
+            'docs': 'See /api for full API documentation'
+        }, 200
     
     app_logger.info("Application initialized successfully")
     return app

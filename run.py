@@ -30,7 +30,7 @@ def main():
     parser = argparse.ArgumentParser(description='PM Intern Recommender')
     parser.add_argument('--env', choices=['development', 'production', 'testing'], 
                        default='development', help='Environment to run in')
-    parser.add_argument('--port', type=int, default=3000, help='Port to run on')
+    parser.add_argument('--port', type=int, default=3001, help='Port to run on')
     parser.add_argument('--host', default='127.0.0.1', help='Host to bind to')
     parser.add_argument('--debug', action='store_true', help='Enable debug mode')
     

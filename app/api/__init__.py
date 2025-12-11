@@ -11,6 +11,7 @@ from app.api.auth import signup, login, logout, check_login_status
 from app.api.profiles import create_or_update_profile, get_profile_by_username, get_profile_by_candidate_id
 from app.api.cities import list_cities
 from app.api.admin import db_stats
+from app.api.resume_parser import parse_resume
 
 # Create API blueprint
 api_bp = Blueprint('api', __name__, url_prefix='/api')
@@ -80,3 +81,9 @@ def get_profile_by_candidate_id_endpoint(candidate_id):
 def admin_db_stats_endpoint():
     """Basic DB stats for quick verification"""
     return db_stats()
+
+# Resume parser route
+@api_bp.route('/parse-resume', methods=['POST'])
+def parse_resume_endpoint():
+    """Parse resume file and extract data"""
+    return parse_resume()
