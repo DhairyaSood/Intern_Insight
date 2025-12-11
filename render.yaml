@@ -5,7 +5,10 @@ services:
     env: python
     plan: free
     region: oregon
-    buildCommand: pip install -r requirements.txt
+    buildCommand: |
+      apt-get update
+      apt-get install -y tesseract-ocr tesseract-ocr-eng
+      pip install -r requirements.txt
     startCommand: gunicorn -w 3 -k gthread -t 120 -b 0.0.0.0:$PORT wsgi:app
     envVars:
       - key: FLASK_ENV
@@ -26,7 +29,7 @@ services:
         sync: false
       # CORS origins for your frontend URL(s), comma-separated
       - key: CORS_ORIGINS
-        value: "https://pm-intern-frontend.onrender.com,https://pm-intern-fobb.onrender.com,http://localhost:3000"
+        value: "https://intern-insight-n1wn.onrender.com,https://pm-intern-fobb.onrender.com,http://localhost:3000"
       # Session cookie settings (if serving frontend on different domain use None + Secure)
       - key: SESSION_COOKIE_SAMESITE
         value: None
