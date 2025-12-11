@@ -20,7 +20,7 @@ cryptography==46.0.3
 
 # Image Processing (for resume parsing)
 Pillow==11.0.0
-paddleocr==2.9.2
+paddleocr==3.3.2
 
 # HTTP & API
 requests==2.32.5
