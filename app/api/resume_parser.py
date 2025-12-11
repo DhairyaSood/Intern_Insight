@@ -1,6 +1,6 @@
 """
 Resume Parser API - Backend OCR with AI-powered extraction
-Uses Tesseract OCR + OpenRouter AI for accurate structured parsing
+Uses EasyOCR + OpenRouter AI for accurate structured parsing
 """
 from flask import request
 from app.utils.response_helpers import success_response, error_response
@@ -11,26 +11,19 @@ import os
 import json
 
 try:
-    import pytesseract
+    import easyocr
     from PIL import Image
-    import platform
     
-    # Configure Tesseract path for Windows
-    if platform.system() == 'Windows':
-        # Try common installation paths
-        possible_paths = [
-            r'C:\Program Files\Tesseract-OCR\tesseract.exe',
-            r'C:\Program Files (x86)\Tesseract-OCR\tesseract.exe',
-        ]
-        for path in possible_paths:
-            if os.path.exists(path):
-                pytesseract.pytesseract.tesseract_cmd = path
-                break
-    
-    TESSERACT_AVAILABLE = True
+    # Initialize EasyOCR reader (cached globally for performance)
+    reader = easyocr.Reader(['en'], gpu=False)  # CPU mode for Render
+    OCR_AVAILABLE = True
+    app_logger.info("EasyOCR initialized successfully")
 except ImportError:
-    TESSERACT_AVAILABLE = False
-    app_logger.warning("Tesseract not available. Resume parsing will use basic extraction only.")
+    OCR_AVAILABLE = False
+    app_logger.warning("EasyOCR not available. Resume parsing will use basic extraction only.")
+except Exception as e:
+    OCR_AVAILABLE = False
+    app_logger.warning(f"EasyOCR initialization failed: {e}")
 
 try:
     import requests
@@ -75,13 +68,13 @@ def parse_resume():
         
         try:
             # Extract text using OCR
-            if TESSERACT_AVAILABLE and file_ext in {'png', 'jpg', 'jpeg'}:
+            if OCR_AVAILABLE and file_ext in {'png', 'jpg', 'jpeg'}:
                 text = extract_text_from_image(tmp_path)
                 app_logger.info(f"OCR extracted {len(text)} characters")
             else:
-                # For PDF or if Tesseract unavailable, return empty structure
+                # For PDF or if OCR unavailable, return empty structure
                 text = ""
-                app_logger.warning(f"Cannot process {file_ext} files or Tesseract unavailable")
+                app_logger.warning(f"Cannot process {file_ext} files or OCR unavailable")
             
             # Parse using AI if available, otherwise fallback to regex
             if text and REQUESTS_AVAILABLE:
@@ -107,21 +100,8 @@ def parse_resume():
 
 
 def extract_text_from_image(image_path):
-    """Extract text from image using Tesseract OCR"""
-    try:
-        image = Image.open(image_path)
-        
-        # Preprocess image for better OCR
-        # Convert to grayscale
-        if image.mode != 'L':
-            image = image.convert('L')
-        
-        # Extract text with Tesseract
-        text = pytesseract.image_to_string(image, lang='eng')
-        
-        return text
-    except Exception as e:
-        app_logger.error(f"OCR extraction failed: {e}")
+    \"\"\"Extract text from image using EasyOCR\"\"\"
+    try:\n        # Use EasyOCR to read text from image\n        result = reader.readtext(image_path)\n        \n        # Combine all detected text\n        text = ' '.join([detection[1] for detection in result])\n        \n        return text\n    except Exception as e:\n        app_logger.error(f\"OCR extraction failed: {e}\")\n        return \"\"
         return ""
 
 

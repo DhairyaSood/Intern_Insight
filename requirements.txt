@@ -20,7 +20,7 @@ cryptography==46.0.3
 
 # Image Processing (for resume parsing)
 Pillow==11.0.0
-pytesseract==0.3.10
+easyocr==1.7.2
 
 # HTTP & API
 requests==2.32.5
