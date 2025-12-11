@@ -26,7 +26,7 @@ services:
         sync: false
       # CORS origins for your frontend URL(s), comma-separated
       - key: CORS_ORIGINS
-        value: "https://pm-intern-frontend.onrender.com,https://pm-intern-backend.onrender.com"
+        value: "https://pm-intern-frontend.onrender.com,https://pm-intern-fobb.onrender.com,http://localhost:3000"
       # Session cookie settings (if serving frontend on different domain use None + Secure)
       - key: SESSION_COOKIE_SAMESITE
         value: None
@@ -43,7 +43,7 @@ services:
     staticPublishPath: ./frontend/build
     envVars:
       - key: REACT_APP_API_BASE_URL
-        value: https://pm-intern-backend.onrender.com/api
+        value: https://pm-intern-fobb.onrender.com/api
     routes:
       - type: rewrite
         source: /*
