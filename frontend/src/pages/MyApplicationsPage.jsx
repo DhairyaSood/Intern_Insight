@@ -126,7 +126,7 @@ const MyApplicationsPage = () => {
                     isBookmarked={bookmarkedIds.includes(internship.internship_id || internship._id)}
                     onToggleBookmark={toggleBookmark}
                   />
-                  <div className="absolute top-2 right-2 bg-green-500 text-white px-3 py-1 rounded-full text-xs font-semibold shadow-lg flex items-center gap-1">
+                  <div className="absolute top-14 right-4 bg-green-500 text-white px-3 py-1 rounded-full text-xs font-semibold shadow-lg flex items-center gap-1 z-10">
                     <CheckCircle className="h-3 w-3" />
                     Applied
                   </div>

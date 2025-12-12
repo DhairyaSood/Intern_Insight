@@ -291,6 +291,8 @@ const CompanyDetailPage = () => {
                     <InternshipCard
                       key={internship.internship_id}
                       internship={internship}
+                      isBookmarked={false}
+                      onToggleBookmark={() => {}}
                     />
                   ))}
                 </div>

@@ -103,8 +103,26 @@ const CompaniesPage = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
         <LoadingSpinner size="lg" />
+      </div>
+    );
+  }
+
+  if (error && companies.length === 0) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8 px-4">
+        <div className="max-w-7xl mx-auto">
+          <ErrorMessage message={error} type="error" onClose={() => setError('')} />
+          <div className="text-center mt-8">
+            <button 
+              onClick={fetchData}
+              className="btn-primary"
+            >
+              Try Again
+            </button>
+          </div>
+        </div>
       </div>
     );
   }

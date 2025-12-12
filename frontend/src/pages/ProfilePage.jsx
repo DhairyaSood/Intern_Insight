@@ -4,6 +4,7 @@ import { useAuthStore } from '../store/authStore';
 import { profileService } from '../services/profile';
 import ResumeUpload from '../components/Profile/ResumeUpload';
 import SkillsInput from '../components/Profile/SkillsInput';
+import SectorInterestsInput from '../components/Profile/SectorInterestsInput';
 import CountryCodeSelector, { detectCountryFromPhone } from '../components/Profile/CountryCodeSelector';
 import LoadingSpinner from '../components/Common/LoadingSpinner';
 import ErrorMessage from '../components/Common/ErrorMessage';
@@ -379,7 +380,7 @@ const ProfilePage = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                      Full Name <span className="text-red-500">*</span>
+                      Full Name
                     </label>
                     <input
                       type="text"
@@ -393,7 +394,7 @@ const ProfilePage = () => {
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                      Email <span className="text-red-500">*</span>
+                      Email
                     </label>
                     <div className="relative">
                       <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
@@ -451,16 +452,15 @@ const ProfilePage = () => {
               <div className="card">
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
                   <Award className="h-5 w-5 text-primary-600 dark:text-primary-400" />
-                  Skills <span className="text-red-500">*</span>
+                  Skills
                 </h3>
-                <SkillsInput
-                  skills={formData.skills}
-                  onChange={handleSkillsChange}
-                  placeholder="Type skills and press Enter (e.g., Python, React...)"
-                />
-                <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
-                  {formData.skills.length} skill{formData.skills.length !== 1 ? 's' : ''} added
-                </p>
+                <div className="min-h-[140px]">
+                  <SkillsInput
+                    skills={formData.skills}
+                    onChange={handleSkillsChange}
+                    placeholder="Type skills and press Enter (e.g., Python, React...)"
+                  />
+                </div>
               </div>
           </div>
 
@@ -549,7 +549,7 @@ const ProfilePage = () => {
                     {formData.education ? 'Added' : 'Not set'}
                   </span>
                 </div>
-                <div className="flex items-center justify-between py-2">
+                <div className="flex items-center justify-between py-2 pb-0">
                   <span className="text-sm text-gray-600 dark:text-gray-400 flex items-center gap-2">
                     <Briefcase className="h-4 w-4" />
                     Experience
@@ -569,7 +569,7 @@ const ProfilePage = () => {
             <div className="card">
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
                 <GraduationCap className="h-5 w-5 text-primary-600 dark:text-primary-400" />
-                Education <span className="text-red-500">*</span>
+                Education
               </h3>
               <textarea
                 name="education"
@@ -586,48 +586,14 @@ const ProfilePage = () => {
             <div className="card">
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
                 <Target className="h-5 w-5 text-primary-600 dark:text-primary-400" />
-                Sector Interests <span className="text-red-500">*</span>
+                Sector Interests
               </h3>
-              <div className="space-y-3">
-                <select
-                  multiple
-                  value={formData.sector_interests}
-                  onChange={(e) => {
-                    const selected = Array.from(e.target.selectedOptions, option => option.value);
-                    handleSectorInterestsChange(selected);
-                  }}
-                  className="input-field h-32 rounded-lg"
-                  size="6"
-                >
-                  {AVAILABLE_SECTORS.map(sector => (
-                    <option key={sector} value={sector} className="py-1">
-                      {sector}
-                    </option>
-                  ))}
-                </select>
-                <p className="text-xs text-gray-500 dark:text-gray-400">
-                  Hold Ctrl/Cmd to select multiple. {formData.sector_interests.length} selected.
-                </p>
-                {formData.sector_interests.length > 0 && (
-                  <div className="flex flex-wrap gap-2">
-                    {formData.sector_interests.map(sector => (
-                      <span
-                        key={sector}
-                        className="inline-flex items-center gap-1 px-3 py-1 bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 rounded-full text-sm"
-                      >
-                        {sector}
-                        <button
-                          type="button"
-                          onClick={() => handleSectorInterestsChange(formData.sector_interests.filter(s => s !== sector))}
-                          className="hover:text-red-600"
-                        >
-                          ×
-                        </button>
-                      </span>
-                    ))}
-                  </div>
-                )}
-              </div>
+              <SectorInterestsInput
+                sectors={formData.sector_interests}
+                onChange={handleSectorInterestsChange}
+                availableSectors={AVAILABLE_SECTORS}
+                placeholder="Search and select sectors..."
+              />
             </div>
           </div>
 

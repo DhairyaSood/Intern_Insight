@@ -466,18 +466,14 @@ const InternshipsPage = () => {
                     : 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3'
                 }`}>
                 {displayedInternships.map((internship) => (
-                  <div key={internship.internship_id} className="relative">
+                  <div key={internship.internship_id}>
                     <InternshipCard
                       internship={internship}
                       onShowSimilar={handleShowSimilar}
+                      showMatchScore={internship.matchScore > 0}
                       isBookmarked={bookmarkedIds.includes(internship.internship_id || internship._id)}
                       onToggleBookmark={toggleBookmark}
                     />
-                    {internship.matchScore > 0 && (
-                      <div className="absolute top-2 right-2 bg-green-500 text-white px-2 py-1 rounded-full text-xs font-semibold shadow-lg">
-                        {Math.round(internship.matchScore)}% Match
-                      </div>
-                    )}
                   </div>
                 ))}
               </div>

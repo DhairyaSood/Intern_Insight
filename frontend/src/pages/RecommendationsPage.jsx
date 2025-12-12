@@ -262,7 +262,7 @@ const RecommendationsPage = () => {
 
         <div className="space-y-6">
           {recommendations.map((internship) => (
-            <div key={internship.internship_id} className="relative">
+            <div key={internship.internship_id}>
               <InternshipCard 
                 internship={internship}
                 onShowSimilar={handleShowSimilar}
@@ -270,11 +270,6 @@ const RecommendationsPage = () => {
                 isBookmarked={bookmarkedIds.includes(internship.internship_id || internship._id)}
                 onToggleBookmark={toggleBookmark}
               />
-              {internship.matchScore && (
-                <div className="absolute top-2 right-2 sm:top-4 sm:right-4 bg-green-500 text-white px-2 py-1 sm:px-3 rounded-full text-xs sm:text-sm font-semibold shadow-lg">
-                  {Math.round(internship.matchScore)}% Match
-                </div>
-              )}
             </div>
           ))}
         </div>

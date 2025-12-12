@@ -137,6 +137,8 @@ const Home = () => {
                 key={internship.internship_id}
                 internship={internship}
                 onShowSimilar={handleShowSimilar}
+                isBookmarked={false}
+                onToggleBookmark={() => {}}
               />
             ))}
           </div>
