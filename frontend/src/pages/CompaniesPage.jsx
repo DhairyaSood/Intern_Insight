@@ -25,46 +25,7 @@ const CompaniesPage = () => {
   }, []);
 
   useEffect(() => {
-    filterAndSortCompanies();
-  }, [companies, searchQuery, selectedSector, hiringOnly, minRating, sortBy]);
-
-  const fetchData = async () => {
-    try {
-      setLoading(true);
-      setError('');
-
-      const [companiesRes, sectorsRes, statsRes] = await Promise.all([
-        getCompanies(),
-        getSectors(),
-        getCompanyStats()
-      ]);
-
-      console.log('Companies API Response:', companiesRes);
-      console.log('Sectors API Response:', sectorsRes);
-      console.log('Stats API Response:', statsRes);
-
-      // Handle different response structures
-      const companiesData = companiesRes.data?.companies || companiesRes.data || [];
-      // Backend returns sectors array directly in data, not nested
-      const sectorsData = Array.isArray(sectorsRes.data) ? sectorsRes.data : (sectorsRes.data?.sectors || sectorsRes.data || []);
-      const statsData = statsRes.data || null;
-
-      console.log('Parsed companies:', companiesData);
-      console.log('Parsed sectors:', sectorsData);
-      console.log('Sectors count:', sectorsData.length);
-      
-      setCompanies(companiesData);
-      setSectors(sectorsData);
-      setStats(statsData);
-    } catch (err) {
-      console.error('Error fetching companies:', err);
-      setError(err.response?.data?.message || 'Failed to load companies');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const filterAndSortCompanies = () => {
+    // Run filter whenever companies or filter values change
     if (!companies || companies.length === 0) {
       setFilteredCompanies([]);
       return;
@@ -102,15 +63,51 @@ const CompaniesPage = () => {
         case 'name':
           return a.name.localeCompare(b.name);
         case 'rating':
-          return b.rating - a.rating;
+          return (b.rating || 0) - (a.rating || 0);
         case 'internships':
-          return b.total_internships - a.total_internships;
+          return (b.total_internships || 0) - (a.total_internships || 0);
         default:
           return 0;
       }
     });
 
     setFilteredCompanies(filtered);
+  }, [companies, searchQuery, selectedSector, hiringOnly, minRating, sortBy]);
+
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+      setError('');
+
+      const [companiesRes, sectorsRes, statsRes] = await Promise.all([
+        getCompanies(),
+        getSectors(),
+        getCompanyStats()
+      ]);
+
+      console.log('Companies API Response:', companiesRes);
+      console.log('Sectors API Response:', sectorsRes);
+      console.log('Stats API Response:', statsRes);
+
+      // Handle different response structures
+      const companiesData = companiesRes.data?.companies || companiesRes.data || [];
+      // Backend returns sectors array directly in data, not nested
+      const sectorsData = Array.isArray(sectorsRes.data) ? sectorsRes.data : (sectorsRes.data?.sectors || sectorsRes.data || []);
+      const statsData = statsRes.data || null;
+
+      console.log('Parsed companies:', companiesData);
+      console.log('Parsed sectors:', sectorsData);
+      console.log('Sectors count:', sectorsData.length);
+      
+      setCompanies(companiesData);
+      setSectors(sectorsData);
+      setStats(statsData);
+    } catch (err) {
+      console.error('Error fetching companies:', err);
+      setError(err.response?.data?.message || 'Failed to load companies');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const clearFilters = () => {

@@ -331,25 +331,28 @@ const CompanyDetailPage = () => {
                   </p>
                 </div>
               ) : (
-                <div className="grid grid-cols-1 gap-6">
-                  {internships.map((internship) => {
-                    const internshipId = internship.internship_id || internship._id;
-                    const hasApplied = user?.username ? (() => {
-                      const appliedKey = `appliedInternships_${user.username}`;
-                      const appliedIds = JSON.parse(localStorage.getItem(appliedKey) || '[]');
-                      return appliedIds.includes(internshipId);
-                    })() : false;
-                    
-                    return (
-                      <InternshipCard
-                        key={internshipId}
-                        internship={internship}
-                        isBookmarked={bookmarkedIds.includes(internshipId)}
-                        onToggleBookmark={toggleBookmark}
-                        hasApplied={hasApplied}
-                      />
-                    );
-                  })}
+                <div className="max-h-[800px] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-gray-400 dark:scrollbar-thumb-gray-600 scrollbar-track-gray-200 dark:scrollbar-track-gray-800">
+                  <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+                    {internships.map((internship) => {
+                      const internshipId = internship.internship_id || internship._id;
+                      const hasApplied = user?.username ? (() => {
+                        const appliedKey = `appliedInternships_${user.username}`;
+                        const appliedIds = JSON.parse(localStorage.getItem(appliedKey) || '[]');
+                        return appliedIds.includes(internshipId);
+                      })() : false;
+                      
+                      return (
+                        <InternshipCard
+                          key={internshipId}
+                          internship={internship}
+                          showMatchScore={true}
+                          isBookmarked={bookmarkedIds.includes(internshipId)}
+                          onToggleBookmark={toggleBookmark}
+                          hasApplied={hasApplied}
+                        />
+                      );
+                    })}
+                  </div>
                 </div>
               )}
             </div>
