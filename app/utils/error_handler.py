@@ -77,3 +77,15 @@ def handle_database_error(operation):
                 raise APIError(f'Database operation failed: {operation}', 500)
         return decorated_function
     return decorator
+
+def handle_errors(f):
+    """Generic error handler decorator for API endpoints."""
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        try:
+            return f(*args, **kwargs)
+        except APIError as e:
+            return handle_api_error(e)
+        except Exception as e:
+            return handle_generic_error(e)
+    return decorated_function
