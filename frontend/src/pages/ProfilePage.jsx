@@ -49,10 +49,20 @@ const ProfilePage = () => {
         }
         
         if (profile) {
+          // Extract and separate country code from phone number
+          let phoneNumber = profile.phone || '';
+          let detectedCountry = null;
+          
+          if (phoneNumber) {
+            detectedCountry = detectCountryFromPhone(phoneNumber);
+            // Remove country code from phone number for display
+            phoneNumber = phoneNumber.replace(/^\+\d+\s*/, '').trim();
+          }
+          
           setFormData({
             name: profile.name || user.username || '',
             email: profile.email || '',
-            phone: profile.phone || '',
+            phone: phoneNumber,
             location: profile.location_preference || profile.location || profile.city || '',
             education: profile.education_level || profile.education || '',
             experience: profile.experience || '',
@@ -60,8 +70,7 @@ const ProfilePage = () => {
           });
           
           // Auto-detect country from saved phone number
-          if (profile.phone) {
-            const detectedCountry = detectCountryFromPhone(profile.phone);
+          if (detectedCountry) {
             setSelectedCountry(detectedCountry);
           }
         } else {
@@ -94,15 +103,8 @@ const ProfilePage = () => {
   
   const handleCountryChange = (country) => {
     setSelectedCountry(country);
-    
-    // Update phone number with new country code if phone doesn't already have it
-    if (formData.phone) {
-      const phoneWithoutCode = formData.phone.replace(/^\+\d+\s*/, '').trim();
-      setFormData(prev => ({
-        ...prev,
-        phone: `${country.code} ${phoneWithoutCode}`
-      }));
-    }
+    // Phone number already doesn't have country code (we strip it on load/extract)
+    // So no need to modify the phone field here
   };
 
   const handleSkillsChange = (newSkills) => {
@@ -111,19 +113,29 @@ const ProfilePage = () => {
   };
 
   const handleResumeDataExtracted = (data) => {
+    // Extract phone without country code for cleaner input
+    let phoneNumber = data.phone || '';
+    let detectedCountry = null;
+    
+    if (phoneNumber) {
+      detectedCountry = detectCountryFromPhone(phoneNumber);
+      // Remove country code from phone number since it's shown separately
+      phoneNumber = phoneNumber.replace(/^\+\d+\s*/, '').trim();
+    }
+    
     setFormData(prev => ({
       ...prev,
       name: data.name || prev.name,
       email: data.email || prev.email,
-      phone: data.phone || prev.phone,
+      phone: phoneNumber || prev.phone,
+      location: data.location || prev.location,
       education: data.education || prev.education,
       experience: data.experience || prev.experience,
       skills: data.skills && data.skills.length > 0 ? data.skills : prev.skills,
     }));
     
     // Auto-detect and set country from extracted phone number
-    if (data.phone) {
-      const detectedCountry = detectCountryFromPhone(data.phone);
+    if (detectedCountry) {
       setSelectedCountry(detectedCountry);
     }
     
@@ -151,10 +163,13 @@ const ProfilePage = () => {
     try {
       setIsSaving(true);
       
-      // Ensure phone has country code
+      // Handle phone number: if country code is selected, check if it's already in the number
       let phoneWithCode = formData.phone.trim();
-      if (selectedCountry && phoneWithCode && !phoneWithCode.startsWith('+')) {
-        phoneWithCode = `${selectedCountry.code} ${phoneWithCode}`;
+      if (selectedCountry && phoneWithCode) {
+        // Remove existing country code if present (to avoid duplication)
+        const phoneWithoutCode = phoneWithCode.replace(/^\+\d+\s*/, '').trim();
+        // Add the selected country code
+        phoneWithCode = `${selectedCountry.code} ${phoneWithoutCode}`;
       }
       
       const profileData = {
@@ -162,11 +177,12 @@ const ProfilePage = () => {
         name: formData.name.trim(),
         email: formData.email.trim(),
         phone: phoneWithCode,
-        city: formData.location.trim(),
-        location: formData.location.trim(),
-        education: formData.education.trim(),
+        location_preference: formData.location.trim(),
+        education_level: formData.education.trim(),
         experience: formData.experience.trim(),
-        skills: formData.skills,
+        skills_possessed: formData.skills,
+        field_of_study: formData.field_of_study || '',
+        sector_interests: formData.sector_interests || []
       };
 
       await profileService.updateProfile(user.candidate_id, profileData);
@@ -237,7 +253,6 @@ const ProfilePage = () => {
                 onClick={() => setShowResumeUpload(true)}
                 className="btn-primary"
               >
-                <UploadIcon className="h-4 w-4 mr-2" />
                 Upload Resume
               </button>
             </div>

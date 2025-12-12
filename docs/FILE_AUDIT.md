@@ -14,7 +14,7 @@ Status legend:
 - .env, .env.example — Environment config. ✅ (example optional)
 - LICENSE — MIT license. ✅
 - logs/ — Runtime logs folder. ✅ (created at runtime)
-- tests/, test_api.py — Unit tests. 🟡 (keep; useful for CI)
+- tests/ — All unit tests (test_api.py, test_login.py, test_signup.py, etc.). 🟡 (keep; useful for CI)
 
 ## Backend (legacy)
 - backend/app.py — Legacy monolithic Flask app with working endpoints; kept for compatibility. 🟡

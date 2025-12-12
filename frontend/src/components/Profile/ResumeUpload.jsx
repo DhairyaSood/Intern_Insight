@@ -130,19 +130,49 @@ const ResumeUpload = ({ onDataExtracted }) => {
       {/* Processing State */}
       {isProcessing && (
         <div className="card text-center">
-          <LoadingSpinner size="lg" />
-          <p className="text-gray-900 dark:text-gray-100 font-medium mt-4">
+          <div className="relative">
+            <LoadingSpinner size="xl" />
+            <div className="absolute inset-0 flex items-center justify-center">
+              <span className="text-2xl font-bold text-primary-600 dark:text-primary-400">
+                {progress}%
+              </span>
+            </div>
+          </div>
+          <p className="text-gray-900 dark:text-gray-100 font-semibold text-lg mt-6">
             Processing your resume...
           </p>
-          <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2 mt-4">
+          <div className="mt-4 space-y-2">
+            <div className="flex items-center justify-center gap-2 text-sm">
+              <div className={`w-2 h-2 rounded-full ${
+                progress >= 20 ? 'bg-green-500 animate-pulse' : 'bg-gray-300 dark:bg-gray-600'
+              }`} />
+              <span className={progress >= 20 ? 'text-green-600 dark:text-green-400' : 'text-gray-500 dark:text-gray-400'}>
+                Uploading file
+              </span>
+            </div>
+            <div className="flex items-center justify-center gap-2 text-sm">
+              <div className={`w-2 h-2 rounded-full ${
+                progress >= 50 ? 'bg-green-500 animate-pulse' : 'bg-gray-300 dark:bg-gray-600'
+              }`} />
+              <span className={progress >= 50 ? 'text-green-600 dark:text-green-400' : 'text-gray-500 dark:text-gray-400'}>
+                Extracting text
+              </span>
+            </div>
+            <div className="flex items-center justify-center gap-2 text-sm">
+              <div className={`w-2 h-2 rounded-full ${
+                progress >= 80 ? 'bg-green-500 animate-pulse' : 'bg-gray-300 dark:bg-gray-600'
+              }`} />
+              <span className={progress >= 80 ? 'text-green-600 dark:text-green-400' : 'text-gray-500 dark:text-gray-400'}>
+                Parsing information
+              </span>
+            </div>
+          </div>
+          <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3 mt-6 overflow-hidden">
             <div
-              className="bg-primary-600 h-2 rounded-full transition-all duration-300"
+              className="bg-gradient-to-r from-primary-500 to-primary-600 h-3 rounded-full transition-all duration-500 ease-out shadow-lg"
               style={{ width: `${progress}%` }}
             />
           </div>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
-            {progress}% complete
-          </p>
         </div>
       )}
 

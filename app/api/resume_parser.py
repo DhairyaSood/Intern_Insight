@@ -11,10 +11,15 @@ import os
 import json
 
 # OCR.space Free API Configuration
-OCR_SPACE_API_KEY = os.getenv('OCR_SPACE_API_KEY', 'K83826061188957')
-OCR_AVAILABLE = True
-OCR_BACKEND = 'ocrspace'
-app_logger.info("✅ Using OCR.space cloud API")
+OCR_SPACE_API_KEY = os.getenv('OCR_SPACE_API_KEY')
+if not OCR_SPACE_API_KEY:
+    app_logger.error("⚠️ OCR_SPACE_API_KEY not found in environment variables")
+    OCR_AVAILABLE = False
+    OCR_BACKEND = None
+else:
+    OCR_AVAILABLE = True
+    OCR_BACKEND = 'ocrspace'
+    app_logger.info("✅ Using OCR.space cloud API")
 
 try:
     import requests
@@ -37,6 +42,15 @@ OPENROUTER_API_KEY = os.getenv('OPENROUTER_API_KEY', None)
 OPENROUTER_MODELS = [
     "meta-llama/llama-3.2-3b-instruct:free",
     "google/gemini-2.0-flash-exp:free",
+    "mistralai/mistral-7b-instruct:free",
+    "arcee-ai/trinity-mini:free",
+    "google/gemma-3-27b-it:free",
+    "meta-llama/llama-3.3-70b-instruct:free",
+    "google/gemma-3n-e2b-it:free",
+    "allenai/olmo-3-32b-think:free",
+    "nvidia/nemotron-nano-9b-v2:free",
+    "qwen/qwen3-4b:free",
+    "mistralai/mistral-small-3.1-24b-instruct:free"
 ]
 OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
 
@@ -194,8 +208,14 @@ def extract_text_from_image(image_path):
 def extract_with_ai(ocr_text):
     """Use OpenRouter AI to extract structured resume data from OCR text"""
     
+    import random
+    
+    # Shuffle models for random rotation and load distribution
+    models_to_try = OPENROUTER_MODELS.copy()
+    random.shuffle(models_to_try)
+    
     # Try multiple models in case one is rate-limited
-    for model in OPENROUTER_MODELS:
+    for model in models_to_try:
         try:
             app_logger.info(f"Trying model: {model}")
             app_logger.info(f"Sending {len(ocr_text)} characters to AI for parsing")
@@ -262,15 +282,23 @@ EXTRACTION GUIDELINES:
    - Format as multi-line string with clear separation between roles
    - Example: "Software Engineer Intern\\nABC Technologies, June 2023 - Aug 2023\\n- Built web applications using React and Node.js\\n- Improved API performance by 40%\\n\\nFreelance Developer\\nSelf-Employed, Jan 2023 - May 2023\\n- Developed e-commerce platform for local businesses"
 
-CRITICAL RULES:
-- Return ONLY valid JSON (no markdown, no code blocks, no extra text)
-- If a field is not found or unclear, use empty string "" for text or empty array [] for skills
-- DO NOT make up information - only extract what's clearly present
-- DO NOT include OCR artifacts or gibberish
-- Skills must be a JSON array, not a comma-separated string
-- Preserve original capitalization for proper nouns (names, companies, universities)
+**CRITICAL OUTPUT FORMAT RULES:**
+⚠️ RETURN **ONLY** THE RAW JSON OBJECT - NOTHING ELSE!
+⚠️ NO markdown code blocks (```json or ```)
+⚠️ NO explanatory text before or after the JSON
+⚠️ NO comments inside the JSON
+⚠️ NO additional formatting or whitespace outside the JSON
+⚠️ The first character of your response MUST be {{ and the last character MUST be }}
+⚠️ Your entire response must be parseable by JSON.parse() or json.loads()
 
-REQUIRED JSON STRUCTURE:
+If a field is not found:
+- Use empty string "" for text fields (name, email, phone, education, experience)
+- Use empty array [] for skills
+- DO NOT use null, undefined, or omit fields
+
+DO NOT make up information - only extract what is clearly present in the resume text.
+
+**REQUIRED JSON STRUCTURE (respond with ONLY this, no other text):**
 {{
   "name": "Full Name",
   "email": "email@example.com",
@@ -278,9 +306,7 @@ REQUIRED JSON STRUCTURE:
   "skills": ["skill1", "skill2", "skill3", "skill4", "skill5"],
   "education": "Degree Name\\nInstitution Name, Year\\nGPA or relevant details",
   "experience": "Job Title\\nCompany Name, Dates\\n- Responsibility 1\\n- Responsibility 2"
-}}
-
-Now extract the information from the resume text above and return ONLY the JSON object:"""
+}}"""
 
             # Make API request to OpenRouter
             headers = {
@@ -295,16 +321,16 @@ Now extract the information from the resume text above and return ONLY the JSON 
                 "messages": [
                     {
                         "role": "system",
-                        "content": "You are a precise resume parsing AI. Extract structured data from resumes and return ONLY valid JSON. Never add commentary, markdown, or explanations."
+                        "content": "You are a precise JSON-only resume parser. Your response must be valid JSON and nothing else. Never include markdown code blocks, explanations, or any text outside the JSON object. The first character must be { and last must be }."
                     },
                     {
                         "role": "user",
                         "content": prompt
                     }
                 ],
-                "temperature": 0.1,  # Very low for consistency
-                "max_tokens": 2000,  # Increased for detailed responses
-                "top_p": 0.9,
+                "temperature": 0.05,  # Extremely low for strict JSON consistency
+                "max_tokens": 2000,
+                "top_p": 0.85,
                 "frequency_penalty": 0.0,
                 "presence_penalty": 0.0
             }
