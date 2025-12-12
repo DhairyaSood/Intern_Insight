@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 import { useInternshipStore } from '../store/internshipStore';
 import { profileService } from '../services/profile';
@@ -11,6 +12,7 @@ const ITEMS_PER_PAGE = 24; // Show 24 items initially (8x3 grid)
 const LOAD_MORE_COUNT = 12; // Load 12 more items when clicking "Load More"
 
 const InternshipsPage = () => {
+  const navigate = useNavigate();
   const { user } = useAuthStore();
   const { 
     internships,
