@@ -89,7 +89,36 @@ const InternshipDetailPage = () => {
       
       // Fetch internship details
       const data = await internshipService.getById(id);
-      setInternship(data.internship);
+      let internshipData = data.internship;
+      
+      // Fetch match score from backend recommendations if user is logged in
+      if (user?.candidate_id) {
+        try {
+          const recommendations = await internshipService.getRecommendations(user.candidate_id);
+          const recWithScores = recommendations.recommendations || [];
+          
+          // Find this internship in recommendations
+          const matchedRec = recWithScores.find(rec => 
+            (rec.internship_id || rec._id) === (internshipData.internship_id || internshipData._id)
+          );
+          
+          if (matchedRec) {
+            internshipData = {
+              ...internshipData,
+              match_score: matchedRec.match_score || matchedRec.matchScore || 0
+            };
+          } else {
+            internshipData = { ...internshipData, match_score: 0 };
+          }
+        } catch (err) {
+          console.warn('Could not fetch match score:', err);
+          internshipData = { ...internshipData, match_score: 0 };
+        }
+      } else {
+        internshipData = { ...internshipData, match_score: 0 };
+      }
+      
+      setInternship(internshipData);
       
       // Fetch similar internships
       try {

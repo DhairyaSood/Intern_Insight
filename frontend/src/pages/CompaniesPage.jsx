@@ -299,8 +299,6 @@ const CompaniesPage = () => {
                 value={selectedSector}
                 onChange={(e) => setSelectedSector(e.target.value)}
                 className="input-field rounded-lg"
-                style={{ maxHeight: '200px' }}
-                size="5"
               >
                 <option value="">All Sectors</option>
                 {sectors.length > 0 ? (

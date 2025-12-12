@@ -45,50 +45,69 @@ const MyApplicationsPage = () => {
       try {
         // Fetch all internships
         await fetchInternships();
-        
-        // Get applied internship IDs from user-specific localStorage
-        const storageKey = `appliedInternships_${user.username}`;
-        const appliedIds = JSON.parse(localStorage.getItem(storageKey) || '[]');
-        
-        // Filter internships that user has applied to
-        let applied = internships.filter(internship => 
-          appliedIds.includes(internship.internship_id || internship._id)
-        );
-        
-        // Fetch recommendations to get match scores
-        if (user.candidate_id) {
-          try {
-            const recommendations = await internshipService.getRecommendations(user.candidate_id);
-            const recWithScores = recommendations.recommendations || [];
-            
-            // Create a map of internship_id to match_score
-            const scoreMap = {};
-            recWithScores.forEach(rec => {
-              const id = rec.internship_id || rec._id;
-              scoreMap[id] = rec.match_score || rec.matchScore;
-            });
-            
-            // Add match scores to applied internships
-            applied = applied.map(internship => ({
-              ...internship,
-              match_score: scoreMap[internship.internship_id || internship._id] || internship.match_score
-            }));
-          } catch (err) {
-            console.warn('Could not fetch match scores:', err);
-            // Continue without match scores
-          }
-        }
-        
-        setAppliedInternships(applied);
       } catch (err) {
-        console.error('Error loading applications:', err);
+        console.error('Error loading internships:', err);
       } finally {
         setIsLoading(false);
       }
     };
 
     loadApplications();
-  }, [user, navigate, internships, fetchInternships]);
+  }, [user, navigate, fetchInternships]);
+
+  // Separate effect to process internships when they load
+  useEffect(() => {
+    if (!user || internships.length === 0) return;
+
+    const processApplications = async () => {
+      // Get applied internship IDs from user-specific localStorage
+      const storageKey = `appliedInternships_${user.username}`;
+      const appliedIds = JSON.parse(localStorage.getItem(storageKey) || '[]');
+      
+      // Filter internships that user has applied to
+      let applied = internships.filter(internship => 
+        appliedIds.includes(internship.internship_id || internship._id)
+      );
+      
+      // Fetch recommendations to get match scores ONLY if we have candidate_id
+      if (user.candidate_id && applied.length > 0) {
+        try {
+          const recommendations = await internshipService.getRecommendations(user.candidate_id);
+          const recWithScores = recommendations.recommendations || [];
+          
+          // Create a map of internship_id to match_score
+          const scoreMap = {};
+          recWithScores.forEach(rec => {
+            const id = rec.internship_id || rec._id;
+            scoreMap[id] = rec.match_score || rec.matchScore;
+          });
+          
+          // Add match scores to applied internships
+          applied = applied.map(internship => ({
+            ...internship,
+            match_score: scoreMap[internship.internship_id || internship._id] || 0
+          }));
+        } catch (err) {
+          console.warn('Could not fetch match scores:', err);
+          // Set 0 for match scores if fetch fails
+          applied = applied.map(internship => ({
+            ...internship,
+            match_score: 0
+          }));
+        }
+      } else {
+        // No candidate_id, set match scores to 0
+        applied = applied.map(internship => ({
+          ...internship,
+          match_score: 0
+        }));
+      }
+      
+      setAppliedInternships(applied);
+    };
+
+    processApplications();
+  }, [user, internships]);
 
   if (isLoading) {
     return <LoadingSpinner message="Loading your applications..." />;
