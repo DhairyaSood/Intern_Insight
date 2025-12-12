@@ -23,10 +23,6 @@ certifi==2024.2.2
 charset-normalizer==3.3.2
 idna==3.6
 
-# Image Processing (for resume parsing)
-Pillow==11.0.0
-pytesseract==0.3.10
-
 # Geolocation
 geopy==2.4.1
 geographiclib==2.1
