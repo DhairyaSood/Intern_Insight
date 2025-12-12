@@ -23,6 +23,15 @@ except ImportError:
     REQUESTS_AVAILABLE = False
     app_logger.warning("requests library not available. AI parsing disabled.")
 
+# PDF extraction support
+try:
+    from PyPDF2 import PdfReader
+    PDF_AVAILABLE = True
+    app_logger.info("✅ PDF support enabled (PyPDF2)")
+except ImportError:
+    PDF_AVAILABLE = False
+    app_logger.warning("⚠️ PyPDF2 not available. PDF support disabled.")
+
 # OpenRouter Configuration
 OPENROUTER_API_KEY = "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"
 OPENROUTER_MODELS = [
@@ -58,22 +67,30 @@ def parse_resume():
             tmp_path = tmp_file.name
         
         try:
-            # Extract text using OCR
-            if OCR_AVAILABLE and file_ext in {'png', 'jpg', 'jpeg'}:
-                app_logger.info(f"Processing {file_ext} image with PaddleOCR")
-                text = extract_text_from_image(tmp_path)
-                app_logger.info(f"OCR extracted {len(text)} characters")
-            else:
-                # For PDF or if OCR unavailable, try basic text extraction
-                if not OCR_AVAILABLE and file_ext in {'png', 'jpg', 'jpeg'}:
-                    app_logger.warning(f"⚠️ OCR not available - cannot extract text from {file_ext} image")
-                    # Return a helpful message
+            # Extract text based on file type
+            if file_ext == 'pdf':
+                if PDF_AVAILABLE:
+                    app_logger.info(f"Processing PDF with PyPDF2")
+                    text = extract_text_from_pdf(tmp_path)
+                else:
+                    app_logger.warning(f"⚠️ PDF support not available")
                     return error_response(
-                        "Resume image upload requires OCR support. Please try uploading a PDF or text-based resume, or contact support.",
+                        "PDF processing not available. Please try uploading an image (JPG/PNG) instead.",
                         503
                     )
+            elif file_ext in {'png', 'jpg', 'jpeg'}:
+                if OCR_AVAILABLE:
+                    app_logger.info(f"Processing {file_ext} image with OCR.space")
+                    text = extract_text_from_image(tmp_path)
+                else:
+                    app_logger.warning(f"⚠️ OCR not available")
+                    return error_response(
+                        "Image OCR not available. Please try uploading a PDF instead.",
+                        503
+                    )
+            else:
                 text = ""
-                app_logger.warning(f"Cannot process {file_ext} files or OCR unavailable")
+                app_logger.warning(f"Unsupported file type: {file_ext}")
             
             # Parse using AI if available, otherwise fallback to regex
             if text and REQUESTS_AVAILABLE:
@@ -96,6 +113,35 @@ def parse_resume():
         import traceback
         app_logger.error(traceback.format_exc())
         return error_response(f"Failed to parse resume: {str(e)}", 500)
+
+
+def extract_text_from_pdf(pdf_path):
+    """Extract text from PDF file"""
+    try:
+        if not PDF_AVAILABLE:
+            app_logger.error("PyPDF2 not available")
+            return ""
+        
+        reader = PdfReader(pdf_path)
+        text_parts = []
+        
+        for page_num, page in enumerate(reader.pages):
+            try:
+                page_text = page.extract_text()
+                if page_text:
+                    text_parts.append(page_text)
+            except Exception as e:
+                app_logger.warning(f"Failed to extract text from page {page_num + 1}: {e}")
+        
+        text = '\n'.join(text_parts)
+        app_logger.info(f"✅ PDF extracted {len(text)} characters from {len(reader.pages)} pages")
+        return text
+        
+    except Exception as e:
+        app_logger.error(f"PDF extraction failed: {e}")
+        import traceback
+        app_logger.error(traceback.format_exc())
+        return ""
 
 
 def extract_text_from_image(image_path):

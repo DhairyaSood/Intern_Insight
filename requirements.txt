@@ -20,6 +20,7 @@ cryptography==46.0.3
 
 # Image Processing (for resume parsing)
 Pillow==11.0.0
+PyPDF2==3.0.1
 
 # ML & Text Processing
 rapidfuzz==3.10.1
