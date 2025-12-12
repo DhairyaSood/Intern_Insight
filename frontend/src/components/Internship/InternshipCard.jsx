@@ -1,7 +1,14 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { MapPin, Sparkles } from 'lucide-react';
 
 const InternshipCard = ({ internship, onShowSimilar, showMatchScore = false }) => {
+  const navigate = useNavigate();
+
+  const handleViewDetails = () => {
+    navigate(`/internship/${internship.internship_id || internship._id}`);
+  };
+
   return (
     <div className="card-compact md:hover:scale-105 transition-transform relative h-full flex flex-col">
       <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
@@ -27,7 +34,10 @@ const InternshipCard = ({ internship, onShowSimilar, showMatchScore = false }) =
         )}
       </div>
       <div className="flex flex-col sm:flex-row gap-2 mt-auto">
-        <button className="flex-1 btn-primary min-h-[44px] touch-manipulation">
+        <button 
+          onClick={handleViewDetails}
+          className="flex-1 btn-primary min-h-[44px] touch-manipulation"
+        >
           View Details
         </button>
         {onShowSimilar && (

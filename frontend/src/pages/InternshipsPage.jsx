@@ -519,7 +519,10 @@ const InternshipsPage = () => {
                         )}
                       </div>
                       <div className="flex gap-2">
-                        <button className="flex-1 btn-primary text-xs py-2 min-h-0">
+                        <button 
+                          onClick={() => navigate(`/internship/${internship.internship_id || internship._id}`)}
+                          className="flex-1 btn-primary text-xs py-2 min-h-0"
+                        >
                           View Details
                         </button>
                         <button 
