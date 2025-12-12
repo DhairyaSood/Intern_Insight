@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Building2, Search, Filter, TrendingUp, Award, Users } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Building2, Search, Filter, TrendingUp, Award, Users, ChevronDown } from 'lucide-react';
 import { getCompanies, getSectors, getCompanyStats } from '../services/companies';
 import CompanyCard from '../components/Company/CompanyCard';
 import LoadingSpinner from '../components/Common/LoadingSpinner';
@@ -19,9 +19,34 @@ const CompaniesPage = () => {
   const [hiringOnly, setHiringOnly] = useState(false);
   const [minRating, setMinRating] = useState(0);
   const [sortBy, setSortBy] = useState('name');
+  
+  // Dropdown states
+  const [sectorDropdownOpen, setSectorDropdownOpen] = useState(false);
+  const [ratingDropdownOpen, setRatingDropdownOpen] = useState(false);
+  const [sortDropdownOpen, setSortDropdownOpen] = useState(false);
+  
+  const sectorRef = useRef(null);
+  const ratingRef = useRef(null);
+  const sortRef = useRef(null);
 
   useEffect(() => {
     fetchData();
+  }, []);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (sectorRef.current && !sectorRef.current.contains(event.target)) {
+        setSectorDropdownOpen(false);
+      }
+      if (ratingRef.current && !ratingRef.current.contains(event.target)) {
+        setRatingDropdownOpen(false);
+      }
+      if (sortRef.current && !sortRef.current.contains(event.target)) {
+        setSortDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
   useEffect(() => {
@@ -291,64 +316,92 @@ const CompaniesPage = () => {
             </div>
 
             {/* Sector Filter */}
-            <div>
+            <div className="relative" ref={sectorRef}>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                 Sector
               </label>
-              <select 
-                value={selectedSector}
-                onChange={(e) => setSelectedSector(e.target.value)}
-                className="input-field rounded-lg"
+              <button
+                type="button"
+                onClick={() => setSectorDropdownOpen(!sectorDropdownOpen)}
+                className="input-field rounded-lg w-full text-left flex items-center justify-between"
               >
-                <option value="">All Sectors</option>
-                {sectors.length > 0 ? (
-                  sectors.map((sector, index) => {
-                    // Handle both string and object formats
-                    const sectorName = typeof sector === 'string' ? sector : (sector.sector || sector.name || 'Unknown');
-                    const sectorCount = typeof sector === 'object' && sector.count ? sector.count : '';
-                    return (
-                      <option key={index} value={sectorName}>
-                        {sectorName}{sectorCount ? ` (${sectorCount})` : ''}
-                      </option>
-                    );
-                  })
-                ) : (
-                  <option disabled>Loading sectors...</option>
-                )}
-              </select>
+                <span>{selectedSector || 'All Sectors'}</span>
+                <ChevronDown className={`h-4 w-4 transition-transform ${sectorDropdownOpen ? 'rotate-180' : ''}`} />
+              </button>
+              {sectorDropdownOpen && (
+                <div className="absolute z-10 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                  <button
+                    type="button"
+                    onClick={() => { setSelectedSector(''); setSectorDropdownOpen(false); }}
+                    className="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-900 dark:text-white transition-colors"
+                  >
+                    All Sectors
+                  </button>
+                  {sectors.length > 0 ? (
+                    sectors.map((sector, index) => {
+                      const sectorName = typeof sector === 'string' ? sector : (sector.sector || sector.name || 'Unknown');
+                      const sectorCount = typeof sector === 'object' && sector.count ? sector.count : '';
+                      return (
+                        <button
+                          key={index}
+                          type="button"
+                          onClick={() => { setSelectedSector(sectorName); setSectorDropdownOpen(false); }}
+                          className="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-900 dark:text-white transition-colors"
+                        >
+                          {sectorName}{sectorCount ? ` (${sectorCount})` : ''}
+                        </button>
+                      );
+                    })
+                  ) : (
+                    <div className="px-4 py-2 text-gray-500 dark:text-gray-400">Loading sectors...</div>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Rating Filter */}
-            <div>
+            <div className="relative" ref={ratingRef}>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                 Min Rating
               </label>
-              <select
-                value={minRating}
-                onChange={(e) => setMinRating(parseFloat(e.target.value))}
-                className="input-field rounded-lg"
+              <button
+                type="button"
+                onClick={() => setRatingDropdownOpen(!ratingDropdownOpen)}
+                className="input-field rounded-lg w-full text-left flex items-center justify-between"
               >
-                <option value="0">Any Rating</option>
-                <option value="3.5">3.5+</option>
-                <option value="4.0">4.0+</option>
-                <option value="4.5">4.5+</option>
-              </select>
+                <span>{minRating === 0 ? 'Any Rating' : `${minRating}+`}</span>
+                <ChevronDown className={`h-4 w-4 transition-transform ${ratingDropdownOpen ? 'rotate-180' : ''}`} />
+              </button>
+              {ratingDropdownOpen && (
+                <div className="absolute z-10 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                  <button type="button" onClick={() => { setMinRating(0); setRatingDropdownOpen(false); }} className="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-900 dark:text-white transition-colors">Any Rating</button>
+                  <button type="button" onClick={() => { setMinRating(3.5); setRatingDropdownOpen(false); }} className="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-900 dark:text-white transition-colors">3.5+</button>
+                  <button type="button" onClick={() => { setMinRating(4.0); setRatingDropdownOpen(false); }} className="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-900 dark:text-white transition-colors">4.0+</button>
+                  <button type="button" onClick={() => { setMinRating(4.5); setRatingDropdownOpen(false); }} className="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-900 dark:text-white transition-colors">4.5+</button>
+                </div>
+              )}
             </div>
 
             {/* Sort By */}
-            <div>
+            <div className="relative" ref={sortRef}>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                 Sort By
               </label>
-              <select
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value)}
-                className="input-field rounded-lg"
+              <button
+                type="button"
+                onClick={() => setSortDropdownOpen(!sortDropdownOpen)}
+                className="input-field rounded-lg w-full text-left flex items-center justify-between"
               >
-                <option value="name">Name</option>
-                <option value="rating">Rating</option>
-                <option value="internships">Internships</option>
-              </select>
+                <span>{sortBy === 'name' ? 'Name' : sortBy === 'rating' ? 'Rating' : 'Internships'}</span>
+                <ChevronDown className={`h-4 w-4 transition-transform ${sortDropdownOpen ? 'rotate-180' : ''}`} />
+              </button>
+              {sortDropdownOpen && (
+                <div className="absolute z-10 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                  <button type="button" onClick={() => { setSortBy('name'); setSortDropdownOpen(false); }} className="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-900 dark:text-white transition-colors">Name</button>
+                  <button type="button" onClick={() => { setSortBy('rating'); setSortDropdownOpen(false); }} className="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-900 dark:text-white transition-colors">Rating</button>
+                  <button type="button" onClick={() => { setSortBy('internships'); setSortDropdownOpen(false); }} className="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-900 dark:text-white transition-colors">Internships</button>
+                </div>
+              )}
             </div>
           </div>
 
