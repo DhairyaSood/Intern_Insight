@@ -297,7 +297,7 @@ const CompaniesPage = () => {
                 className="input-field rounded-lg"
               >
                 <option value="">All Sectors</option>
-                {sectors.map((sector, index) => {
+                {Array.isArray(sectors) && sectors.map((sector, index) => {
                   // Handle both string and object formats
                   const sectorName = typeof sector === 'string' ? sector : (sector.sector || sector.name || 'Unknown');
                   const sectorCount = typeof sector === 'object' ? sector.count : '';
