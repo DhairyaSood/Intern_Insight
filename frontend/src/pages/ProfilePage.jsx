@@ -355,20 +355,22 @@ const ProfilePage = () => {
         )}
 
         {/* Two Column Layout */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Left Column - Form (2/3 width) */}
-          <div className="lg:col-span-2 space-y-6">
-            <form onSubmit={handleSubmit} className="space-y-6"> type="error" />}
-              {success && (
-                <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4">
-                  <p className="text-green-800 dark:text-green-200 font-medium flex items-center gap-2">
-                    <CheckCircle2 className="h-5 w-5" />
-                    Profile saved successfully!
-                  </p>
-                </div>
-              )}
+        <form onSubmit={handleSubmit} className="space-y-6">
+          {error && <ErrorMessage message={error} type="error" />}
+          {success && (
+            <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4">
+              <p className="text-green-800 dark:text-green-200 font-medium flex items-center gap-2">
+                <CheckCircle2 className="h-5 w-5" />
+                Profile saved successfully!
+              </p>
+            </div>
+          )}
 
-              {/* Personal Information Card */
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Left Column - Personal Info + Skills (2/3 width) */}
+            <div className="lg:col-span-2 space-y-6">
+
+              {/* Personal Information Card */}
               <div className="card">
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
                   <User className="h-5 w-5 text-primary-600 dark:text-primary-400" />
@@ -460,28 +462,6 @@ const ProfilePage = () => {
                   {formData.skills.length} skill{formData.skills.length !== 1 ? 's' : ''} added
                 </p>
               </div>
-
-              {/* Save Button */}
-              <div className="flex justify-center">
-                <button
-                  type="submit"
-                  disabled={isSaving}
-                  className="btn-primary px-8 py-3 inline-flex items-center gap-2"
-                >
-                  {isSaving ? (
-                    <>
-                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-                      <span>Saving...</span>
-                    </>
-                  ) : (
-                    <>
-                      <Save className="h-5 w-5" />
-                      Save Profile
-                    </>
-                  )}
-                </button>
-              </div>
-            </form>
           </div>
 
           {/* Right Column - Profile Overview Sidebar (1/3 width) */}
@@ -583,8 +563,7 @@ const ProfilePage = () => {
           </div>
         </div>
 
-        {/* Education and Sector Interests Row - Full Page Width */}
-        <form onSubmit={handleSubmit}>
+          {/* Education and Sector Interests Row - Full Page Width */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Education Card */}
             <div className="card">
@@ -666,6 +645,27 @@ const ProfilePage = () => {
               rows="8"
               className="input-field resize-none"
             />
+          </div>
+
+          {/* Save Button */}
+          <div className="flex justify-center mt-6">
+            <button
+              type="submit"
+              disabled={isSaving}
+              className="btn-primary px-8 py-3 inline-flex items-center gap-2"
+            >
+              {isSaving ? (
+                <>
+                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                  <span>Saving...</span>
+                </>
+              ) : (
+                <>
+                  <Save className="h-5 w-5" />
+                  Save Profile
+                </>
+              )}
+            </button>
           </div>
         </form>
       </div>
