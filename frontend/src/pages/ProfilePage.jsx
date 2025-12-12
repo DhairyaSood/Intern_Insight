@@ -354,88 +354,11 @@ const ProfilePage = () => {
           </div>
         )}
 
-        {/* Profile Overview Card - Full Width at Top */}
-        <div className="card mb-6">
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-            Profile Overview
-          </h3>
-          
-          {/* Completion Circle */}
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
-            <div className="flex items-center gap-6">
-              <div className="relative w-24 h-24">
-                <svg className="w-24 h-24 transform -rotate-90">
-                  <circle
-                    cx="48"
-                    cy="48"
-                    r="42"
-                    stroke="currentColor"
-                    strokeWidth="6"
-                    fill="none"
-                    className="text-gray-200 dark:text-gray-700"
-                  />
-                  <circle
-                    cx="48"
-                    cy="48"
-                    r="42"
-                    stroke="currentColor"
-                    strokeWidth="6"
-                    fill="none"
-                    strokeDasharray={`${2 * Math.PI * 42}`}
-                    strokeDashoffset={`${2 * Math.PI * 42 * (1 - completionPercentage / 100)}`}
-                    className="text-primary-600 dark:text-primary-400 transition-all duration-500"
-                    strokeLinecap="round"
-                  />
-                </svg>
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <span className="text-2xl font-bold text-gray-900 dark:text-white">
-                    {completionPercentage}%
-                  </span>
-                </div>
-              </div>
-              <div>
-                <p className="text-lg font-semibold text-gray-900 dark:text-white mb-1">
-                  {completionPercentage === 100 
-                    ? '🎉 Profile Complete!' 
-                    : 'Complete Your Profile'}
-                </p>
-                <p className="text-sm text-gray-600 dark:text-gray-400">
-                  {completionPercentage === 100 
-                    ? 'Your profile is ready for recommendations' 
-                    : 'Fill all sections for better internship matches'}
-                </p>
-              </div>
-            </div>
-            
-            {/* Stats Grid */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div className="text-center">
-                <div className="text-2xl font-bold text-primary-600 dark:text-primary-400">{formData.skills.length}</div>
-                <div className="text-xs text-gray-600 dark:text-gray-400">Skills</div>
-              </div>
-              <div className="text-center">
-                <div className="text-2xl font-bold text-primary-600 dark:text-primary-400">{formData.sector_interests.length}</div>
-                <div className="text-xs text-gray-600 dark:text-gray-400">Interests</div>
-              </div>
-              <div className="text-center">
-                <div className="text-2xl font-bold text-primary-600 dark:text-primary-400">{formData.education ? '✓' : '−'}</div>
-                <div className="text-xs text-gray-600 dark:text-gray-400">Education</div>
-              </div>
-              <div className="text-center">
-                <div className="text-2xl font-bold text-primary-600 dark:text-primary-400">{formData.experience ? '✓' : '−'}</div>
-                <div className="text-xs text-gray-600 dark:text-gray-400">Experience</div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Main Form Section */}
-        <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Two Column Layout */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Left Column - Form (2/3 width) */}
-            <div className="lg:col-span-2 space-y-6">
-              {error && <ErrorMessage message={error} type="error" />}
+        {/* Two Column Layout */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Left Column - Form (2/3 width) */}
+          <div className="lg:col-span-2 space-y-6">
+            <form onSubmit={handleSubmit} className="space-y-6"> type="error" />}
               {success && (
                 <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4">
                   <p className="text-green-800 dark:text-green-200 font-medium flex items-center gap-2">
@@ -445,7 +368,7 @@ const ProfilePage = () => {
                 </div>
               )}
 
-              {/* Personal Information Card */}
+              {/* Personal Information Card */
               <div className="card">
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
                   <User className="h-5 w-5 text-primary-600 dark:text-primary-400" />
@@ -538,31 +461,131 @@ const ProfilePage = () => {
                 </p>
               </div>
 
-              {/* Experience Card - Full Width */}
-              <div className="card">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-                  <Briefcase className="h-5 w-5 text-primary-600 dark:text-primary-400" />
-                  Experience
-                </h3>
-                <textarea
-                  name="experience"
-                  value={formData.experience}
-                  onChange={handleInputChange}
-                  placeholder="Brief summary of your experience, projects, or achievements&#10;&#10;E.g.,&#10;Software Engineer Intern - ABC Corp (Jun 2023 - Aug 2023)&#10;- Built web applications using React and Node.js&#10;- Improved API performance by 40%"
-                  rows="8"
-                  className="input-field resize-none"
-                />
+              {/* Save Button */}
+              <div className="flex justify-center">
+                <button
+                  type="submit"
+                  disabled={isSaving}
+                  className="btn-primary px-8 py-3 inline-flex items-center gap-2"
+                >
+                  {isSaving ? (
+                    <>
+                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                      <span>Saving...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Save className="h-5 w-5" />
+                      Save Profile
+                    </>
+                  )}
+                </button>
               </div>
-            </div>
-
-            {/* Right Column - Empty for now */}
-            <div className="space-y-6">
-              {/* Can add additional sidebar content here if needed */}
-            </div>
+            </form>
           </div>
 
-          {/* Education and Sector Interests Row - Full Width */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Right Column - Profile Overview Sidebar (1/3 width) */}
+          <div className="space-y-6">
+            {/* Profile Overview Card */}
+            <div className="card">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                Profile Overview
+              </h3>
+              
+              {/* Completion Circle */}
+              <div className="flex items-center justify-center mb-6">
+                <div className="relative w-32 h-32">
+                  <svg className="w-32 h-32 transform -rotate-90">
+                    <circle
+                      cx="64"
+                      cy="64"
+                      r="56"
+                      stroke="currentColor"
+                      strokeWidth="8"
+                      fill="none"
+                      className="text-gray-200 dark:text-gray-700"
+                    />
+                    <circle
+                      cx="64"
+                      cy="64"
+                      r="56"
+                      stroke="currentColor"
+                      strokeWidth="8"
+                      fill="none"
+                      strokeDasharray={`${2 * Math.PI * 56}`}
+                      strokeDashoffset={`${2 * Math.PI * 56 * (1 - completionPercentage / 100)}`}
+                      className="text-primary-600 dark:text-primary-400 transition-all duration-500"
+                      strokeLinecap="round"
+                    />
+                  </svg>
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <span className="text-3xl font-bold text-gray-900 dark:text-white">
+                      {completionPercentage}%
+                    </span>
+                  </div>
+                </div>
+              </div>
+              <p className="text-sm text-center text-gray-600 dark:text-gray-400 mb-6 pb-6 border-b border-gray-200 dark:border-gray-700">
+                {completionPercentage === 100 
+                  ? '🎉 Profile is complete!' 
+                  : 'Complete your profile to get better recommendations'}
+              </p>
+              
+              {/* Stats */}
+              <div className="space-y-3">
+                <div className="flex items-center justify-between py-2 border-b border-gray-200 dark:border-gray-700">
+                  <span className="text-sm text-gray-600 dark:text-gray-400 flex items-center gap-2">
+                    <Award className="h-4 w-4" />
+                    Total Skills
+                  </span>
+                  <span className="font-semibold text-gray-900 dark:text-white">
+                    {formData.skills.length}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between py-2 border-b border-gray-200 dark:border-gray-700">
+                  <span className="text-sm text-gray-600 dark:text-gray-400 flex items-center gap-2">
+                    <Target className="h-4 w-4" />
+                    Sector Interests
+                  </span>
+                  <span className="font-semibold text-gray-900 dark:text-white">
+                    {formData.sector_interests.length}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between py-2 border-b border-gray-200 dark:border-gray-700">
+                  <span className="text-sm text-gray-600 dark:text-gray-400 flex items-center gap-2">
+                    <MapPin className="h-4 w-4" />
+                    Location
+                  </span>
+                  <span className="font-semibold text-gray-900 dark:text-white text-right text-sm">
+                    {formData.location || 'Not set'}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between py-2 border-b border-gray-200 dark:border-gray-700">
+                  <span className="text-sm text-gray-600 dark:text-gray-400 flex items-center gap-2">
+                    <GraduationCap className="h-4 w-4" />
+                    Education
+                  </span>
+                  <span className="font-semibold text-gray-900 dark:text-white text-right text-sm">
+                    {formData.education ? 'Added' : 'Not set'}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between py-2">
+                  <span className="text-sm text-gray-600 dark:text-gray-400 flex items-center gap-2">
+                    <Briefcase className="h-4 w-4" />
+                    Experience
+                  </span>
+                  <span className="font-semibold text-gray-900 dark:text-white text-right text-sm">
+                    {formData.experience ? 'Added' : 'Not set'}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Education and Sector Interests Row - Full Page Width */}
+        <form onSubmit={handleSubmit}>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Education Card */}
             <div className="card">
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
@@ -573,7 +596,7 @@ const ProfilePage = () => {
                 name="education"
                 value={formData.education}
                 onChange={handleInputChange}
-                placeholder="E.g., B.Tech in Computer Science&#10;XYZ University (2020-2024)&#10;CGPA: 8.5/10"
+                placeholder="E.g., Bachelor of Technology in Electronics&#10;Punjab Engineering College, 2024&#10;CGPA: 9.05"
                 rows="6"
                 className="input-field resize-none"
                 required
@@ -604,10 +627,10 @@ const ProfilePage = () => {
                   ))}
                 </select>
                 <p className="text-xs text-gray-500 dark:text-gray-400">
-                  Hold Ctrl/Cmd to select multiple sectors. {formData.sector_interests.length} selected.
+                  Hold Ctrl/Cmd to select multiple. {formData.sector_interests.length} selected.
                 </p>
                 {formData.sector_interests.length > 0 && (
-                  <div className="flex flex-wrap gap-2 mt-2">
+                  <div className="flex flex-wrap gap-2">
                     {formData.sector_interests.map(sector => (
                       <span
                         key={sector}
@@ -629,25 +652,20 @@ const ProfilePage = () => {
             </div>
           </div>
 
-          {/* Save Button - Centered across full width */}
-          <div className="flex justify-center py-4">
-            <button
-              type="submit"
-              disabled={isSaving}
-              className="btn-primary px-12 py-3 inline-flex items-center gap-2 text-lg"
-            >
-              {isSaving ? (
-                <>
-                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-                  <span>Saving...</span>
-                </>
-              ) : (
-                <>
-                  <Save className="h-5 w-5" />
-                  Save Profile
-                </>
-              )}
-            </button>
+          {/* Experience Card - Full Page Width */}
+          <div className="card mt-6">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+              <Briefcase className="h-5 w-5 text-primary-600 dark:text-primary-400" />
+              Experience
+            </h3>
+            <textarea
+              name="experience"
+              value={formData.experience}
+              onChange={handleInputChange}
+              placeholder="Brief summary of your experience, projects, or achievements&#10;&#10;E.g.,&#10;Marketing Platform Developer&#10;Lakshya Solutions India, 2023-Present&#10;- Built marketing agent tracking platform using Next.js and Supabase&#10;- Integrated location tracking and visit logging"
+              rows="8"
+              className="input-field resize-none"
+            />
           </div>
         </form>
       </div>

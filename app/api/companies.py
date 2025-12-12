@@ -199,7 +199,7 @@ def get_sectors():
     Get all unique sectors with company counts
     """
     try:
-        companies = db.load_data('companies')
+        companies = load_data('companies', use_cache=False)
         
         # Count companies by sector
         sector_counts = {}
@@ -232,7 +232,7 @@ def get_company_stats():
     Get overall company statistics
     """
     try:
-        companies = db.load_data('companies')
+        companies = load_data('companies', use_cache=False)
         
         total_companies = len(companies)
         hiring_companies = sum(1 for c in companies if c.get('is_hiring', False))
