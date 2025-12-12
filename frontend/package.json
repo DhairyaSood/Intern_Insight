@@ -20,7 +20,8 @@
     "pdf-lib": "^1.17.1",
     "clsx": "^2.0.0",
     "tailwind-merge": "^2.1.0",
-    "date-fns": "^2.30.0"
+    "date-fns": "^2.30.0",
+    "framer-motion": "^10.16.16"
   },
   "devDependencies": {
     "tailwindcss": "^3.3.5",
