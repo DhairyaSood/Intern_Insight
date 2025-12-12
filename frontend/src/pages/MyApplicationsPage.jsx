@@ -13,16 +13,21 @@ const MyApplicationsPage = () => {
   const [appliedInternships, setAppliedInternships] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [bookmarkedIds, setBookmarkedIds] = useState(() => {
-    const saved = localStorage.getItem('bookmarkedInternships');
+    if (!user?.username) return [];
+    const bookmarkKey = `bookmarkedInternships_${user.username}`;
+    const saved = localStorage.getItem(bookmarkKey);
     return saved ? JSON.parse(saved) : [];
   });
 
   const toggleBookmark = (internshipId) => {
+    if (!user?.username) return;
+    
     setBookmarkedIds(prev => {
       const updated = prev.includes(internshipId)
         ? prev.filter(id => id !== internshipId)
         : [...prev, internshipId];
-      localStorage.setItem('bookmarkedInternships', JSON.stringify(updated));
+      const bookmarkKey = `bookmarkedInternships_${user.username}`;
+      localStorage.setItem(bookmarkKey, JSON.stringify(updated));
       return updated;
     });
   };

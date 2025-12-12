@@ -47,8 +47,13 @@ const InternshipDetailPage = () => {
     // Check if internship is bookmarked when internship data loads
     if (internship) {
       const internshipId = internship.internship_id || internship._id;
-      const bookmarkedIds = JSON.parse(localStorage.getItem('bookmarkedInternships') || '[]');
-      setIsBookmarked(bookmarkedIds.includes(internshipId));
+      
+      // Check bookmarks (per-user)
+      if (user?.username) {
+        const bookmarkKey = `bookmarkedInternships_${user.username}`;
+        const bookmarkedIds = JSON.parse(localStorage.getItem(bookmarkKey) || '[]');
+        setIsBookmarked(bookmarkedIds.includes(internshipId));
+      }
       
       // Check if user has applied
       if (user?.username) {
@@ -126,20 +131,24 @@ const InternshipDetailPage = () => {
   };
 
   const handleBookmark = () => {
-    if (!internship) return;
+    if (!internship || !user?.username) {
+      alert('Please login to bookmark internships!');
+      return;
+    }
     
     const internshipId = internship.internship_id || internship._id;
-    const bookmarkedIds = JSON.parse(localStorage.getItem('bookmarkedInternships') || '[]');
+    const bookmarkKey = `bookmarkedInternships_${user.username}`;
+    const bookmarkedIds = JSON.parse(localStorage.getItem(bookmarkKey) || '[]');
     
     if (isBookmarked) {
       // Remove bookmark
       const updatedIds = bookmarkedIds.filter(id => id !== internshipId);
-      localStorage.setItem('bookmarkedInternships', JSON.stringify(updatedIds));
+      localStorage.setItem(bookmarkKey, JSON.stringify(updatedIds));
     } else {
       // Add bookmark
       if (!bookmarkedIds.includes(internshipId)) {
         bookmarkedIds.push(internshipId);
-        localStorage.setItem('bookmarkedInternships', JSON.stringify(bookmarkedIds));
+        localStorage.setItem(bookmarkKey, JSON.stringify(bookmarkedIds));
       }
     }
     

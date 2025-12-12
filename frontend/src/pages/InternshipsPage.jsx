@@ -35,16 +35,24 @@ const InternshipsPage = () => {
   const [recommendedFilters, setRecommendedFilters] = useState({ search: '', location: '' });
   const [displayCount, setDisplayCount] = useState(ITEMS_PER_PAGE);
   const [bookmarkedIds, setBookmarkedIds] = useState(() => {
-    const saved = localStorage.getItem('bookmarkedInternships');
+    if (!user?.username) return [];
+    const bookmarkKey = `bookmarkedInternships_${user.username}`;
+    const saved = localStorage.getItem(bookmarkKey);
     return saved ? JSON.parse(saved) : [];
   });
 
   const toggleBookmark = (internshipId) => {
+    if (!user?.username) {
+      alert('Please login to bookmark internships!');
+      return;
+    }
+    
     setBookmarkedIds(prev => {
       const updated = prev.includes(internshipId)
         ? prev.filter(id => id !== internshipId)
         : [...prev, internshipId];
-      localStorage.setItem('bookmarkedInternships', JSON.stringify(updated));
+      const bookmarkKey = `bookmarkedInternships_${user.username}`;
+      localStorage.setItem(bookmarkKey, JSON.stringify(updated));
       return updated;
     });
   };
@@ -55,8 +63,11 @@ const InternshipsPage = () => {
 
   useEffect(() => {
     // Save bookmarks to localStorage whenever they change
-    localStorage.setItem('bookmarkedInternships', JSON.stringify(bookmarkedIds));
-  }, [bookmarkedIds]);
+    if (user?.username) {
+      const bookmarkKey = `bookmarkedInternships_${user.username}`;
+      localStorage.setItem(bookmarkKey, JSON.stringify(bookmarkedIds));
+    }
+  }, [bookmarkedIds, user]);
 
   useEffect(() => {
     if (viewMode === 'recommended' && user?.username) {
