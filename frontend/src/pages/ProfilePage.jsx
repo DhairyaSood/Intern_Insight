@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 import { profileService } from '../services/profile';
 import ResumeUpload from '../components/Profile/ResumeUpload';
@@ -9,6 +10,7 @@ import ErrorMessage from '../components/Common/ErrorMessage';
 import { User, Mail, MapPin, Briefcase, GraduationCap, Save, Upload as UploadIcon, CheckCircle2, Award, Target } from 'lucide-react';
 
 const ProfilePage = () => {
+  const navigate = useNavigate();
   const { user } = useAuthStore();
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -136,7 +138,7 @@ const ProfilePage = () => {
     return Math.round((filledFields / fields.length) * 100);
   };
 
-  const handleResumeDataExtracted = (data) => {
+  const handleResumeDataExtracted = async (data) => {
     // Extract phone without country code for cleaner input
     let phoneNumber = data.phone || '';
     let detectedCountry = null;
@@ -156,17 +158,18 @@ const ProfilePage = () => {
         .join(' ');
     };
     
-    setFormData(prev => ({
-      ...prev,
-      name: normalizeName(data.name) || prev.name,
-      email: data.email || prev.email,
-      phone: phoneNumber || prev.phone,
-      location: data.location || prev.location,
-      education: data.education || prev.education,
-      experience: data.experience || prev.experience,
-      skills: data.skills && data.skills.length > 0 ? data.skills : prev.skills,
-      sector_interests: data.sector_interests && data.sector_interests.length > 0 ? data.sector_interests : prev.sector_interests,
-    }));
+    const updatedData = {
+      name: normalizeName(data.name) || formData.name,
+      email: data.email || formData.email,
+      phone: phoneNumber || formData.phone,
+      location: data.location || formData.location,
+      education: data.education || formData.education,
+      experience: data.experience || formData.experience,
+      skills: data.skills && data.skills.length > 0 ? data.skills : formData.skills,
+      sector_interests: data.sector_interests && data.sector_interests.length > 0 ? data.sector_interests : formData.sector_interests,
+    };
+    
+    setFormData(prev => ({...prev, ...updatedData}));
     
     // Auto-detect and set country from extracted phone number
     if (detectedCountry) {
@@ -174,6 +177,41 @@ const ProfilePage = () => {
     }
     
     setShowResumeUpload(false);
+    
+    // Auto-save profile after resume parsing
+    if (updatedData.name && updatedData.email && updatedData.skills.length > 0) {
+      try {
+        setIsSaving(true);
+        
+        // Handle phone number with country code
+        let phoneWithCode = updatedData.phone.trim();
+        if (detectedCountry && phoneWithCode) {
+          const phoneWithoutCode = phoneWithCode.replace(/^\+\d+\s*/, '').trim();
+          phoneWithCode = `${detectedCountry.code} ${phoneWithoutCode}`;
+        }
+        
+        const profileData = {
+          candidate_id: user.candidate_id,
+          name: updatedData.name.trim(),
+          email: updatedData.email.trim(),
+          phone: phoneWithCode,
+          location_preference: updatedData.location.trim(),
+          education_level: updatedData.education.trim(),
+          experience: updatedData.experience.trim(),
+          skills_possessed: updatedData.skills,
+          sector_interests: updatedData.sector_interests || []
+        };
+
+        await profileService.updateProfile(user.candidate_id, profileData);
+        setSuccess(true);
+        setTimeout(() => setSuccess(false), 3000);
+      } catch (err) {
+        console.error('Auto-save after resume parsing failed:', err);
+        // Don't show error for auto-save, user can manually save later
+      } finally {
+        setIsSaving(false);
+      }
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -220,28 +258,12 @@ const ProfilePage = () => {
 
       await profileService.updateProfile(user.candidate_id, profileData);
       
-      // Reload profile using username (more reliable than candidate_id)
-      const savedProfile = await profileService.getByUsername(user.username);
-      if (savedProfile) {
-        setFormData({
-          name: savedProfile.name || '',
-          email: savedProfile.email || '',
-          phone: savedProfile.phone || '',
-          location: savedProfile.location_preference || savedProfile.location || savedProfile.city || '',
-          education: savedProfile.education_level || savedProfile.education || '',
-          experience: savedProfile.experience || '',
-          skills: savedProfile.skills_possessed || savedProfile.skills || [],
-        });
-        
-        // Update country selector with saved phone
-        if (savedProfile.phone) {
-          const detectedCountry = detectCountryFromPhone(savedProfile.phone);
-          setSelectedCountry(detectedCountry);
-        }
-      }
-      
       setSuccess(true);
-      setTimeout(() => setSuccess(false), 3000);
+      
+      // Navigate to home page after 1.5 seconds
+      setTimeout(() => {
+        navigate('/');
+      }, 1500);
     } catch (err) {
       console.error('Failed to save profile:', err);
       setError(err.response?.data?.message || 'Failed to save profile. Please try again.');
@@ -286,22 +308,25 @@ const ProfilePage = () => {
           )}
         </div>
 
-        {/* Resume Upload Section */}
+        {/* Resume Upload Modal - Compact in corner */}
         {showResumeUpload && (
-          <div className="card mb-6">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                Upload Resume
-              </h3>
-              <button
-                type="button"
-                onClick={() => setShowResumeUpload(false)}
-                className="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100"
-              >
-                Cancel
-              </button>
+          <div className="fixed top-20 right-4 z-50 w-96 max-w-[calc(100vw-2rem)]">
+            <div className="card shadow-2xl border border-gray-200 dark:border-gray-700">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                  <UploadIcon className="h-5 w-5 text-primary-600" />
+                  Upload Resume
+                </h3>
+                <button
+                  type="button"
+                  onClick={() => setShowResumeUpload(false)}
+                  className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                >
+                  ✕
+                </button>
+              </div>
+              <ResumeUpload onDataExtracted={handleResumeDataExtracted} />
             </div>
-            <ResumeUpload onDataExtracted={handleResumeDataExtracted} />
           </div>
         )}
 
@@ -465,11 +490,11 @@ const ProfilePage = () => {
               </div>
 
               {/* Save Button */}
-              <div className="card">
+              <div className="flex justify-end">
                 <button
                   type="submit"
                   disabled={isSaving}
-                  className="btn-primary w-full"
+                  className="btn-primary px-8"
                 >
                   {isSaving ? (
                     <>

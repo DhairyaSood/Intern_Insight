@@ -11,7 +11,7 @@ const InternshipCard = ({ internship, onShowSimilar, showMatchScore = false }) =
 
   return (
     <div className="card-compact md:hover:scale-105 transition-transform relative h-full flex flex-col">
-      <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+      <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2 pr-24 line-clamp-2 min-h-[3.5rem]">
         {internship.title}
       </h3>
       <p className="text-gray-600 dark:text-gray-400 mb-2">

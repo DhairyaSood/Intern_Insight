@@ -5,7 +5,7 @@ Contains all API endpoint modules
 """
 
 from flask import Blueprint
-from app.api.internships import get_internships
+from app.api.internships import get_internships, get_internship_by_id
 from app.api.recommendations import get_candidate_recommendations, get_internship_recommendations
 from app.api.auth import signup, login, logout, check_login_status
 from app.api.profiles import create_or_update_profile, get_profile_by_username, get_profile_by_candidate_id
@@ -21,6 +21,11 @@ api_bp = Blueprint('api', __name__, url_prefix='/api')
 def internships_endpoint():
     """Get all internships"""
     return get_internships()
+
+@api_bp.route('/internships/<internship_id>', methods=['GET'])
+def internship_by_id_endpoint(internship_id):
+    """Get specific internship by ID"""
+    return get_internship_by_id(internship_id)
 
 # Register cities route
 @api_bp.route('/cities', methods=['GET'])
