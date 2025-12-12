@@ -5,6 +5,7 @@ import {
   Award, TrendingUp, ArrowLeft, Globe, Heart
 } from 'lucide-react';
 import { getCompanyById, getCompanyByName } from '../services/companies';
+import { profileService } from '../services/profile';
 import { useAuthStore } from '../store/authStore';
 import InternshipCard from '../components/Internship/InternshipCard';
 import LoadingSpinner from '../components/Common/LoadingSpinner';
@@ -19,6 +20,7 @@ const CompanyDetailPage = () => {
   const [internships, setInternships] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [userProfile, setUserProfile] = useState(null);
   const [bookmarkedIds, setBookmarkedIds] = useState(() => {
     if (!user?.username) return [];
     const bookmarkKey = `bookmarkedInternships_${user.username}`;
@@ -45,6 +47,52 @@ const CompanyDetailPage = () => {
   useEffect(() => {
     fetchCompanyDetails();
   }, [companyId]);
+
+  useEffect(() => {
+    if (user?.username) {
+      profileService.getByUsername(user.username)
+        .then(profile => setUserProfile(profile))
+        .catch(err => console.error('Failed to load profile:', err));
+    }
+  }, [user]);
+
+  // Recalculate match scores when userProfile loads
+  useEffect(() => {
+    if (userProfile && internships.length > 0) {
+      const internshipsWithScores = internships.map(internship => ({
+        ...internship,
+        match_score: calculateMatchScore(userProfile, internship)
+      }));
+      setInternships(internshipsWithScores);
+    }
+  }, [userProfile]);
+
+  const calculateMatchScore = (profile, internship) => {
+    if (!profile) return 0;
+    
+    const userSkills = (profile?.skills_possessed || profile?.skills || []).map(s => s.toLowerCase());
+    const userLocation = (profile?.location_preference || profile?.location || profile?.city || '').toLowerCase();
+    
+    if (userSkills.length === 0) {
+      return 0;
+    }
+
+    let score = 0;
+    
+    const internshipSkills = (internship.skills_required || []).map(s => s.toLowerCase());
+    const matchingSkills = userSkills.filter(userSkill =>
+      internshipSkills.some(intSkill => 
+        intSkill.includes(userSkill) || userSkill.includes(intSkill)
+      )
+    );
+    score += (matchingSkills.length / Math.max(userSkills.length, 1)) * 100;
+
+    if (userLocation && internship.location?.toLowerCase().includes(userLocation)) {
+      score += 50;
+    }
+
+    return Math.round(score);
+  };
 
   const fetchCompanyDetails = async () => {
     try {
@@ -74,8 +122,13 @@ const CompanyDetailPage = () => {
       
       setCompany(response.data);
       const internshipsData = response.data?.internships || [];
-      console.log('Setting internships state to:', internshipsData);
-      setInternships(internshipsData);
+      // Add match scores to internships
+      const internshipsWithScores = internshipsData.map(internship => ({
+        ...internship,
+        match_score: userProfile ? calculateMatchScore(userProfile, internship) : 0
+      }));
+      console.log('Setting internships state to:', internshipsWithScores);
+      setInternships(internshipsWithScores);
     } catch (err) {
       console.error('Error fetching company details:', err);
       setError(err.response?.data?.message || 'Failed to load company details');

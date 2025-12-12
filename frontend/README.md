@@ -95,6 +95,13 @@ frontend/
 - ✅ API integration with backend
 - ✅ State management (Zustand)
 - ✅ Responsive design (mobile-first)
+- ✅ **Mobile-Optimized UI**:
+  - Dual-layout system (desktop/mobile)
+  - Horizontal card layouts for mobile
+  - Scrollable filter chips
+  - Touch-friendly controls
+  - Match percentage badges
+  - Companies page with scrollable sector dropdown
 
 ## 🔧 Available Scripts
 

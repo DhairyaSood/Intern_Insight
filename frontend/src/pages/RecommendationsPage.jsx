@@ -274,7 +274,7 @@ const RecommendationsPage = () => {
               <InternshipCard 
                 internship={internship}
                 onShowSimilar={handleShowSimilar}
-                showMatchScore={internship.matchScore > 0}
+                showMatchScore={true}
                 isBookmarked={bookmarkedIds.includes(internshipId)}
                 onToggleBookmark={toggleBookmark}
                 hasApplied={hasApplied}

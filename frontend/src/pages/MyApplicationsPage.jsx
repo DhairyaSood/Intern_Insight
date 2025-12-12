@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 import { useInternshipStore } from '../store/internshipStore';
+import { internshipService } from '../services/internships';
 import InternshipCard from '../components/Internship/InternshipCard';
 import LoadingSpinner from '../components/Common/LoadingSpinner';
 import { FileText, Calendar, CheckCircle } from 'lucide-react';
@@ -40,19 +41,50 @@ const MyApplicationsPage = () => {
 
     const loadApplications = async () => {
       setIsLoading(true);
-      await fetchInternships();
       
-      // Get applied internship IDs from user-specific localStorage
-      const storageKey = `appliedInternships_${user.username}`;
-      const appliedIds = JSON.parse(localStorage.getItem(storageKey) || '[]');
-      
-      // Filter internships that user has applied to
-      const applied = internships.filter(internship => 
-        appliedIds.includes(internship.internship_id || internship._id)
-      );
-      
-      setAppliedInternships(applied);
-      setIsLoading(false);
+      try {
+        // Fetch all internships
+        await fetchInternships();
+        
+        // Get applied internship IDs from user-specific localStorage
+        const storageKey = `appliedInternships_${user.username}`;
+        const appliedIds = JSON.parse(localStorage.getItem(storageKey) || '[]');
+        
+        // Filter internships that user has applied to
+        let applied = internships.filter(internship => 
+          appliedIds.includes(internship.internship_id || internship._id)
+        );
+        
+        // Fetch recommendations to get match scores
+        if (user.candidate_id) {
+          try {
+            const recommendations = await internshipService.getRecommendations(user.candidate_id);
+            const recWithScores = recommendations.recommendations || [];
+            
+            // Create a map of internship_id to match_score
+            const scoreMap = {};
+            recWithScores.forEach(rec => {
+              const id = rec.internship_id || rec._id;
+              scoreMap[id] = rec.match_score || rec.matchScore;
+            });
+            
+            // Add match scores to applied internships
+            applied = applied.map(internship => ({
+              ...internship,
+              match_score: scoreMap[internship.internship_id || internship._id] || internship.match_score
+            }));
+          } catch (err) {
+            console.warn('Could not fetch match scores:', err);
+            // Continue without match scores
+          }
+        }
+        
+        setAppliedInternships(applied);
+      } catch (err) {
+        console.error('Error loading applications:', err);
+      } finally {
+        setIsLoading(false);
+      }
     };
 
     loadApplications();

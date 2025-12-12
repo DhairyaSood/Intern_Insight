@@ -282,6 +282,15 @@ const InternshipDetailPage = () => {
                 
                 {/* Top-right action buttons */}
                 <div className="flex items-center gap-2 ml-4">
+                  {/* Match Score Badge */}
+                  {user && (
+                    <div className="inline-flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-lg shadow-lg">
+                      <Sparkles className="h-4 w-4" />
+                      <span className="font-bold">
+                        {Math.round(internship.match_score || internship.matchScore || 0)}% Match
+                      </span>
+                    </div>
+                  )}
                   <button
                     onClick={handleBookmark}
                     className={`p-2.5 rounded-lg transition-all ${
@@ -626,9 +635,9 @@ const InternshipDetailPage = () => {
                             <MapPin className="h-3 w-3" />
                             {similar.location}
                           </span>
-                          {similar.match_score && (
+                          {user && (
                             <span className="text-xs font-semibold text-primary-600 dark:text-primary-400">
-                              {Math.round(similar.match_score)}% match
+                              {Math.round(similar.match_score || 0)}% match
                             </span>
                           )}
                         </div>

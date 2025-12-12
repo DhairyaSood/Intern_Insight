@@ -39,14 +39,14 @@ const InternshipCard = ({ internship, onShowSimilar, showMatchScore = false, isB
           </button>
         )}
         {/* Match Score Badge - Below Bookmark */}
-        {showMatchScore && (internship.match_score || internship.matchScore) && (
+        {showMatchScore && (
           <div className="absolute top-14 right-4 bg-green-500 text-white px-2 py-1 rounded-full text-xs font-semibold shadow-lg z-10">
-            {Math.round(internship.match_score || internship.matchScore)}% Match
+            {Math.round(internship.match_score || internship.matchScore || 0)}% Match
           </div>
         )}
         {/* Applied Badge - Below Match Score */}
         {hasApplied && (
-          <div className={`absolute ${showMatchScore && (internship.match_score || internship.matchScore) ? 'top-24' : 'top-14'} right-4 bg-blue-500 text-white px-2 py-1 rounded-full text-xs font-semibold shadow-lg flex items-center gap-1 z-10`}>
+          <div className={`absolute ${showMatchScore ? 'top-24' : 'top-14'} right-4 bg-blue-500 text-white px-2 py-1 rounded-full text-xs font-semibold shadow-lg flex items-center gap-1 z-10`}>
             <CheckCircle className="h-3 w-3" />
             Applied
           </div>
@@ -126,9 +126,9 @@ const InternshipCard = ({ internship, onShowSimilar, showMatchScore = false, isB
             </div>
             {/* Badges Row */}
             <div className="flex flex-wrap gap-1.5 mb-2">
-              {showMatchScore && (internship.match_score || internship.matchScore) && (
+              {showMatchScore && (
                 <span className="bg-green-500 text-white px-2 py-0.5 rounded-full text-xs font-semibold">
-                  {Math.round(internship.match_score || internship.matchScore)}%
+                  {Math.round(internship.match_score || internship.matchScore || 0)}%
                 </span>
               )}
               {hasApplied && (

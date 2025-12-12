@@ -295,11 +295,12 @@ const CompaniesPage = () => {
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                 Sector
               </label>
-              <select
+              <select 
                 value={selectedSector}
                 onChange={(e) => setSelectedSector(e.target.value)}
-                className="input-field rounded-lg max-h-60 overflow-y-auto"
-                size="1"
+                className="input-field rounded-lg"
+                style={{ maxHeight: '200px' }}
+                size="5"
               >
                 <option value="">All Sectors</option>
                 {sectors.length > 0 ? (

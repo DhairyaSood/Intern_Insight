@@ -478,7 +478,7 @@ const InternshipsPage = () => {
                     <InternshipCard
                       internship={internship}
                       onShowSimilar={handleShowSimilar}
-                      showMatchScore={internship.matchScore > 0}
+                      showMatchScore={user && userProfile}
                       isBookmarked={bookmarkedIds.includes(internshipId)}
                       onToggleBookmark={toggleBookmark}
                       hasApplied={hasApplied}
@@ -592,14 +592,14 @@ const InternshipsPage = () => {
                         )}
                       </div>
                       <div className="flex flex-wrap gap-2 mb-3">
-                        {internship.similarityScore && (
+                        {internship.similarityScore !== undefined && (
                           <div className="inline-flex items-center text-xs text-blue-600 dark:text-blue-400 font-semibold bg-blue-50 dark:bg-blue-900/20 px-2 py-1 rounded">
                             {internship.similarityScore}% Similar
                           </div>
                         )}
-                        {internship.userMatchScore > 0 && (
+                        {userProfile && (
                           <div className="inline-flex items-center text-xs text-green-600 dark:text-green-400 font-semibold bg-green-50 dark:bg-green-900/20 px-2 py-1 rounded">
-                            {internship.userMatchScore}% You
+                            {internship.userMatchScore || 0}% Match
                           </div>
                         )}
                       </div>

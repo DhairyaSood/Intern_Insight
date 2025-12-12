@@ -13,6 +13,7 @@ This folder contains comprehensive documentation for the PM Intern Recommender p
 - **[RESTRUCTURE_GUIDE.md](guides/RESTRUCTURE_GUIDE.md)**: Guide to understanding the project restructuring process
 - **[ISSUES_RESOLVED.md](guides/ISSUES_RESOLVED.md)**: Documentation of resolved issues and their solutions
 - **[SUCCESS_SUMMARY.md](guides/SUCCESS_SUMMARY.md)**: Summary of successful improvements and implementations
+- **[MOBILE_UI_IMPROVEMENTS.md](guides/MOBILE_UI_IMPROVEMENTS.md)**: Mobile-first UI enhancements and dual-layout implementation
 
 ### 🔧 API Documentation (`api/`)
 - **[API_REFERENCE.md](api/API_REFERENCE.md)**: Complete API endpoint documentation with examples and error codes
@@ -61,6 +62,6 @@ This folder contains comprehensive documentation for the PM Intern Recommender p
 
 ---
 
-**Last Updated**: September 2025
-**Version**: 2.1.0
+**Last Updated**: December 2025
+**Version**: 3.0.0
 **Maintained By**: Development Team

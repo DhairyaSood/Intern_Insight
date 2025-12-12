@@ -50,6 +50,7 @@ npm start
 - **AI-Powered Recommendations**: ML-driven "Find Similar" functionality with personalized scoring
 - **Real-time Results**: Live internship listings with instant search feedback
 - **Modern React UI**: Responsive design with dark/light theme toggle and persistent preferences
+- **Mobile-Optimized**: Dual-layout system with horizontal cards, scrollable filters, and touch-friendly controls
 
 ### 👤 **Comprehensive Profile Management**
 - **AI-Powered Resume Parser**: Upload PDF/Image resumes for automatic profile filling
@@ -153,7 +154,8 @@ Flask Backend (Port 3000)
 - **Axios** for HTTP requests with interceptors
 - **Lucide React** for beautiful icons
 - **Dark/Light Theme** with system preference detection
-- **Responsive Design** optimized for mobile, tablet, desktop
+- **Responsive Design** optimized for mobile, tablet, desktop with dual-layout architecture
+- **Mobile-First UI**: Horizontal card layouts, scrollable filter chips, match percentage badges
 
 #### AI & Cloud Services
 - **OCR.space API** - Free tier: 25,000 requests/month
@@ -526,6 +528,8 @@ npm test
 - [ ] **Mobile App**: React Native mobile application
 - [ ] **Real-time Chat**: Direct messaging with recruiters
 - [ ] **Video Interviews**: Integrated video interview platform
+- [ ] **Companies Page**: Browse and filter companies with scrollable sector dropdown
+- [ ] **Advanced ML**: Deep learning models for enhanced recommendation accuracy
 
 ## 📚 Documentation
 
