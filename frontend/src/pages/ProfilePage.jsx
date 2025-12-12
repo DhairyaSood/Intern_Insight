@@ -490,7 +490,7 @@ const ProfilePage = () => {
               </div>
 
               {/* Save Button */}
-              <div className="flex justify-end">
+              <div className="flex justify-center">
                 <button
                   type="submit"
                   disabled={isSaving}

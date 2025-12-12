@@ -7,7 +7,7 @@ import api from './api';
  */
 export const getCompanies = async (params = {}) => {
   const response = await api.get('/companies', { params });
-  return response.data;
+  return response;
 };
 
 /**
@@ -17,7 +17,7 @@ export const getCompanies = async (params = {}) => {
  */
 export const getCompanyById = async (companyId) => {
   const response = await api.get(`/companies/${companyId}`);
-  return response.data;
+  return response;
 };
 
 /**
@@ -27,7 +27,7 @@ export const getCompanyById = async (companyId) => {
  */
 export const getCompanyByName = async (companyName) => {
   const response = await api.get(`/companies/by-name/${encodeURIComponent(companyName)}`);
-  return response.data;
+  return response;
 };
 
 /**
@@ -36,7 +36,7 @@ export const getCompanyByName = async (companyName) => {
  */
 export const getSectors = async () => {
   const response = await api.get('/companies/sectors');
-  return response.data;
+  return response;
 };
 
 /**
@@ -45,5 +45,5 @@ export const getSectors = async () => {
  */
 export const getCompanyStats = async () => {
   const response = await api.get('/companies/stats');
-  return response.data;
+  return response;
 };

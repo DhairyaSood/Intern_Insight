@@ -205,7 +205,7 @@ const CompaniesPage = () => {
               <select
                 value={selectedSector}
                 onChange={(e) => setSelectedSector(e.target.value)}
-                className="input-field"
+                className="input-field rounded-lg"
               >
                 <option value="">All Sectors</option>
                 {sectors.map((sector) => (
@@ -224,7 +224,7 @@ const CompaniesPage = () => {
               <select
                 value={minRating}
                 onChange={(e) => setMinRating(parseFloat(e.target.value))}
-                className="input-field"
+                className="input-field rounded-lg"
               >
                 <option value="0">Any Rating</option>
                 <option value="3.5">3.5+</option>
@@ -241,7 +241,7 @@ const CompaniesPage = () => {
               <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value)}
-                className="input-field"
+                className="input-field rounded-lg"
               >
                 <option value="name">Name</option>
                 <option value="rating">Rating</option>

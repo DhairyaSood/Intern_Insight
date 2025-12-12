@@ -25,7 +25,7 @@ const InternshipCard = ({ internship, onShowSimilar, showMatchScore = false, isB
   };
 
   return (
-    <div className="card-compact md:hover:scale-105 transition-transform relative h-full flex flex-col pb-10">
+    <div className="card-compact md:hover:scale-105 transition-transform relative h-full flex flex-col">
       <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2 pr-6 line-clamp-2 min-h-[3.5rem]">
         {internship.title}
       </h3>
@@ -39,6 +39,25 @@ const InternshipCard = ({ internship, onShowSimilar, showMatchScore = false, isB
         <MapPin className="h-4 w-4 mr-1" />
         {internship.location}
       </div>
+      {showMatchScore && internship.match_score && (
+        <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center gap-2">
+            <Sparkles className="h-4 w-4 text-primary-500" />
+            <span className="text-sm font-semibold text-primary-600 dark:text-primary-400">
+              {internship.match_score}% Match
+            </span>
+          </div>
+          {onToggleBookmark && (
+            <button
+              onClick={handleBookmarkClick}
+              className={`p-1.5 rounded-lg transition-all ${isBookmarked ? 'bg-primary-500 text-white hover:bg-primary-600' : 'bg-white dark:bg-gray-700 text-gray-400 hover:text-primary-500 border border-gray-200 dark:border-gray-600'}`}
+              title={isBookmarked ? 'Remove bookmark' : 'Bookmark'}
+            >
+              <Bookmark className={`h-4 w-4 ${isBookmarked ? 'fill-current' : ''}`} />
+            </button>
+          )}
+        </div>
+      )}
       <div className="flex flex-wrap gap-2 mb-4 flex-grow items-start">
         {internship.skills_required?.slice(0, 3).map((skill, idx) => (
           <span key={idx} className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-primary-100 dark:bg-primary-900 text-primary-700 dark:text-primary-200">
@@ -69,19 +88,17 @@ const InternshipCard = ({ internship, onShowSimilar, showMatchScore = false, isB
           </button>
         )}
       </div>
-      {/* Bookmark Button - bottom right, never overlaps */}
-      {onToggleBookmark && (
-        <button
-          onClick={handleBookmarkClick}
-          className={`absolute bottom-3 right-3 p-2 rounded-lg transition-all z-10 shadow-md ${
-            isBookmarked
-              ? 'bg-primary-500 text-white hover:bg-primary-600'
-              : 'bg-white dark:bg-gray-700 text-gray-400 hover:text-primary-500 border border-gray-200 dark:border-gray-600'
-          }`}
-          title={isBookmarked ? 'Remove bookmark' : 'Bookmark'}
-        >
-          <Bookmark className={`h-4 w-4 ${isBookmarked ? 'fill-current' : ''}`} />
-        </button>
+      {/* Bookmark Button for cards without match score */}
+      {onToggleBookmark && !showMatchScore && (
+        <div className="flex justify-end mb-2">
+          <button
+            onClick={handleBookmarkClick}
+            className={`p-1.5 rounded-lg transition-all ${isBookmarked ? 'bg-primary-500 text-white hover:bg-primary-600' : 'bg-white dark:bg-gray-700 text-gray-400 hover:text-primary-500 border border-gray-200 dark:border-gray-600'}`}
+            title={isBookmarked ? 'Remove bookmark' : 'Bookmark'}
+          >
+            <Bookmark className={`h-4 w-4 ${isBookmarked ? 'fill-current' : ''}`} />
+          </button>
+        </div>
       )}
     </div>
   );
