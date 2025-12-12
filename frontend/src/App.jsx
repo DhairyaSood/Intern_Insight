@@ -8,6 +8,8 @@ import ProtectedRoute from './components/Auth/ProtectedRoute';
 // Pages
 import LandingPage from './pages/LandingPage';
 import InternshipsPage from './pages/InternshipsPage';
+import CompaniesPage from './pages/CompaniesPage';
+import CompanyDetailPage from './pages/CompanyDetailPage';
 import LoginPage from './pages/LoginPage';
 import SignupPage from './pages/SignupPage';
 import ProfilePage from './pages/ProfilePage';
@@ -31,6 +33,8 @@ function App() {
           <Routes>
             <Route path="/" element={<LandingPage />} />
             <Route path="/internships" element={<InternshipsPage />} />
+            <Route path="/companies" element={<CompaniesPage />} />
+            <Route path="/companies/:companyId" element={<CompanyDetailPage />} />
             <Route path="/login" element={<LoginPage />} />
             <Route path="/signup" element={<SignupPage />} />
             

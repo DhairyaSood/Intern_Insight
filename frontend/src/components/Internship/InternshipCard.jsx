@@ -9,6 +9,14 @@ const InternshipCard = ({ internship, onShowSimilar, showMatchScore = false, isB
     navigate(`/internship/${internship.internship_id || internship._id}`);
   };
 
+  const handleCompanyClick = (e) => {
+    e.stopPropagation();
+    const companyName = internship.organization || internship.company;
+    if (companyName) {
+      navigate(`/companies/${encodeURIComponent(companyName)}`);
+    }
+  };
+
   const handleBookmarkClick = (e) => {
     e.stopPropagation();
     if (onToggleBookmark) {
@@ -17,28 +25,16 @@ const InternshipCard = ({ internship, onShowSimilar, showMatchScore = false, isB
   };
 
   return (
-    <div className="card-compact md:hover:scale-105 transition-transform relative h-full flex flex-col">
-      {/* Bookmark Button */}
-      {onToggleBookmark && (
-        <button
-          onClick={handleBookmarkClick}
-          className={`absolute top-3 right-3 p-2 rounded-lg transition-all z-10 ${
-            isBookmarked
-              ? 'bg-primary-500 text-white hover:bg-primary-600'
-              : 'bg-white dark:bg-gray-700 text-gray-400 hover:text-primary-500 border border-gray-200 dark:border-gray-600'
-          }`}
-          title={isBookmarked ? 'Remove bookmark' : 'Bookmark'}
-        >
-          <Bookmark className={`h-4 w-4 ${isBookmarked ? 'fill-current' : ''}`} />
-        </button>
-      )}
-      
-      <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2 pr-24 line-clamp-2 min-h-[3.5rem]">
+    <div className="card-compact md:hover:scale-105 transition-transform relative h-full flex flex-col pb-10">
+      <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2 pr-6 line-clamp-2 min-h-[3.5rem]">
         {internship.title}
       </h3>
-      <p className="text-gray-600 dark:text-gray-400 mb-2">
+      <button
+        onClick={handleCompanyClick}
+        className="text-gray-600 dark:text-gray-400 hover:text-primary-600 dark:hover:text-primary-400 transition-colors mb-2 text-left font-medium"
+      >
         {internship.organization}
-      </p>
+      </button>
       <div className="flex items-center text-sm text-gray-500 dark:text-gray-400 mb-3">
         <MapPin className="h-4 w-4 mr-1" />
         {internship.location}
@@ -73,6 +69,20 @@ const InternshipCard = ({ internship, onShowSimilar, showMatchScore = false, isB
           </button>
         )}
       </div>
+      {/* Bookmark Button - bottom right, never overlaps */}
+      {onToggleBookmark && (
+        <button
+          onClick={handleBookmarkClick}
+          className={`absolute bottom-3 right-3 p-2 rounded-lg transition-all z-10 shadow-md ${
+            isBookmarked
+              ? 'bg-primary-500 text-white hover:bg-primary-600'
+              : 'bg-white dark:bg-gray-700 text-gray-400 hover:text-primary-500 border border-gray-200 dark:border-gray-600'
+          }`}
+          title={isBookmarked ? 'Remove bookmark' : 'Bookmark'}
+        >
+          <Bookmark className={`h-4 w-4 ${isBookmarked ? 'fill-current' : ''}`} />
+        </button>
+      )}
     </div>
   );
 };

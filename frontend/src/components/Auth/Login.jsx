@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { motion } from 'framer-motion';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../store/authStore';
 import ErrorMessage from '../Common/ErrorMessage';
@@ -40,20 +41,47 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8 animate-fadeIn">
-        <div>
+    <div className="min-h-screen flex items-center justify-center relative overflow-hidden bg-gray-50 dark:bg-gray-900 py-12 px-4 sm:px-6 lg:px-8">
+      {/* Animated Gradient Background */}
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 1.2 }}
+        aria-hidden="true"
+        className="absolute inset-0 z-0 pointer-events-none"
+      >
+        <motion.div
+          initial={{ scale: 0.9, rotate: 0 }}
+          animate={{ scale: 1.1, rotate: 360 }}
+          transition={{ repeat: Infinity, duration: 18, ease: 'linear' }}
+          className="absolute -top-1/3 -left-1/3 w-[140%] h-[140%] rounded-full bg-gradient-to-tr from-primary-200 via-primary-400 to-primary-600 opacity-30 blur-3xl"
+        />
+      </motion.div>
+      <motion.div
+        className="max-w-md w-full space-y-8 z-10"
+        initial={{ opacity: 0, y: 40 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.8, ease: 'easeOut' }}
+      >
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2, duration: 0.7 }}
+        >
           <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900 dark:text-white">
             Welcome Back
           </h2>
           <p className="mt-2 text-center text-sm text-gray-600 dark:text-gray-400">
             Sign in to your account to continue
           </p>
-        </div>
-        
-        <div className="card">
+        </motion.div>
+        <motion.div
+          className="card"
+          initial={{ opacity: 0, scale: 0.96 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ delay: 0.4, duration: 0.6 }}
+        >
           {error && <ErrorMessage message={error} type="error" onClose={() => setError('')} />}
-          
           <form className="mt-6 space-y-6" onSubmit={handleSubmit}>
             <div className="space-y-4">
               <div>
@@ -78,7 +106,6 @@ const Login = () => {
                   />
                 </div>
               </div>
-
               <div>
                 <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Password
@@ -102,7 +129,6 @@ const Login = () => {
                 </div>
               </div>
             </div>
-
             <button
               type="submit"
               disabled={isLoading}
@@ -118,7 +144,6 @@ const Login = () => {
               )}
             </button>
           </form>
-
           <div className="mt-6">
             <div className="relative">
               <div className="absolute inset-0 flex items-center">
@@ -130,7 +155,6 @@ const Login = () => {
                 </span>
               </div>
             </div>
-
             <div className="mt-6 text-center">
               <Link
                 to="/signup"
@@ -140,8 +164,8 @@ const Login = () => {
               </Link>
             </div>
           </div>
-        </div>
-      </div>
+        </motion.div>
+      </motion.div>
     </div>
   );
 };

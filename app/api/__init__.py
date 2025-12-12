@@ -13,6 +13,7 @@ from app.api.cities import list_cities
 from app.api.admin import db_stats
 from app.api.resume_parser import parse_resume
 from app.api.candidate_ranking import get_candidate_ranking
+from app.api.companies import get_companies, get_company, get_company_by_name, get_sectors, get_company_stats
 
 # Create API blueprint
 api_bp = Blueprint('api', __name__, url_prefix='/api')
@@ -99,3 +100,29 @@ def parse_resume_endpoint():
 def candidate_ranking_endpoint(internship_id):
     """Get candidate's ranking for a specific internship"""
     return get_candidate_ranking(internship_id)
+
+# Company routes
+@api_bp.route('/companies', methods=['GET'])
+def companies_endpoint():
+    """Get all companies with optional filtering"""
+    return get_companies()
+
+@api_bp.route('/companies/<company_id>', methods=['GET'])
+def company_by_id_endpoint(company_id):
+    """Get specific company by ID"""
+    return get_company(company_id)
+
+@api_bp.route('/companies/by-name/<company_name>', methods=['GET'])
+def company_by_name_endpoint(company_name):
+    """Get company by name"""
+    return get_company_by_name(company_name)
+
+@api_bp.route('/companies/sectors', methods=['GET'])
+def company_sectors_endpoint():
+    """Get all unique sectors with counts"""
+    return get_sectors()
+
+@api_bp.route('/companies/stats', methods=['GET'])
+def company_stats_endpoint():
+    """Get overall company statistics"""
+    return get_company_stats()

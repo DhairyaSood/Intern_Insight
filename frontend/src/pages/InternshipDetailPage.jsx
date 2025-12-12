@@ -169,6 +169,13 @@ const InternshipDetailPage = () => {
     navigate(`/internship/${similarInternship.internship_id}`);
   };
 
+  const handleCompanyClick = () => {
+    const companyName = internship.organization || internship.company;
+    if (companyName) {
+      navigate(`/companies/${encodeURIComponent(companyName)}`);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8">
@@ -222,10 +229,13 @@ const InternshipDetailPage = () => {
                   <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-3">
                     {internship.title}
                   </h1>
-                  <div className="flex items-center gap-2 text-xl text-gray-700 dark:text-gray-300 mb-4">
+                  <button
+                    onClick={handleCompanyClick}
+                    className="flex items-center gap-2 text-xl text-gray-700 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400 transition-colors mb-4 group"
+                  >
                     <Building2 className="h-6 w-6 text-primary-600 dark:text-primary-400" />
-                    <span className="font-semibold">{internship.organization || internship.company}</span>
-                  </div>
+                    <span className="font-semibold group-hover:underline">{internship.organization || internship.company}</span>
+                  </button>
                 </div>
               </div>
 

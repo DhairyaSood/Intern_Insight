@@ -2,7 +2,7 @@ import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../store/authStore';
 import ThemeToggle from './ThemeToggle';
-import { Menu, X, User, LogOut, Home, Briefcase, FileText } from 'lucide-react';
+import { Menu, X, User, LogOut, Home, Briefcase, FileText, Building2 } from 'lucide-react';
 
 const Navbar = () => {
   const { isAuthenticated, user, logout } = useAuthStore();
@@ -39,6 +39,10 @@ const Navbar = () => {
             <Link to="/internships" className="btn-ghost">
               <Briefcase className="h-5 w-5 mr-2 inline" />
               Internships
+            </Link>
+            <Link to="/companies" className="btn-ghost">
+              <Building2 className="h-5 w-5 mr-2 inline" />
+              Companies
             </Link>
             
             {isAuthenticated && (
@@ -117,6 +121,14 @@ const Navbar = () => {
               >
                 <Briefcase className="h-5 w-5 mr-3" />
                 Internships
+              </Link>
+              <Link 
+                to="/companies" 
+                className="btn-ghost justify-start min-h-[48px] touch-manipulation" 
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                <Building2 className="h-5 w-5 mr-3" />
+                Companies
               </Link>
               
               {isAuthenticated && (

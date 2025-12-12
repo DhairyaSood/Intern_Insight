@@ -1,0 +1,1734 @@
+[
+  {
+    "company_id": "COMP_001",
+    "name": "Accenture",
+    "sector": "IT Services",
+    "description": "Accenture is a leading technology company specializing in Software Development, Cloud Computing. We're committed to building innovative solutions that transform how businesses operate in the digital age.",
+    "headquarters": "Dublin, Ireland",
+    "founded_year": 2003,
+    "employee_count": "1000-5000",
+    "website": "https://www.accenture.com",
+    "logo_url": "https://ui-avatars.com/api/?name=Accenture&size=200&background=random&bold=true",
+    "locations": [
+      "Kolkata"
+    ],
+    "specializations": [
+      "Software Development",
+      "Cloud Computing",
+      "AI/ML"
+    ],
+    "culture": [],
+    "benefits": [
+      "Remote Work Options",
+      "Health Insurance",
+      "Flexible Work Hours",
+      "Team Outings"
+    ],
+    "internship_ids": [
+      "INT_045"
+    ],
+    "total_internships": 1,
+    "is_hiring": true,
+    "rating": 3.6,
+    "created_at": "2025-12-12T17:45:44.608121",
+    "updated_at": "2025-12-12T17:45:44.608121"
+  },
+  {
+    "company_id": "COMP_002",
+    "name": "Adobe",
+    "sector": "Software",
+    "description": "At Adobe, we leverage cutting-edge technology in Big Data and Cloud Computing to create products that impact millions of users worldwide. Our team of experts drives innovation across the tech landscape.",
+    "headquarters": "San Jose, USA",
+    "founded_year": 2019,
+    "employee_count": "5000+",
+    "website": "https://www.adobe.com",
+    "logo_url": "https://ui-avatars.com/api/?name=Adobe&size=200&background=random&bold=true",
+    "locations": [
+      "Noida"
+    ],
+    "specializations": [
+      "Big Data",
+      "Cloud Computing",
+      "Cybersecurity"
+    ],
+    "culture": [],
+    "benefits": [
+      "Health Insurance",
+      "Team Outings",
+      "Flexible Work Hours",
+      "Remote Work Options"
+    ],
+    "internship_ids": [
+      "INT_011"
+    ],
+    "total_internships": 1,
+    "is_hiring": true,
+    "rating": 4.5,
+    "created_at": "2025-12-12T17:45:44.609120",
+    "updated_at": "2025-12-12T17:45:44.609120"
+  },
+  {
+    "company_id": "COMP_003",
+    "name": "Amazon",
+    "sector": "Technology",
+    "description": "Amazon is a leading technology company specializing in Cybersecurity, AI/ML. We're committed to building innovative solutions that transform how businesses operate in the digital age.",
+    "headquarters": "Seattle, USA",
+    "founded_year": 2011,
+    "employee_count": "100-500",
+    "website": "https://www.amazon.com",
+    "logo_url": "https://ui-avatars.com/api/?name=Amazon&size=200&background=random&bold=true",
+    "locations": [
+      "Hyderabad"
+    ],
+    "specializations": [
+      "Cybersecurity",
+      "AI/ML",
+      "Cloud Computing"
+    ],
+    "culture": [
+      "Collaborative",
+      "Agile",
+      "Learning-focused"
+    ],
+    "benefits": [
+      "Learning & Development Budget",
+      "Team Outings",
+      "Flexible Work Hours",
+      "Remote Work Options"
+    ],
+    "internship_ids": [
+      "INT_003"
+    ],
+    "total_internships": 1,
+    "is_hiring": false,
+    "rating": 3.9,
+    "created_at": "2025-12-12T17:45:44.609120",
+    "updated_at": "2025-12-12T17:45:44.609120"
+  },
+  {
+    "company_id": "COMP_004",
+    "name": "Bosch",
+    "sector": "Automotive/IoT",
+    "description": "At Bosch, we leverage cutting-edge technology in Cloud Computing and AI/ML to create products that impact millions of users worldwide. Our team of experts drives innovation across the tech landscape.",
+    "headquarters": ", India",
+    "founded_year": 2012,
+    "employee_count": "500-1000",
+    "website": "https://www.bosch.com",
+    "logo_url": "https://ui-avatars.com/api/?name=Bosch&size=200&background=random&bold=true",
+    "locations": [
+      "Bangalore"
+    ],
+    "specializations": [
+      "Cloud Computing",
+      "AI/ML",
+      "Cybersecurity"
+    ],
+    "culture": [],
+    "benefits": [
+      "Health Insurance",
+      "Flexible Work Hours",
+      "Team Outings",
+      "Learning & Development Budget"
+    ],
+    "internship_ids": [
+      "INT_034"
+    ],
+    "total_internships": 1,
+    "is_hiring": true,
+    "rating": 4.8,
+    "created_at": "2025-12-12T17:45:44.609120",
+    "updated_at": "2025-12-12T17:45:44.609120"
+  },
+  {
+    "company_id": "COMP_005",
+    "name": "CRED",
+    "sector": "Fintech",
+    "description": "CRED is a leading technology company specializing in Software Development, Cybersecurity. We're committed to building innovative solutions that transform how businesses operate in the digital age.",
+    "headquarters": "Bangalore, India",
+    "founded_year": 2012,
+    "employee_count": "500-1000",
+    "website": "https://www.cred.com",
+    "logo_url": "https://ui-avatars.com/api/?name=CRED&size=200&background=random&bold=true",
+    "locations": [
+      "Bangalore"
+    ],
+    "specializations": [
+      "Software Development",
+      "Cybersecurity",
+      "AI/ML"
+    ],
+    "culture": [],
+    "benefits": [
+      "Flexible Work Hours",
+      "Team Outings",
+      "Learning & Development Budget",
+      "Remote Work Options"
+    ],
+    "internship_ids": [
+      "INT_010"
+    ],
+    "total_internships": 1,
+    "is_hiring": true,
+    "rating": 4.0,
+    "created_at": "2025-12-12T17:45:44.609120",
+    "updated_at": "2025-12-12T17:45:44.609120"
+  },
+  {
+    "company_id": "COMP_006",
+    "name": "Cisco",
+    "sector": "Networking",
+    "description": "Cisco is a leading technology company specializing in AI/ML, Big Data. We're committed to building innovative solutions that transform how businesses operate in the digital age.",
+    "headquarters": "Bangalore",
+    "founded_year": 2010,
+    "employee_count": "500-1000",
+    "website": "https://www.cisco.com",
+    "logo_url": "https://ui-avatars.com/api/?name=Cisco&size=200&background=random&bold=true",
+    "locations": [
+      "Bangalore"
+    ],
+    "specializations": [
+      "AI/ML",
+      "Big Data",
+      "Cybersecurity"
+    ],
+    "culture": [],
+    "benefits": [
+      "Remote Work Options",
+      "Team Outings",
+      "Learning & Development Budget",
+      "Flexible Work Hours"
+    ],
+    "internship_ids": [
+      "INT_027"
+    ],
+    "total_internships": 1,
+    "is_hiring": false,
+    "rating": 3.9,
+    "created_at": "2025-12-12T17:45:44.609120",
+    "updated_at": "2025-12-12T17:45:44.609120"
+  },
+  {
+    "company_id": "COMP_007",
+    "name": "Cloudflare",
+    "sector": "Cybersecurity/CDN",
+    "description": "Cloudflare is a leading technology company specializing in Big Data, Cloud Computing. We're committed to building innovative solutions that transform how businesses operate in the digital age.",
+    "headquarters": "Pune",
+    "founded_year": 2014,
+    "employee_count": "1000-5000",
+    "website": "https://www.cloudflare.com",
+    "logo_url": "https://ui-avatars.com/api/?name=Cloudflare&size=200&background=random&bold=true",
+    "locations": [
+      "Bangalore"
+    ],
+    "specializations": [
+      "Big Data",
+      "Cloud Computing",
+      "Cybersecurity"
+    ],
+    "culture": [],
+    "benefits": [
+      "Flexible Work Hours",
+      "Team Outings",
+      "Health Insurance",
+      "Learning & Development Budget"
+    ],
+    "internship_ids": [
+      "INT_037"
+    ],
+    "total_internships": 1,
+    "is_hiring": false,
+    "rating": 4.4,
+    "created_at": "2025-12-12T17:45:44.609120",
+    "updated_at": "2025-12-12T17:45:44.609120"
+  },
+  {
+    "company_id": "COMP_008",
+    "name": "Cognizant",
+    "sector": "IT Services",
+    "description": "Cognizant is a leading technology company specializing in Big Data, Cybersecurity. We're committed to building innovative solutions that transform how businesses operate in the digital age.",
+    "headquarters": "Hyderabad",
+    "founded_year": 2009,
+    "employee_count": "1000-5000",
+    "website": "https://www.cognizant.com",
+    "logo_url": "https://ui-avatars.com/api/?name=Cognizant&size=200&background=random&bold=true",
+    "locations": [
+      "Chennai"
+    ],
+    "specializations": [
+      "Big Data",
+      "Cybersecurity",
+      "Cloud Computing"
+    ],
+    "culture": [],
+    "benefits": [
+      "Team Outings",
+      "Learning & Development Budget",
+      "Remote Work Options",
+      "Health Insurance"
+    ],
+    "internship_ids": [
+      "INT_048"
+    ],
+    "total_internships": 1,
+    "is_hiring": true,
+    "rating": 3.9,
+    "created_at": "2025-12-12T17:45:44.610122",
+    "updated_at": "2025-12-12T17:45:44.610122"
+  },
+  {
+    "company_id": "COMP_009",
+    "name": "Deloitte",
+    "sector": "Consulting/CRM",
+    "description": "At Deloitte, we leverage cutting-edge technology in Cybersecurity and Software Development to create products that impact millions of users worldwide. Our team of experts drives innovation across the tech landscape.",
+    "headquarters": "London, UK",
+    "founded_year": 2004,
+    "employee_count": "500-1000",
+    "website": "https://www.deloitte.com",
+    "logo_url": "https://ui-avatars.com/api/?name=Deloitte&size=200&background=random&bold=true",
+    "locations": [
+      "Hyderabad"
+    ],
+    "specializations": [
+      "Cybersecurity",
+      "Software Development",
+      "AI/ML"
+    ],
+    "culture": [],
+    "benefits": [
+      "Team Outings",
+      "Learning & Development Budget",
+      "Flexible Work Hours",
+      "Remote Work Options"
+    ],
+    "internship_ids": [
+      "INT_046"
+    ],
+    "total_internships": 1,
+    "is_hiring": true,
+    "rating": 4.0,
+    "created_at": "2025-12-12T17:45:44.610122",
+    "updated_at": "2025-12-12T17:45:44.610122"
+  },
+  {
+    "company_id": "COMP_010",
+    "name": "Dream11",
+    "sector": "Gaming/Fantasy Sports",
+    "description": "At Dream11, we leverage cutting-edge technology in Cloud Computing and Software Development to create products that impact millions of users worldwide. Our team of experts drives innovation across the tech landscape.",
+    "headquarters": "Bangalore",
+    "founded_year": 2015,
+    "employee_count": "100-500",
+    "website": "https://www.dream11.com",
+    "logo_url": "https://ui-avatars.com/api/?name=Dream11&size=200&background=random&bold=true",
+    "locations": [
+      "Mumbai"
+    ],
+    "specializations": [
+      "Cloud Computing",
+      "Software Development",
+      "AI/ML"
+    ],
+    "culture": [],
+    "benefits": [
+      "Learning & Development Budget",
+      "Team Outings",
+      "Health Insurance",
+      "Remote Work Options"
+    ],
+    "internship_ids": [
+      "INT_036"
+    ],
+    "total_internships": 1,
+    "is_hiring": false,
+    "rating": 4.7,
+    "created_at": "2025-12-12T17:45:44.610122",
+    "updated_at": "2025-12-12T17:45:44.610122"
+  },
+  {
+    "company_id": "COMP_011",
+    "name": "Flipkart",
+    "sector": "E-commerce",
+    "description": "Flipkart is revolutionizing online commerce with a focus on Customer Experience, Logistics. We connect millions of customers with products and services they love.",
+    "headquarters": "Bangalore, India",
+    "founded_year": 2020,
+    "employee_count": "5000+",
+    "website": "https://www.flipkart.com",
+    "logo_url": "https://ui-avatars.com/api/?name=Flipkart&size=200&background=random&bold=true",
+    "locations": [
+      "Bangalore"
+    ],
+    "specializations": [
+      "Customer Experience",
+      "Logistics",
+      "Digital Payments"
+    ],
+    "culture": [
+      "Dynamic",
+      "Innovative",
+      "Customer-centric"
+    ],
+    "benefits": [
+      "Flexible Work",
+      "Performance Bonuses",
+      "Career Growth Programs",
+      "Health Insurance"
+    ],
+    "internship_ids": [
+      "INT_002"
+    ],
+    "total_internships": 1,
+    "is_hiring": true,
+    "rating": 4.4,
+    "created_at": "2025-12-12T17:45:44.610122",
+    "updated_at": "2025-12-12T17:45:44.610122"
+  },
+  {
+    "company_id": "COMP_012",
+    "name": "Freshworks",
+    "sector": "SaaS",
+    "description": "At Freshworks, we leverage cutting-edge technology in AI/ML and Big Data to create products that impact millions of users worldwide. Our team of experts drives innovation across the tech landscape.",
+    "headquarters": "Gurgaon",
+    "founded_year": 1997,
+    "employee_count": "5000+",
+    "website": "https://www.freshworks.com",
+    "logo_url": "https://ui-avatars.com/api/?name=Freshworks&size=200&background=random&bold=true",
+    "locations": [
+      "Chennai"
+    ],
+    "specializations": [
+      "AI/ML",
+      "Big Data",
+      "Cloud Computing"
+    ],
+    "culture": [],
+    "benefits": [
+      "Flexible Work Hours",
+      "Team Outings",
+      "Learning & Development Budget",
+      "Remote Work Options"
+    ],
+    "internship_ids": [
+      "INT_020"
+    ],
+    "total_internships": 1,
+    "is_hiring": true,
+    "rating": 4.8,
+    "created_at": "2025-12-12T17:45:44.611123",
+    "updated_at": "2025-12-12T17:45:44.611123"
+  },
+  {
+    "company_id": "COMP_013",
+    "name": "GeeksforGeeks",
+    "sector": "EdTech",
+    "description": "At GeeksforGeeks, we leverage cutting-edge technology in AI/ML and Cloud Computing to create products that impact millions of users worldwide. Our team of experts drives innovation across the tech landscape.",
+    "headquarters": "Bangalore",
+    "founded_year": 2016,
+    "employee_count": "5000+",
+    "website": "https://www.geeksforgeeks.com",
+    "logo_url": "https://ui-avatars.com/api/?name=GeeksforGeeks&size=200&background=random&bold=true",
+    "locations": [
+      "Noida"
+    ],
+    "specializations": [
+      "AI/ML",
+      "Cloud Computing",
+      "Software Development"
+    ],
+    "culture": [],
+    "benefits": [
+      "Flexible Work Hours",
+      "Learning & Development Budget",
+      "Team Outings",
+      "Remote Work Options"
+    ],
+    "internship_ids": [
+      "INT_029"
+    ],
+    "total_internships": 1,
+    "is_hiring": true,
+    "rating": 3.8,
+    "created_at": "2025-12-12T17:45:44.611123",
+    "updated_at": "2025-12-12T17:45:44.611123"
+  },
+  {
+    "company_id": "COMP_014",
+    "name": "GitLab",
+    "sector": "DevOps/SaaS",
+    "description": "GitLab is a leading technology company specializing in Big Data, Software Development. We're committed to building innovative solutions that transform how businesses operate in the digital age.",
+    "headquarters": "Bangalore",
+    "founded_year": 2001,
+    "employee_count": "5000+",
+    "website": "https://www.gitlab.com",
+    "logo_url": "https://ui-avatars.com/api/?name=GitLab&size=200&background=random&bold=true",
+    "locations": [
+      "Remote"
+    ],
+    "specializations": [
+      "Big Data",
+      "Software Development",
+      "Cloud Computing"
+    ],
+    "culture": [],
+    "benefits": [
+      "Learning & Development Budget",
+      "Health Insurance",
+      "Flexible Work Hours",
+      "Remote Work Options"
+    ],
+    "internship_ids": [
+      "INT_030"
+    ],
+    "total_internships": 1,
+    "is_hiring": true,
+    "rating": 4.6,
+    "created_at": "2025-12-12T17:45:44.611123",
+    "updated_at": "2025-12-12T17:45:44.611123"
+  },
+  {
+    "company_id": "COMP_015",
+    "name": "Google India",
+    "sector": "Technology",
+    "description": "At Google India, we leverage cutting-edge technology in Big Data and Cybersecurity to create products that impact millions of users worldwide. Our team of experts drives innovation across the tech landscape.",
+    "headquarters": "Bangalore",
+    "founded_year": 2020,
+    "employee_count": "5000+",
+    "website": "https://www.google.com",
+    "logo_url": "https://ui-avatars.com/api/?name=Google+India&size=200&background=random&bold=true",
+    "locations": [
+      "Bangalore"
+    ],
+    "specializations": [
+      "Big Data",
+      "Cybersecurity",
+      "AI/ML"
+    ],
+    "culture": [
+      "Fast-paced",
+      "Collaborative",
+      "Innovation-driven"
+    ],
+    "benefits": [
+      "Learning & Development Budget",
+      "Remote Work Options",
+      "Team Outings",
+      "Health Insurance"
+    ],
+    "internship_ids": [
+      "INT_001"
+    ],
+    "total_internships": 1,
+    "is_hiring": true,
+    "rating": 3.7,
+    "created_at": "2025-12-12T17:45:44.611123",
+    "updated_at": "2025-12-12T17:45:44.611123"
+  },
+  {
+    "company_id": "COMP_016",
+    "name": "GreyOrange",
+    "sector": "Robotics/Automation",
+    "description": "GreyOrange is a leading technology company specializing in Cybersecurity, AI/ML. We're committed to building innovative solutions that transform how businesses operate in the digital age.",
+    "headquarters": "Bangalore",
+    "founded_year": 2012,
+    "employee_count": "500-1000",
+    "website": "https://www.greyorange.com",
+    "logo_url": "https://ui-avatars.com/api/?name=GreyOrange&size=200&background=random&bold=true",
+    "locations": [
+      "Gurgaon"
+    ],
+    "specializations": [
+      "Cybersecurity",
+      "AI/ML",
+      "Cloud Computing"
+    ],
+    "culture": [],
+    "benefits": [
+      "Remote Work Options",
+      "Team Outings",
+      "Health Insurance",
+      "Learning & Development Budget"
+    ],
+    "internship_ids": [
+      "INT_040"
+    ],
+    "total_internships": 1,
+    "is_hiring": true,
+    "rating": 4.4,
+    "created_at": "2025-12-12T17:45:44.611123",
+    "updated_at": "2025-12-12T17:45:44.611123"
+  },
+  {
+    "company_id": "COMP_017",
+    "name": "Haptik",
+    "sector": "AI/Chatbots",
+    "description": "Haptik is a leading technology company specializing in Cloud Computing, AI/ML. We're committed to building innovative solutions that transform how businesses operate in the digital age.",
+    "headquarters": "Mumbai",
+    "founded_year": 2001,
+    "employee_count": "100-500",
+    "website": "https://www.haptik.com",
+    "logo_url": "https://ui-avatars.com/api/?name=Haptik&size=200&background=random&bold=true",
+    "locations": [
+      "Mumbai"
+    ],
+    "specializations": [
+      "Cloud Computing",
+      "AI/ML",
+      "Cybersecurity"
+    ],
+    "culture": [],
+    "benefits": [
+      "Team Outings",
+      "Learning & Development Budget",
+      "Flexible Work Hours",
+      "Health Insurance"
+    ],
+    "internship_ids": [
+      "INT_033"
+    ],
+    "total_internships": 1,
+    "is_hiring": true,
+    "rating": 4.5,
+    "created_at": "2025-12-12T17:45:44.611123",
+    "updated_at": "2025-12-12T17:45:44.611123"
+  },
+  {
+    "company_id": "COMP_018",
+    "name": "HubSpot",
+    "sector": "Marketing/SaaS",
+    "description": "At HubSpot, we leverage cutting-edge technology in Cybersecurity and AI/ML to create products that impact millions of users worldwide. Our team of experts drives innovation across the tech landscape.",
+    "headquarters": "Pune",
+    "founded_year": 2008,
+    "employee_count": "1000-5000",
+    "website": "https://www.hubspot.com",
+    "logo_url": "https://ui-avatars.com/api/?name=HubSpot&size=200&background=random&bold=true",
+    "locations": [
+      "Remote"
+    ],
+    "specializations": [
+      "Cybersecurity",
+      "AI/ML",
+      "Software Development"
+    ],
+    "culture": [],
+    "benefits": [
+      "Learning & Development Budget",
+      "Remote Work Options",
+      "Health Insurance",
+      "Team Outings"
+    ],
+    "internship_ids": [
+      "INT_041"
+    ],
+    "total_internships": 1,
+    "is_hiring": false,
+    "rating": 4.0,
+    "created_at": "2025-12-12T17:45:44.611123",
+    "updated_at": "2025-12-12T17:45:44.611123"
+  },
+  {
+    "company_id": "COMP_019",
+    "name": "IBM",
+    "sector": "Technology",
+    "description": "IBM is a leading technology company specializing in AI/ML, Cybersecurity. We're committed to building innovative solutions that transform how businesses operate in the digital age.",
+    "headquarters": "Mumbai",
+    "founded_year": 1998,
+    "employee_count": "500-1000",
+    "website": "https://www.ibm.com",
+    "logo_url": "https://ui-avatars.com/api/?name=IBM&size=200&background=random&bold=true",
+    "locations": [
+      "Pune"
+    ],
+    "specializations": [
+      "AI/ML",
+      "Cybersecurity",
+      "Software Development"
+    ],
+    "culture": [
+      "Learning-focused",
+      "Innovation-driven",
+      "Agile"
+    ],
+    "benefits": [
+      "Learning & Development Budget",
+      "Health Insurance",
+      "Flexible Work Hours",
+      "Remote Work Options"
+    ],
+    "internship_ids": [
+      "INT_015"
+    ],
+    "total_internships": 1,
+    "is_hiring": true,
+    "rating": 4.1,
+    "created_at": "2025-12-12T17:45:44.612124",
+    "updated_at": "2025-12-12T17:45:44.612124"
+  },
+  {
+    "company_id": "COMP_020",
+    "name": "IIT Bombay - AI Lab",
+    "sector": "Research/Academia",
+    "description": "IIT Bombay - AI Lab is a leading technology company specializing in Big Data, AI/ML. We're committed to building innovative solutions that transform how businesses operate in the digital age.",
+    "headquarters": "Pune",
+    "founded_year": 2014,
+    "employee_count": "100-500",
+    "website": "https://www.iitbombay-ailab.com",
+    "logo_url": "https://ui-avatars.com/api/?name=IIT+Bombay+-+AI+Lab&size=200&background=random&bold=true",
+    "locations": [
+      "Mumbai"
+    ],
+    "specializations": [
+      "Big Data",
+      "AI/ML",
+      "Software Development"
+    ],
+    "culture": [],
+    "benefits": [
+      "Learning & Development Budget",
+      "Team Outings",
+      "Health Insurance",
+      "Remote Work Options"
+    ],
+    "internship_ids": [
+      "INT_021"
+    ],
+    "total_internships": 1,
+    "is_hiring": true,
+    "rating": 3.6,
+    "created_at": "2025-12-12T17:45:44.612124",
+    "updated_at": "2025-12-12T17:45:44.612124"
+  },
+  {
+    "company_id": "COMP_021",
+    "name": "Infosys",
+    "sector": "IT Services",
+    "description": "Infosys is a leading technology company specializing in AI/ML, Big Data. We're committed to building innovative solutions that transform how businesses operate in the digital age.",
+    "headquarters": "Mumbai",
+    "founded_year": 2010,
+    "employee_count": "1000-5000",
+    "website": "https://www.infosys.com",
+    "logo_url": "https://ui-avatars.com/api/?name=Infosys&size=200&background=random&bold=true",
+    "locations": [
+      "Mysore"
+    ],
+    "specializations": [
+      "AI/ML",
+      "Big Data",
+      "Cloud Computing"
+    ],
+    "culture": [],
+    "benefits": [
+      "Team Outings",
+      "Health Insurance",
+      "Flexible Work Hours",
+      "Learning & Development Budget"
+    ],
+    "internship_ids": [
+      "INT_018"
+    ],
+    "total_internships": 1,
+    "is_hiring": true,
+    "rating": 4.0,
+    "created_at": "2025-12-12T17:45:44.612124",
+    "updated_at": "2025-12-12T17:45:44.612124"
+  },
+  {
+    "company_id": "COMP_022",
+    "name": "McKinsey & Company",
+    "sector": "Consulting",
+    "description": "McKinsey & Company is a global consulting leader specializing in Operations, Strategy Consulting. We partner with organizations to solve their most complex challenges.",
+    "headquarters": "New York, USA",
+    "founded_year": 2001,
+    "employee_count": "1000-5000",
+    "website": "https://www.mckinseyandcompany.com",
+    "logo_url": "https://ui-avatars.com/api/?name=McKinsey+&+Company&size=200&background=random&bold=true",
+    "locations": [
+      "Mumbai"
+    ],
+    "specializations": [
+      "Operations",
+      "Strategy Consulting",
+      "Analytics"
+    ],
+    "culture": [
+      "Global mindset",
+      "Collaborative",
+      "Analytical"
+    ],
+    "benefits": [
+      "Career Development",
+      "Travel Allowances",
+      "Performance Bonuses",
+      "Health Insurance"
+    ],
+    "internship_ids": [
+      "INT_026"
+    ],
+    "total_internships": 1,
+    "is_hiring": true,
+    "rating": 4.5,
+    "created_at": "2025-12-12T17:45:44.612124",
+    "updated_at": "2025-12-12T17:45:44.612124"
+  },
+  {
+    "company_id": "COMP_023",
+    "name": "Meesho",
+    "sector": "E-commerce",
+    "description": "Meesho is revolutionizing online commerce with a focus on Marketplace, Customer Experience. We connect millions of customers with products and services they love.",
+    "headquarters": ", India",
+    "founded_year": 2012,
+    "employee_count": "500-1000",
+    "website": "https://www.meesho.com",
+    "logo_url": "https://ui-avatars.com/api/?name=Meesho&size=200&background=random&bold=true",
+    "locations": [
+      "Bangalore"
+    ],
+    "specializations": [
+      "Marketplace",
+      "Customer Experience",
+      "Supply Chain"
+    ],
+    "culture": [
+      "Innovative",
+      "Dynamic",
+      "Data-driven"
+    ],
+    "benefits": [
+      "Career Growth Programs",
+      "Employee Discounts",
+      "Flexible Work",
+      "Performance Bonuses"
+    ],
+    "internship_ids": [
+      "INT_014"
+    ],
+    "total_internships": 1,
+    "is_hiring": true,
+    "rating": 4.8,
+    "created_at": "2025-12-12T17:45:44.612124",
+    "updated_at": "2025-12-12T17:45:44.612124"
+  },
+  {
+    "company_id": "COMP_024",
+    "name": "Meta",
+    "sector": "Social Media/AR",
+    "description": "At Meta, we leverage cutting-edge technology in Cloud Computing and AI/ML to create products that impact millions of users worldwide. Our team of experts drives innovation across the tech landscape.",
+    "headquarters": "Hyderabad",
+    "founded_year": 2010,
+    "employee_count": "500-1000",
+    "website": "https://www.meta.com",
+    "logo_url": "https://ui-avatars.com/api/?name=Meta&size=200&background=random&bold=true",
+    "locations": [
+      "Hyderabad"
+    ],
+    "specializations": [
+      "Cloud Computing",
+      "AI/ML",
+      "Software Development"
+    ],
+    "culture": [],
+    "benefits": [
+      "Remote Work Options",
+      "Learning & Development Budget",
+      "Flexible Work Hours",
+      "Health Insurance"
+    ],
+    "internship_ids": [
+      "INT_032"
+    ],
+    "total_internships": 1,
+    "is_hiring": true,
+    "rating": 4.2,
+    "created_at": "2025-12-12T17:45:44.612124",
+    "updated_at": "2025-12-12T17:45:44.612124"
+  },
+  {
+    "company_id": "COMP_025",
+    "name": "Microsoft",
+    "sector": "Technology",
+    "description": "Microsoft is a leading technology company specializing in Big Data, AI/ML. We're committed to building innovative solutions that transform how businesses operate in the digital age.",
+    "headquarters": "Redmond, USA",
+    "founded_year": 2002,
+    "employee_count": "5000+",
+    "website": "https://www.microsoft.com",
+    "logo_url": "https://ui-avatars.com/api/?name=Microsoft&size=200&background=random&bold=true",
+    "locations": [
+      "Hyderabad"
+    ],
+    "specializations": [
+      "Big Data",
+      "AI/ML",
+      "Cybersecurity"
+    ],
+    "culture": [
+      "Agile",
+      "Fast-paced",
+      "Collaborative"
+    ],
+    "benefits": [
+      "Health Insurance",
+      "Flexible Work Hours",
+      "Team Outings",
+      "Remote Work Options"
+    ],
+    "internship_ids": [
+      "INT_006"
+    ],
+    "total_internships": 1,
+    "is_hiring": true,
+    "rating": 4.5,
+    "created_at": "2025-12-12T17:45:44.612124",
+    "updated_at": "2025-12-12T17:45:44.612124"
+  },
+  {
+    "company_id": "COMP_026",
+    "name": "Netflix",
+    "sector": "Streaming/Entertainment",
+    "description": "At Netflix, we leverage cutting-edge technology in Big Data and Cloud Computing to create products that impact millions of users worldwide. Our team of experts drives innovation across the tech landscape.",
+    "headquarters": "Los Gatos, USA",
+    "founded_year": 1999,
+    "employee_count": "5000+",
+    "website": "https://www.netflix.com",
+    "logo_url": "https://ui-avatars.com/api/?name=Netflix&size=200&background=random&bold=true",
+    "locations": [
+      "Bangalore"
+    ],
+    "specializations": [
+      "Big Data",
+      "Cloud Computing",
+      "AI/ML"
+    ],
+    "culture": [],
+    "benefits": [
+      "Flexible Work Hours",
+      "Learning & Development Budget",
+      "Remote Work Options",
+      "Health Insurance"
+    ],
+    "internship_ids": [
+      "INT_035"
+    ],
+    "total_internships": 1,
+    "is_hiring": true,
+    "rating": 4.1,
+    "created_at": "2025-12-12T17:45:44.613122",
+    "updated_at": "2025-12-12T17:45:44.613122"
+  },
+  {
+    "company_id": "COMP_027",
+    "name": "Nvidia",
+    "sector": "Hardware/AI",
+    "description": "Nvidia is a leading technology company specializing in Software Development, AI/ML. We're committed to building innovative solutions that transform how businesses operate in the digital age.",
+    "headquarters": "Hyderabad",
+    "founded_year": 2001,
+    "employee_count": "5000+",
+    "website": "https://www.nvidia.com",
+    "logo_url": "https://ui-avatars.com/api/?name=Nvidia&size=200&background=random&bold=true",
+    "locations": [
+      "Pune"
+    ],
+    "specializations": [
+      "Software Development",
+      "AI/ML",
+      "Cybersecurity"
+    ],
+    "culture": [],
+    "benefits": [
+      "Flexible Work Hours",
+      "Team Outings",
+      "Learning & Development Budget",
+      "Remote Work Options"
+    ],
+    "internship_ids": [
+      "INT_019"
+    ],
+    "total_internships": 1,
+    "is_hiring": true,
+    "rating": 4.8,
+    "created_at": "2025-12-12T17:45:44.613122",
+    "updated_at": "2025-12-12T17:45:44.613122"
+  },
+  {
+    "company_id": "COMP_028",
+    "name": "Ola",
+    "sector": "Transportation",
+    "description": "Ola is a leading technology company specializing in Cloud Computing, Cybersecurity. We're committed to building innovative solutions that transform how businesses operate in the digital age.",
+    "headquarters": "Bangalore, India",
+    "founded_year": 2005,
+    "employee_count": "5000+",
+    "website": "https://www.ola.com",
+    "logo_url": "https://ui-avatars.com/api/?name=Ola&size=200&background=random&bold=true",
+    "locations": [
+      "Bangalore"
+    ],
+    "specializations": [
+      "Cloud Computing",
+      "Cybersecurity",
+      "Software Development"
+    ],
+    "culture": [],
+    "benefits": [
+      "Remote Work Options",
+      "Health Insurance",
+      "Flexible Work Hours",
+      "Team Outings"
+    ],
+    "internship_ids": [
+      "INT_016"
+    ],
+    "total_internships": 1,
+    "is_hiring": true,
+    "rating": 4.3,
+    "created_at": "2025-12-12T17:45:44.613122",
+    "updated_at": "2025-12-12T17:45:44.613122"
+  },
+  {
+    "company_id": "COMP_029",
+    "name": "Oracle",
+    "sector": "Enterprise Software",
+    "description": "Oracle is a leading technology company specializing in Big Data, AI/ML. We're committed to building innovative solutions that transform how businesses operate in the digital age.",
+    "headquarters": ", India",
+    "founded_year": 2003,
+    "employee_count": "100-500",
+    "website": "https://www.oracle.com",
+    "logo_url": "https://ui-avatars.com/api/?name=Oracle&size=200&background=random&bold=true",
+    "locations": [
+      "Hyderabad"
+    ],
+    "specializations": [
+      "Big Data",
+      "AI/ML",
+      "Cloud Computing"
+    ],
+    "culture": [],
+    "benefits": [
+      "Learning & Development Budget",
+      "Flexible Work Hours",
+      "Remote Work Options",
+      "Health Insurance"
+    ],
+    "internship_ids": [
+      "INT_028"
+    ],
+    "total_internships": 1,
+    "is_hiring": true,
+    "rating": 4.4,
+    "created_at": "2025-12-12T17:45:44.613122",
+    "updated_at": "2025-12-12T17:45:44.613122"
+  },
+  {
+    "company_id": "COMP_030",
+    "name": "PayPal",
+    "sector": "Fintech/Payments",
+    "description": "PayPal is a leading technology company specializing in Cybersecurity, Software Development. We're committed to building innovative solutions that transform how businesses operate in the digital age.",
+    "headquarters": "Hyderabad",
+    "founded_year": 1997,
+    "employee_count": "5000+",
+    "website": "https://www.paypal.com",
+    "logo_url": "https://ui-avatars.com/api/?name=PayPal&size=200&background=random&bold=true",
+    "locations": [
+      "Chennai"
+    ],
+    "specializations": [
+      "Cybersecurity",
+      "Software Development",
+      "Big Data"
+    ],
+    "culture": [],
+    "benefits": [
+      "Flexible Work Hours",
+      "Remote Work Options",
+      "Learning & Development Budget",
+      "Health Insurance"
+    ],
+    "internship_ids": [
+      "INT_047"
+    ],
+    "total_internships": 1,
+    "is_hiring": true,
+    "rating": 4.7,
+    "created_at": "2025-12-12T17:45:44.613122",
+    "updated_at": "2025-12-12T17:45:44.613122"
+  },
+  {
+    "company_id": "COMP_031",
+    "name": "Paytm",
+    "sector": "Fintech",
+    "description": "At Paytm, we leverage cutting-edge technology in AI/ML and Software Development to create products that impact millions of users worldwide. Our team of experts drives innovation across the tech landscape.",
+    "headquarters": "Noida, India",
+    "founded_year": 2001,
+    "employee_count": "500-1000",
+    "website": "https://www.paytm.com",
+    "logo_url": "https://ui-avatars.com/api/?name=Paytm&size=200&background=random&bold=true",
+    "locations": [
+      "Noida"
+    ],
+    "specializations": [
+      "AI/ML",
+      "Software Development",
+      "Cloud Computing"
+    ],
+    "culture": [],
+    "benefits": [
+      "Flexible Work Hours",
+      "Remote Work Options",
+      "Health Insurance",
+      "Learning & Development Budget"
+    ],
+    "internship_ids": [
+      "INT_012"
+    ],
+    "total_internships": 1,
+    "is_hiring": false,
+    "rating": 4.0,
+    "created_at": "2025-12-12T17:45:44.613122",
+    "updated_at": "2025-12-12T17:45:44.613122"
+  },
+  {
+    "company_id": "COMP_032",
+    "name": "PhonePe",
+    "sector": "Fintech",
+    "description": "At PhonePe, we leverage cutting-edge technology in Cloud Computing and Big Data to create products that impact millions of users worldwide. Our team of experts drives innovation across the tech landscape.",
+    "headquarters": "Bangalore, India",
+    "founded_year": 2016,
+    "employee_count": "500-1000",
+    "website": "https://www.phonepe.com",
+    "logo_url": "https://ui-avatars.com/api/?name=PhonePe&size=200&background=random&bold=true",
+    "locations": [
+      "Pune"
+    ],
+    "specializations": [
+      "Cloud Computing",
+      "Big Data",
+      "Cybersecurity"
+    ],
+    "culture": [],
+    "benefits": [
+      "Remote Work Options",
+      "Learning & Development Budget",
+      "Team Outings",
+      "Flexible Work Hours"
+    ],
+    "internship_ids": [
+      "INT_005"
+    ],
+    "total_internships": 1,
+    "is_hiring": true,
+    "rating": 4.9,
+    "created_at": "2025-12-12T17:45:44.614122",
+    "updated_at": "2025-12-12T17:45:44.614122"
+  },
+  {
+    "company_id": "COMP_033",
+    "name": "Polygon",
+    "sector": "Blockchain/Web3",
+    "description": "At Polygon, we leverage cutting-edge technology in Cloud Computing and Cybersecurity to create products that impact millions of users worldwide. Our team of experts drives innovation across the tech landscape.",
+    "headquarters": "Bangalore",
+    "founded_year": 2018,
+    "employee_count": "100-500",
+    "website": "https://www.polygon.com",
+    "logo_url": "https://ui-avatars.com/api/?name=Polygon&size=200&background=random&bold=true",
+    "locations": [
+      "Bangalore"
+    ],
+    "specializations": [
+      "Cloud Computing",
+      "Cybersecurity",
+      "Big Data"
+    ],
+    "culture": [],
+    "benefits": [
+      "Team Outings",
+      "Remote Work Options",
+      "Flexible Work Hours",
+      "Health Insurance"
+    ],
+    "internship_ids": [
+      "INT_023"
+    ],
+    "total_internships": 1,
+    "is_hiring": true,
+    "rating": 4.6,
+    "created_at": "2025-12-12T17:45:44.614122",
+    "updated_at": "2025-12-12T17:45:44.614122"
+  },
+  {
+    "company_id": "COMP_034",
+    "name": "Postman",
+    "sector": "Developer Tools",
+    "description": "Postman is a leading technology company specializing in Cloud Computing, Software Development. We're committed to building innovative solutions that transform how businesses operate in the digital age.",
+    "headquarters": ", India",
+    "founded_year": 2013,
+    "employee_count": "500-1000",
+    "website": "https://www.postman.com",
+    "logo_url": "https://ui-avatars.com/api/?name=Postman&size=200&background=random&bold=true",
+    "locations": [
+      "Bangalore"
+    ],
+    "specializations": [
+      "Cloud Computing",
+      "Software Development",
+      "AI/ML"
+    ],
+    "culture": [],
+    "benefits": [
+      "Remote Work Options",
+      "Learning & Development Budget",
+      "Health Insurance",
+      "Flexible Work Hours"
+    ],
+    "internship_ids": [
+      "INT_043"
+    ],
+    "total_internships": 1,
+    "is_hiring": false,
+    "rating": 3.9,
+    "created_at": "2025-12-12T17:45:44.614122",
+    "updated_at": "2025-12-12T17:45:44.614122"
+  },
+  {
+    "company_id": "COMP_035",
+    "name": "Razorpay",
+    "sector": "Fintech",
+    "description": "Razorpay is a leading technology company specializing in AI/ML, Cloud Computing. We're committed to building innovative solutions that transform how businesses operate in the digital age.",
+    "headquarters": "Bangalore, India",
+    "founded_year": 2004,
+    "employee_count": "100-500",
+    "website": "https://www.razorpay.com",
+    "logo_url": "https://ui-avatars.com/api/?name=Razorpay&size=200&background=random&bold=true",
+    "locations": [
+      "Bangalore"
+    ],
+    "specializations": [
+      "AI/ML",
+      "Cloud Computing",
+      "Cybersecurity"
+    ],
+    "culture": [],
+    "benefits": [
+      "Flexible Work Hours",
+      "Team Outings",
+      "Remote Work Options",
+      "Health Insurance"
+    ],
+    "internship_ids": [
+      "INT_007"
+    ],
+    "total_internships": 1,
+    "is_hiring": false,
+    "rating": 3.6,
+    "created_at": "2025-12-12T17:45:44.614122",
+    "updated_at": "2025-12-12T17:45:44.614122"
+  },
+  {
+    "company_id": "COMP_036",
+    "name": "Red Hat",
+    "sector": "Open Source/Enterprise",
+    "description": "At Red Hat, we leverage cutting-edge technology in AI/ML and Cybersecurity to create products that impact millions of users worldwide. Our team of experts drives innovation across the tech landscape.",
+    "headquarters": "Pune",
+    "founded_year": 2004,
+    "employee_count": "1000-5000",
+    "website": "https://www.redhat.com",
+    "logo_url": "https://ui-avatars.com/api/?name=Red+Hat&size=200&background=random&bold=true",
+    "locations": [
+      "Pune"
+    ],
+    "specializations": [
+      "AI/ML",
+      "Cybersecurity",
+      "Software Development"
+    ],
+    "culture": [],
+    "benefits": [
+      "Team Outings",
+      "Flexible Work Hours",
+      "Health Insurance",
+      "Remote Work Options"
+    ],
+    "internship_ids": [
+      "INT_042"
+    ],
+    "total_internships": 1,
+    "is_hiring": true,
+    "rating": 4.6,
+    "created_at": "2025-12-12T17:45:44.614122",
+    "updated_at": "2025-12-12T17:45:44.614122"
+  },
+  {
+    "company_id": "COMP_037",
+    "name": "Samsung R&D",
+    "sector": "Electronics/Software",
+    "description": "At Samsung R&D, we leverage cutting-edge technology in Cloud Computing and Software Development to create products that impact millions of users worldwide. Our team of experts drives innovation across the tech landscape.",
+    "headquarters": "Bangalore",
+    "founded_year": 2014,
+    "employee_count": "1000-5000",
+    "website": "https://www.samsungrandd.com",
+    "logo_url": "https://ui-avatars.com/api/?name=Samsung+R&D&size=200&background=random&bold=true",
+    "locations": [
+      "Noida"
+    ],
+    "specializations": [
+      "Cloud Computing",
+      "Software Development",
+      "Big Data"
+    ],
+    "culture": [],
+    "benefits": [
+      "Learning & Development Budget",
+      "Remote Work Options",
+      "Team Outings",
+      "Flexible Work Hours"
+    ],
+    "internship_ids": [
+      "INT_031"
+    ],
+    "total_internships": 1,
+    "is_hiring": false,
+    "rating": 4.8,
+    "created_at": "2025-12-12T17:45:44.614122",
+    "updated_at": "2025-12-12T17:45:44.614122"
+  },
+  {
+    "company_id": "COMP_038",
+    "name": "Shopify",
+    "sector": "E-commerce/SaaS",
+    "description": "Shopify is a leading technology company specializing in Cloud Computing, Cybersecurity. We're committed to building innovative solutions that transform how businesses operate in the digital age.",
+    "headquarters": "Bangalore",
+    "founded_year": 2007,
+    "employee_count": "5000+",
+    "website": "https://www.shopify.com",
+    "logo_url": "https://ui-avatars.com/api/?name=Shopify&size=200&background=random&bold=true",
+    "locations": [
+      "Remote"
+    ],
+    "specializations": [
+      "Cloud Computing",
+      "Cybersecurity",
+      "Big Data"
+    ],
+    "culture": [],
+    "benefits": [
+      "Team Outings",
+      "Health Insurance",
+      "Flexible Work Hours",
+      "Remote Work Options"
+    ],
+    "internship_ids": [
+      "INT_050"
+    ],
+    "total_internships": 1,
+    "is_hiring": false,
+    "rating": 3.9,
+    "created_at": "2025-12-12T17:45:44.614122",
+    "updated_at": "2025-12-12T17:45:44.614122"
+  },
+  {
+    "company_id": "COMP_039",
+    "name": "Siemens",
+    "sector": "Industrial IoT",
+    "description": "At Siemens, we leverage cutting-edge technology in Cloud Computing and Big Data to create products that impact millions of users worldwide. Our team of experts drives innovation across the tech landscape.",
+    "headquarters": ", India",
+    "founded_year": 2016,
+    "employee_count": "1000-5000",
+    "website": "https://www.siemens.com",
+    "logo_url": "https://ui-avatars.com/api/?name=Siemens&size=200&background=random&bold=true",
+    "locations": [
+      "Bangalore"
+    ],
+    "specializations": [
+      "Cloud Computing",
+      "Big Data",
+      "AI/ML"
+    ],
+    "culture": [],
+    "benefits": [
+      "Flexible Work Hours",
+      "Remote Work Options",
+      "Health Insurance",
+      "Team Outings"
+    ],
+    "internship_ids": [
+      "INT_049"
+    ],
+    "total_internships": 1,
+    "is_hiring": false,
+    "rating": 3.7,
+    "created_at": "2025-12-12T17:45:44.615122",
+    "updated_at": "2025-12-12T17:45:44.615122"
+  },
+  {
+    "company_id": "COMP_040",
+    "name": "Swiggy",
+    "sector": "Food Tech",
+    "description": "At Swiggy, we leverage cutting-edge technology in Cloud Computing and Software Development to create products that impact millions of users worldwide. Our team of experts drives innovation across the tech landscape.",
+    "headquarters": "Bangalore, India",
+    "founded_year": 2015,
+    "employee_count": "500-1000",
+    "website": "https://www.swiggy.com",
+    "logo_url": "https://ui-avatars.com/api/?name=Swiggy&size=200&background=random&bold=true",
+    "locations": [
+      "Bangalore"
+    ],
+    "specializations": [
+      "Cloud Computing",
+      "Software Development",
+      "Big Data"
+    ],
+    "culture": [],
+    "benefits": [
+      "Remote Work Options",
+      "Health Insurance",
+      "Flexible Work Hours",
+      "Learning & Development Budget"
+    ],
+    "internship_ids": [
+      "INT_004"
+    ],
+    "total_internships": 1,
+    "is_hiring": true,
+    "rating": 3.6,
+    "created_at": "2025-12-12T17:45:44.615122",
+    "updated_at": "2025-12-12T17:45:44.615122"
+  },
+  {
+    "company_id": "COMP_041",
+    "name": "TCS",
+    "sector": "IT Services",
+    "description": "TCS is a leading technology company specializing in AI/ML, Cloud Computing. We're committed to building innovative solutions that transform how businesses operate in the digital age.",
+    "headquarters": ", India",
+    "founded_year": 2019,
+    "employee_count": "100-500",
+    "website": "https://www.tcs.com",
+    "logo_url": "https://ui-avatars.com/api/?name=TCS&size=200&background=random&bold=true",
+    "locations": [
+      "Pune"
+    ],
+    "specializations": [
+      "AI/ML",
+      "Cloud Computing",
+      "Cybersecurity"
+    ],
+    "culture": [],
+    "benefits": [
+      "Team Outings",
+      "Learning & Development Budget",
+      "Health Insurance",
+      "Flexible Work Hours"
+    ],
+    "internship_ids": [
+      "INT_038"
+    ],
+    "total_internships": 1,
+    "is_hiring": true,
+    "rating": 4.8,
+    "created_at": "2025-12-12T17:45:44.615122",
+    "updated_at": "2025-12-12T17:45:44.615122"
+  },
+  {
+    "company_id": "COMP_042",
+    "name": "Tesla",
+    "sector": "Automotive/AI",
+    "description": "At Tesla, we leverage cutting-edge technology in AI/ML and Big Data to create products that impact millions of users worldwide. Our team of experts drives innovation across the tech landscape.",
+    "headquarters": "Mumbai",
+    "founded_year": 2009,
+    "employee_count": "500-1000",
+    "website": "https://www.tesla.com",
+    "logo_url": "https://ui-avatars.com/api/?name=Tesla&size=200&background=random&bold=true",
+    "locations": [
+      "Bangalore"
+    ],
+    "specializations": [
+      "AI/ML",
+      "Big Data",
+      "Cybersecurity"
+    ],
+    "culture": [],
+    "benefits": [
+      "Remote Work Options",
+      "Health Insurance",
+      "Learning & Development Budget",
+      "Team Outings"
+    ],
+    "internship_ids": [
+      "INT_025"
+    ],
+    "total_internships": 1,
+    "is_hiring": false,
+    "rating": 4.1,
+    "created_at": "2025-12-12T17:45:44.615122",
+    "updated_at": "2025-12-12T17:45:44.615122"
+  },
+  {
+    "company_id": "COMP_043",
+    "name": "Uber",
+    "sector": "Transportation",
+    "description": "Uber is a leading technology company specializing in Big Data, Cloud Computing. We're committed to building innovative solutions that transform how businesses operate in the digital age.",
+    "headquarters": "San Francisco, USA",
+    "founded_year": 2002,
+    "employee_count": "1000-5000",
+    "website": "https://www.uber.com",
+    "logo_url": "https://ui-avatars.com/api/?name=Uber&size=200&background=random&bold=true",
+    "locations": [
+      "Bangalore"
+    ],
+    "specializations": [
+      "Big Data",
+      "Cloud Computing",
+      "AI/ML"
+    ],
+    "culture": [],
+    "benefits": [
+      "Team Outings",
+      "Health Insurance",
+      "Flexible Work Hours",
+      "Learning & Development Budget"
+    ],
+    "internship_ids": [
+      "INT_013"
+    ],
+    "total_internships": 1,
+    "is_hiring": true,
+    "rating": 4.0,
+    "created_at": "2025-12-12T17:45:44.615122",
+    "updated_at": "2025-12-12T17:45:44.615122"
+  },
+  {
+    "company_id": "COMP_044",
+    "name": "Walmart",
+    "sector": "Retail/E-commerce",
+    "description": "At Walmart, we leverage cutting-edge technology in Big Data and Cloud Computing to create products that impact millions of users worldwide. Our team of experts drives innovation across the tech landscape.",
+    "headquarters": "Hyderabad",
+    "founded_year": 2015,
+    "employee_count": "5000+",
+    "website": "https://www.walmart.com",
+    "logo_url": "https://ui-avatars.com/api/?name=Walmart&size=200&background=random&bold=true",
+    "locations": [
+      "Bangalore"
+    ],
+    "specializations": [
+      "Big Data",
+      "Cloud Computing",
+      "AI/ML"
+    ],
+    "culture": [],
+    "benefits": [
+      "Learning & Development Budget",
+      "Team Outings",
+      "Remote Work Options",
+      "Flexible Work Hours"
+    ],
+    "internship_ids": [
+      "INT_044"
+    ],
+    "total_internships": 1,
+    "is_hiring": true,
+    "rating": 4.4,
+    "created_at": "2025-12-12T17:45:44.615122",
+    "updated_at": "2025-12-12T17:45:44.615122"
+  },
+  {
+    "company_id": "COMP_045",
+    "name": "Walmart Labs",
+    "sector": "Retail",
+    "description": "Walmart Labs is transforming retail with a focus on Supply Chain, Omnichannel Retail. We deliver exceptional shopping experiences across all channels.",
+    "headquarters": "Gurgaon",
+    "founded_year": 2018,
+    "employee_count": "1000-5000",
+    "website": "https://www.walmart.com",
+    "logo_url": "https://ui-avatars.com/api/?name=Walmart+Labs&size=200&background=random&bold=true",
+    "locations": [
+      "Bangalore"
+    ],
+    "specializations": [
+      "Supply Chain",
+      "Omnichannel Retail",
+      "E-commerce"
+    ],
+    "culture": [
+      "Dynamic",
+      "Efficient",
+      "Service-oriented"
+    ],
+    "benefits": [
+      "Employee Discounts",
+      "Career Development",
+      "Health Insurance",
+      "Flexible Scheduling"
+    ],
+    "internship_ids": [
+      "INT_009"
+    ],
+    "total_internships": 1,
+    "is_hiring": true,
+    "rating": 3.7,
+    "created_at": "2025-12-12T17:45:44.616120",
+    "updated_at": "2025-12-12T17:45:44.616120"
+  },
+  {
+    "company_id": "COMP_046",
+    "name": "Yellow.ai",
+    "sector": "AI/Automation",
+    "description": "At Yellow.ai, we leverage cutting-edge technology in Big Data and AI/ML to create products that impact millions of users worldwide. Our team of experts drives innovation across the tech landscape.",
+    "headquarters": ", India",
+    "founded_year": 2011,
+    "employee_count": "5000+",
+    "website": "https://www.yellow.ai.com",
+    "logo_url": "https://ui-avatars.com/api/?name=Yellow.ai&size=200&background=random&bold=true",
+    "locations": [
+      "Bangalore"
+    ],
+    "specializations": [
+      "Big Data",
+      "AI/ML",
+      "Software Development"
+    ],
+    "culture": [],
+    "benefits": [
+      "Remote Work Options",
+      "Team Outings",
+      "Learning & Development Budget",
+      "Health Insurance"
+    ],
+    "internship_ids": [
+      "INT_039"
+    ],
+    "total_internships": 1,
+    "is_hiring": true,
+    "rating": 4.8,
+    "created_at": "2025-12-12T17:45:44.616120",
+    "updated_at": "2025-12-12T17:45:44.616120"
+  },
+  {
+    "company_id": "COMP_047",
+    "name": "Zerodha",
+    "sector": "Fintech",
+    "description": "Zerodha is a leading technology company specializing in Software Development, Cloud Computing. We're committed to building innovative solutions that transform how businesses operate in the digital age.",
+    "headquarters": "Pune",
+    "founded_year": 2014,
+    "employee_count": "100-500",
+    "website": "https://www.zerodha.com",
+    "logo_url": "https://ui-avatars.com/api/?name=Zerodha&size=200&background=random&bold=true",
+    "locations": [
+      "Bangalore"
+    ],
+    "specializations": [
+      "Software Development",
+      "Cloud Computing",
+      "Cybersecurity"
+    ],
+    "culture": [],
+    "benefits": [
+      "Health Insurance",
+      "Flexible Work Hours",
+      "Team Outings",
+      "Learning & Development Budget"
+    ],
+    "internship_ids": [
+      "INT_017"
+    ],
+    "total_internships": 1,
+    "is_hiring": false,
+    "rating": 4.6,
+    "created_at": "2025-12-12T17:45:44.616120",
+    "updated_at": "2025-12-12T17:45:44.616120"
+  },
+  {
+    "company_id": "COMP_048",
+    "name": "Zoho",
+    "sector": "SaaS",
+    "description": "At Zoho, we leverage cutting-edge technology in Software Development and Cloud Computing to create products that impact millions of users worldwide. Our team of experts drives innovation across the tech landscape.",
+    "headquarters": "Mumbai",
+    "founded_year": 1995,
+    "employee_count": "100-500",
+    "website": "https://www.zoho.com",
+    "logo_url": "https://ui-avatars.com/api/?name=Zoho&size=200&background=random&bold=true",
+    "locations": [
+      "Chennai"
+    ],
+    "specializations": [
+      "Software Development",
+      "Cloud Computing",
+      "Big Data"
+    ],
+    "culture": [],
+    "benefits": [
+      "Team Outings",
+      "Flexible Work Hours",
+      "Learning & Development Budget",
+      "Remote Work Options"
+    ],
+    "internship_ids": [
+      "INT_024"
+    ],
+    "total_internships": 1,
+    "is_hiring": true,
+    "rating": 3.7,
+    "created_at": "2025-12-12T17:45:44.616120",
+    "updated_at": "2025-12-12T17:45:44.616120"
+  },
+  {
+    "company_id": "COMP_049",
+    "name": "Zomato",
+    "sector": "Food Tech",
+    "description": "At Zomato, we leverage cutting-edge technology in AI/ML and Cloud Computing to create products that impact millions of users worldwide. Our team of experts drives innovation across the tech landscape.",
+    "headquarters": "Gurgaon, India",
+    "founded_year": 2014,
+    "employee_count": "1000-5000",
+    "website": "https://www.zomato.com",
+    "logo_url": "https://ui-avatars.com/api/?name=Zomato&size=200&background=random&bold=true",
+    "locations": [
+      "Gurgaon"
+    ],
+    "specializations": [
+      "AI/ML",
+      "Cloud Computing",
+      "Big Data"
+    ],
+    "culture": [],
+    "benefits": [
+      "Team Outings",
+      "Learning & Development Budget",
+      "Flexible Work Hours",
+      "Health Insurance"
+    ],
+    "internship_ids": [
+      "INT_008"
+    ],
+    "total_internships": 1,
+    "is_hiring": true,
+    "rating": 4.4,
+    "created_at": "2025-12-12T17:45:44.616120",
+    "updated_at": "2025-12-12T17:45:44.616120"
+  },
+  {
+    "company_id": "COMP_050",
+    "name": "Zynga",
+    "sector": "Gaming",
+    "description": "Zynga is a leading technology company specializing in Cloud Computing, Software Development. We're committed to building innovative solutions that transform how businesses operate in the digital age.",
+    "headquarters": "Mumbai",
+    "founded_year": 2014,
+    "employee_count": "500-1000",
+    "website": "https://www.zynga.com",
+    "logo_url": "https://ui-avatars.com/api/?name=Zynga&size=200&background=random&bold=true",
+    "locations": [
+      "Bangalore"
+    ],
+    "specializations": [
+      "Cloud Computing",
+      "Software Development",
+      "AI/ML"
+    ],
+    "culture": [],
+    "benefits": [
+      "Remote Work Options",
+      "Health Insurance",
+      "Flexible Work Hours",
+      "Team Outings"
+    ],
+    "internship_ids": [
+      "INT_022"
+    ],
+    "total_internships": 1,
+    "is_hiring": true,
+    "rating": 3.7,
+    "created_at": "2025-12-12T17:45:44.616120",
+    "updated_at": "2025-12-12T17:45:44.616120"
+  }
+]
