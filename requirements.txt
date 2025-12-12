@@ -20,7 +20,6 @@ cryptography==46.0.3
 
 # Image Processing (for resume parsing)
 Pillow==11.0.0
-paddleocr==3.3.2
 
 # ML & Text Processing
 rapidfuzz==3.10.1

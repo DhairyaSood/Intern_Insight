@@ -10,24 +10,11 @@ import tempfile
 import os
 import json
 
-try:
-    from paddleocr import PaddleOCR
-    from PIL import Image
-    
-    # Initialize PaddleOCR (cached globally for performance)
-    ocr = PaddleOCR(use_angle_cls=True, lang='en', use_gpu=False, show_log=False)
-    OCR_AVAILABLE = True
-    app_logger.info("✅ PaddleOCR initialized successfully")
-except ImportError as ie:
-    OCR_AVAILABLE = False
-    ocr = None
-    app_logger.error(f"❌ PaddleOCR import failed: {ie}")
-except Exception as e:
-    OCR_AVAILABLE = False
-    ocr = None
-    app_logger.error(f"❌ PaddleOCR initialization failed: {e}")
-    import traceback
-    app_logger.error(traceback.format_exc())
+# OCR.space Free API Configuration
+OCR_SPACE_API_KEY = "K83826061188957"
+OCR_AVAILABLE = True
+OCR_BACKEND = 'ocrspace'
+app_logger.info("✅ Using OCR.space cloud API")
 
 try:
     import requests
@@ -112,22 +99,50 @@ def parse_resume():
 
 
 def extract_text_from_image(image_path):
-    """Extract text from image using PaddleOCR"""
+    """Extract text from image using OCR.space cloud API"""
     try:
-        # Use PaddleOCR to read text from image
-        result = ocr.ocr(image_path, cls=True)
+        import requests
         
-        # Combine all detected text
-        text_lines = []
-        if result and result[0]:
-            for line in result[0]:
-                if line and len(line) > 1:
-                    text_lines.append(line[1][0])  # line[1][0] contains the text
+        url = 'https://api.ocr.space/parse/image'
         
-        text = ' '.join(text_lines)
-        return text
+        with open(image_path, 'rb') as f:
+            response = requests.post(
+                url,
+                files={'file': f},
+                data={
+                    'apikey': OCR_SPACE_API_KEY,
+                    'language': 'eng',
+                    'isOverlayRequired': False,
+                    'detectOrientation': True,
+                    'scale': True,
+                    'OCREngine': 2  # Engine 2 is more accurate
+                },
+                timeout=60
+            )
+        
+        if response.status_code == 200:
+            result = response.json()
+            
+            if result.get('IsErroredOnProcessing'):
+                error_msg = result.get('ErrorMessage', ['Unknown error'])[0]
+                app_logger.error(f"OCR.space error: {error_msg}")
+                return ""
+            
+            if result.get('ParsedResults'):
+                text = result['ParsedResults'][0]['ParsedText']
+                app_logger.info(f"✅ OCR.space extracted {len(text)} characters")
+                return text
+            else:
+                app_logger.warning("No parsed results from OCR.space")
+                return ""
+        else:
+            app_logger.error(f"OCR.space API error: {response.status_code} - {response.text}")
+            return ""
+        
     except Exception as e:
         app_logger.error(f"OCR extraction failed: {e}")
+        import traceback
+        app_logger.error(traceback.format_exc())
         return ""
 
 
