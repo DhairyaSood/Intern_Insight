@@ -296,7 +296,7 @@ const CompaniesPage = () => {
                 type="checkbox"
                 checked={hiringOnly}
                 onChange={(e) => setHiringOnly(e.target.checked)}
-                className="w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
+                className="w-4 h-4 text-primary-600 bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 rounded focus:ring-2 focus:ring-primary-500 transition-colors cursor-pointer"
               />
               <span className="text-sm text-gray-700 dark:text-gray-300">
                 Hiring Now

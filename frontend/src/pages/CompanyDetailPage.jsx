@@ -60,12 +60,22 @@ const CompanyDetailPage = () => {
         response = await getCompanyByName(decodeURIComponent(companyId));
       }
       
-      console.log('Company Detail Response:', response);
-      console.log('Company data:', response.data);
-      console.log('Internships:', response.data?.internships || []);
+      console.log('=== COMPANY DETAIL DEBUG ===');
+      console.log('Full API Response:', response);
+      console.log('Response data:', response.data);
+      console.log('Company object:', response.data);
+      console.log('Internship IDs from company:', response.data?.internship_ids);
+      console.log('Internships array:', response.data?.internships);
+      console.log('Internships length:', response.data?.internships?.length || 0);
+      if (response.data?.internships?.length > 0) {
+        console.log('First internship:', response.data.internships[0]);
+      }
+      console.log('=== END DEBUG ===');
       
       setCompany(response.data);
-      setInternships(response.data?.internships || []);
+      const internshipsData = response.data?.internships || [];
+      console.log('Setting internships state to:', internshipsData);
+      setInternships(internshipsData);
     } catch (err) {
       console.error('Error fetching company details:', err);
       setError(err.response?.data?.message || 'Failed to load company details');
@@ -302,6 +312,13 @@ const CompanyDetailPage = () => {
                 <Briefcase className="h-6 w-6 text-primary-600" />
                 Open Internships ({internships.length})
               </h2>
+
+              {(() => {
+                console.log('=== RENDER TIME ===');
+                console.log('Internships state:', internships);
+                console.log('Internships count:', internships.length);
+                return null;
+              })()}
 
               {internships.length === 0 ? (
                 <div className="text-center py-12">
