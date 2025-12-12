@@ -30,6 +30,8 @@ geographiclib==2.1
 # Data Processing
 beautifulsoup4==4.12.3
 soupsieve==2.5
+rapidFuzz==3.10.1
+PyPDF2==3.0.1
 
 # Environment & Configuration
 python-dotenv==1.0.1

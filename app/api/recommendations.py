@@ -10,7 +10,7 @@ from app.utils.logger import app_logger
 from app.utils.response_helpers import success_response, error_response
 try:
     # Prefer the improved ML logic
-    from backend.ml_model import get_recommendations as ml_get_recommendations
+    from app.core.ml_model import get_recommendations as ml_get_recommendations
 except Exception as _e:
     ml_get_recommendations = None
     app_logger.error(f"Failed to import ML recommender: {__name__}: {_e}")

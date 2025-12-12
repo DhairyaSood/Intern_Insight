@@ -12,11 +12,11 @@ import os
 import sys
 
 try:
-    from backend.city_coords import get_all_display_cities_sorted, CITY_COORDINATES  # type: ignore
+    from app.core.city_coords import get_all_display_cities_sorted, CITY_COORDINATES  # type: ignore
 except Exception:
     # Defensive fallback if module shape changes
     try:
-        from backend.city_coords import CITY_COORDINATES  # type: ignore
+        from app.core.city_coords import CITY_COORDINATES  # type: ignore
     except Exception:
         CITY_COORDINATES = None  # type: ignore
     get_all_display_cities_sorted = None  # type: ignore
@@ -34,7 +34,7 @@ def list_cities():
         if get_all_display_cities_sorted is None or CITY_COORDINATES is None:
             try:
                 import importlib
-                mod = importlib.import_module('backend.city_coords')
+                mod = importlib.import_module('app.core.city_coords')
                 get_all_display_cities_sorted = getattr(mod, 'get_all_display_cities_sorted', None)
                 CITY_COORDINATES = getattr(mod, 'CITY_COORDINATES', None)
             except Exception:
@@ -46,7 +46,7 @@ def list_cities():
                     if proj not in sys.path:
                         sys.path.insert(0, proj)
                     import importlib as _il
-                    mod = _il.import_module('backend.city_coords')
+                    mod = _il.import_module('app.core.city_coords')
                     get_all_display_cities_sorted = getattr(mod, 'get_all_display_cities_sorted', None)
                     CITY_COORDINATES = getattr(mod, 'CITY_COORDINATES', None)
                 except Exception:

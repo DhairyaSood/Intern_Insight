@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 import math
 
-from backend.distance_matrix import get_distance, normalize_city_name
-from backend.city_coords import CITY_COORDINATES
+from app.core.distance_matrix import get_distance, normalize_city_name
+from app.core.city_coords import CITY_COORDINATES
 
 
 def test_known_city_coords_present():

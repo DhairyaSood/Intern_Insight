@@ -1,4 +1,4 @@
-# backend/ml_model.py
+# app/core/ml_model.py
 from rapidfuzz import fuzz
 import difflib
 import math
@@ -9,7 +9,7 @@ try:
     from .distance_matrix import get_distance, normalize_city_name
 except Exception:
     try:
-        from distance_matrix import get_distance, normalize_city_name
+        from app.core.distance_matrix import get_distance, normalize_city_name
     except Exception:
         # If distance_matrix missing, provide safe fallbacks
         def normalize_city_name(x):
@@ -86,7 +86,7 @@ def find_nearest_city(input_city: str, cities: list[dict]):
 def _load_synonyms():
     """Load skill synonyms strictly from MongoDB (Atlas). No JSON fallback."""
     try:
-        from backend.db import load_data
+        from app.core.database import load_data
         syn_rows = load_data('skills_synonyms') or []
         mapping = {}
         for row in syn_rows:

@@ -1,10 +1,10 @@
-# backend/distance_matrix.py
+# app/core/distance_matrix.py
 """
 Distance calculation using a static hardcoded city coordinates dictionary.
-This module imports CITY_COORDINATES from backend.city_coords.
+This module imports CITY_COORDINATES from app.core.city_coords.
 """
 
-from backend.city_coords import CITY_COORDINATES
+from app.core.city_coords import CITY_COORDINATES
 
 from math import radians, sin, cos, sqrt, atan2
 

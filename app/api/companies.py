@@ -5,7 +5,7 @@ Provides company information and their associated internships
 
 from flask import Blueprint, request, jsonify
 from app.core.database import DatabaseManager
-from app.utils.logger import log, log_error, log_warning
+from app.utils.logger import app_logger
 from app.utils.response_helpers import success_response, error_response
 from app.utils.error_handler import handle_errors
 
@@ -72,7 +72,7 @@ def get_companies():
         else:
             companies = companies[offset:]
         
-        log(f"[API] Retrieved {len(companies)} companies (total: {total}, filters: {filter_query})")
+        app_logger.info(f"[API] Retrieved {len(companies)} companies (total: {total}, filters: {filter_query})")
         
         return success_response(
             data={
@@ -85,7 +85,7 @@ def get_companies():
         )
     
     except Exception as e:
-        log_error(f"[API] Error fetching companies: {e}")
+        app_logger.error(f"[API] Error fetching companies: {e}")
         return error_response(str(e), 500)
 
 
@@ -117,7 +117,7 @@ def get_company(company_id):
         # Add internships to company data
         company['internships'] = internships
         
-        log(f"[API] Retrieved company: {company.get('name')} with {len(internships)} internships")
+        app_logger.info(f"[API] Retrieved company: {company.get('name')} with {len(internships)} internships")
         
         return success_response(
             data=company,
@@ -125,7 +125,7 @@ def get_company(company_id):
         )
     
     except Exception as e:
-        log_error(f"[API] Error fetching company {company_id}: {e}")
+        app_logger.error(f"[API] Error fetching company {company_id}: {e}")
         return error_response(str(e), 500)
 
 
@@ -159,7 +159,7 @@ def get_company_by_name(company_name):
         # Add internships to company data
         company['internships'] = internships
         
-        log(f"[API] Retrieved company by name: {company.get('name')} with {len(internships)} internships")
+        app_logger.info(f"[API] Retrieved company by name: {company.get('name')} with {len(internships)} internships")
         
         return success_response(
             data=company,
@@ -167,7 +167,7 @@ def get_company_by_name(company_name):
         )
     
     except Exception as e:
-        log_error(f"[API] Error fetching company by name '{company_name}': {e}")
+        app_logger.error(f"[API] Error fetching company by name '{company_name}': {e}")
         return error_response(str(e), 500)
 
 
@@ -192,7 +192,7 @@ def get_sectors():
             for sector, count in sorted(sector_counts.items(), key=lambda x: -x[1])
         ]
         
-        log(f"[API] Retrieved {len(sectors)} unique sectors")
+        app_logger.info(f"[API] Retrieved {len(sectors)} unique sectors")
         
         return success_response(
             data=sectors,
@@ -200,7 +200,7 @@ def get_sectors():
         )
     
     except Exception as e:
-        log_error(f"[API] Error fetching sectors: {e}")
+        app_logger.error(f"[API] Error fetching sectors: {e}")
         return error_response(str(e), 500)
 
 
@@ -233,7 +233,7 @@ def get_company_stats():
             'sector_distribution': sectors
         }
         
-        log(f"[API] Retrieved company statistics")
+        app_logger.info(f"[API] Retrieved company statistics")
         
         return success_response(
             data=stats,
@@ -241,5 +241,5 @@ def get_company_stats():
         )
     
     except Exception as e:
-        log_error(f"[API] Error fetching company stats: {e}")
+        app_logger.error(f"[API] Error fetching company stats: {e}")
         return error_response(str(e), 500)

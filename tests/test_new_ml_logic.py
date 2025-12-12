@@ -1,4 +1,4 @@
-from backend.ml_model import get_recommendations
+from app.core.ml_model import get_recommendations
 # sample candidate
 candidate = {
     "skills_possessed": ["python", "data analysis", "Excel"],
