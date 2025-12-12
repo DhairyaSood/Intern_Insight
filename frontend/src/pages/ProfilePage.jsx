@@ -6,7 +6,7 @@ import SkillsInput from '../components/Profile/SkillsInput';
 import CountryCodeSelector, { detectCountryFromPhone } from '../components/Profile/CountryCodeSelector';
 import LoadingSpinner from '../components/Common/LoadingSpinner';
 import ErrorMessage from '../components/Common/ErrorMessage';
-import { User, Mail, MapPin, Briefcase, GraduationCap, Save, Upload as UploadIcon } from 'lucide-react';
+import { User, Mail, MapPin, Briefcase, GraduationCap, Save, Upload as UploadIcon, CheckCircle2, Clock, Award, Target } from 'lucide-react';
 
 const ProfilePage = () => {
   const { user } = useAuthStore();
@@ -25,6 +25,8 @@ const ProfilePage = () => {
     education: '',
     experience: '',
     skills: [],
+    field_of_study: '',
+    sector_interests: [],
   });
 
   // Load existing profile
@@ -67,6 +69,8 @@ const ProfilePage = () => {
             education: profile.education_level || profile.education || '',
             experience: profile.experience || '',
             skills: profile.skills_possessed || profile.skills || [],
+            field_of_study: profile.field_of_study || '',
+            sector_interests: profile.sector_interests || [],
           });
           
           // Auto-detect country from saved phone number
@@ -112,6 +116,28 @@ const ProfilePage = () => {
     setSuccess(false);
   };
 
+  const handleSectorInterestsChange = (newInterests) => {
+    setFormData(prev => ({ ...prev, sector_interests: newInterests }));
+    setSuccess(false);
+  };
+
+  // Calculate profile completion percentage
+  const calculateCompletion = () => {
+    const fields = [
+      formData.name,
+      formData.email,
+      formData.phone,
+      formData.location,
+      formData.education,
+      formData.experience,
+      formData.skills.length > 0,
+      formData.field_of_study,
+      formData.sector_interests.length > 0,
+    ];
+    const filledFields = fields.filter(Boolean).length;
+    return Math.round((filledFields / fields.length) * 100);
+  };
+
   const handleResumeDataExtracted = (data) => {
     // Extract phone without country code for cleaner input
     let phoneNumber = data.phone || '';
@@ -132,6 +158,8 @@ const ProfilePage = () => {
       education: data.education || prev.education,
       experience: data.experience || prev.experience,
       skills: data.skills && data.skills.length > 0 ? data.skills : prev.skills,
+      field_of_study: data.field_of_study || prev.field_of_study,
+      sector_interests: data.sector_interests && data.sector_interests.length > 0 ? data.sector_interests : prev.sector_interests,
     }));
     
     // Auto-detect and set country from extracted phone number
@@ -181,7 +209,7 @@ const ProfilePage = () => {
         education_level: formData.education.trim(),
         experience: formData.experience.trim(),
         skills_possessed: formData.skills,
-        field_of_study: formData.field_of_study || '',
+        field_of_study: formData.field_of_study.trim() || '',
         sector_interests: formData.sector_interests || []
       };
 
@@ -219,45 +247,42 @@ const ProfilePage = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
-        <LoadingSpinner size="lg" text="Loading profile..." />
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8">
+        <div className="container-custom max-w-7xl">
+          <LoadingSpinner size="lg" text="Loading profile..." />
+        </div>
       </div>
     );
   }
 
+  const completionPercentage = calculateCompletion();
+
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8">
-      <div className="container-custom max-w-4xl">
-        <div className="mb-6">
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
-            My Profile
-          </h1>
-          <p className="text-gray-600 dark:text-gray-400">
-            Complete your profile to get personalized internship recommendations
-          </p>
+      <div className="container-custom max-w-7xl">
+        {/* Header with Resume Upload */}
+        <div className="mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
+              My Profile
+            </h1>
+            <p className="text-gray-600 dark:text-gray-400">
+              Complete your profile to get personalized internship recommendations
+            </p>
+          </div>
+          {!showResumeUpload && (
+            <button
+              type="button"
+              onClick={() => setShowResumeUpload(true)}
+              className="btn-primary whitespace-nowrap"
+            >
+              Upload Resume
+            </button>
+          )}
         </div>
 
-        {!showResumeUpload ? (
-          <div className="card mb-6 bg-primary-50 dark:bg-primary-900/20 border-primary-200 dark:border-primary-800">
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-1">
-                  Quick Fill with Resume
-                </h3>
-                <p className="text-sm text-gray-600 dark:text-gray-400">
-                  Upload your resume to automatically fill the form below
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={() => setShowResumeUpload(true)}
-                className="btn-primary"
-              >
-                Upload Resume
-              </button>
-            </div>
-          </div>
-        ) : (
+        {/* Resume Upload Section */}
+        {showResumeUpload && (
           <div className="card mb-6">
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
@@ -275,157 +300,327 @@ const ProfilePage = () => {
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="card space-y-6">
-          {error && <ErrorMessage message={error} type="error" />}
-          {success && (
-            <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4">
-              <p className="text-green-800 dark:text-green-200 font-medium">
-                ✓ Profile saved successfully!
-              </p>
-            </div>
-          )}
+        {/* Two Column Layout */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Left Column - Form (2/3 width) */}
+          <div className="lg:col-span-2 space-y-6">
+            <form onSubmit={handleSubmit} className="space-y-6">
+              {error && <ErrorMessage message={error} type="error" />}
+              {success && (
+                <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4">
+                  <p className="text-green-800 dark:text-green-200 font-medium flex items-center gap-2">
+                    <CheckCircle2 className="h-5 w-5" />
+                    Profile saved successfully!
+                  </p>
+                </div>
+              )}
 
-          <div>
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-              <User className="h-5 w-5" />
-              Personal Information
-            </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Full Name *
-                </label>
-                <input
-                  type="text"
-                  name="name"
-                  value={formData.name}
-                  onChange={handleInputChange}
-                  placeholder="John Doe"
-                  className="input-field"
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Email *
-                </label>
-                <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
-                  <input
-                    type="email"
-                    name="email"
-                    value={formData.email}
-                    onChange={handleInputChange}
-                    placeholder="john@example.com"
-                    className="input-field pl-10"
-                    required
-                  />
+              {/* Personal Information Card */}
+              <div className="card">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+                  <User className="h-5 w-5 text-primary-600 dark:text-primary-400" />
+                  Personal Information
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Full Name <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      name="name"
+                      value={formData.name}
+                      onChange={handleInputChange}
+                      placeholder="John Doe"
+                      className="input-field"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Email <span className="text-red-500">*</span>
+                    </label>
+                    <div className="relative">
+                      <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                      <input
+                        type="email"
+                        name="email"
+                        value={formData.email}
+                        onChange={handleInputChange}
+                        placeholder="john@example.com"
+                        className="input-field pl-10"
+                        required
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Phone Number
+                    </label>
+                    <div className="flex">
+                      <CountryCodeSelector 
+                        selectedCountry={selectedCountry}
+                        onCountryChange={handleCountryChange}
+                        phoneNumber={formData.phone}
+                      />
+                      <input
+                        type="tel"
+                        name="phone"
+                        value={formData.phone}
+                        onChange={handleInputChange}
+                        placeholder="98765 43210"
+                        className="input-field rounded-l-none flex-1"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Location
+                    </label>
+                    <div className="relative">
+                      <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                      <input
+                        type="text"
+                        name="location"
+                        value={formData.location}
+                        onChange={handleInputChange}
+                        placeholder="Mumbai, Maharashtra"
+                        className="input-field pl-10"
+                      />
+                    </div>
+                  </div>
                 </div>
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Phone
-                </label>
-                <div className="flex">
-                  <CountryCodeSelector 
-                    selectedCountry={selectedCountry}
-                    onCountryChange={handleCountryChange}
-                    phoneNumber={formData.phone}
+
+              {/* Skills and Field of Study Row */}
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                {/* Skills Card */}
+                <div className="lg:col-span-2 card">
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+                    <Award className="h-5 w-5 text-primary-600 dark:text-primary-400" />
+                    Skills <span className="text-red-500">*</span>
+                  </h3>
+                  <SkillsInput
+                    skills={formData.skills}
+                    onChange={handleSkillsChange}
+                    placeholder="Type skills and press Enter (e.g., Python, React...)"
                   />
-                  <input
-                    type="tel"
-                    name="phone"
-                    value={formData.phone}
-                    onChange={handleInputChange}
-                    placeholder="98765 43210"
-                    className="input-field rounded-l-none flex-1"
-                  />
+                  <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
+                    {formData.skills.length} skill{formData.skills.length !== 1 ? 's' : ''} added
+                  </p>
                 </div>
-                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                  Country code auto-detected from your number
-                </p>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Location
-                </label>
-                <div className="relative">
-                  <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+
+                {/* Field of Study Card */}
+                <div className="card">
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+                    <GraduationCap className="h-5 w-5 text-primary-600 dark:text-primary-400" />
+                    Field of Study
+                  </h3>
                   <input
                     type="text"
-                    name="location"
-                    value={formData.location}
+                    name="field_of_study"
+                    value={formData.field_of_study}
                     onChange={handleInputChange}
-                    placeholder="Mumbai, Maharashtra"
-                    className="input-field pl-10"
+                    placeholder="e.g., Computer Science"
+                    className="input-field"
                   />
+                </div>
+              </div>
+
+              {/* Education and Sector Interests Row */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Education Card */}
+                <div className="card">
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+                    <GraduationCap className="h-5 w-5 text-primary-600 dark:text-primary-400" />
+                    Education
+                  </h3>
+                  <textarea
+                    name="education"
+                    value={formData.education}
+                    onChange={handleInputChange}
+                    placeholder="E.g., B.Tech in Computer Science&#10;XYZ University (2020-2024)&#10;CGPA: 8.5/10"
+                    rows="4"
+                    className="input-field resize-none"
+                  />
+                </div>
+
+                {/* Sector Interests Card */}
+                <div className="card">
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+                    <Target className="h-5 w-5 text-primary-600 dark:text-primary-400" />
+                    Sector Interests
+                  </h3>
+                  <SkillsInput
+                    skills={formData.sector_interests}
+                    onChange={handleSectorInterestsChange}
+                    placeholder="Type sectors (e.g., Technology, Finance...)"
+                  />
+                  <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
+                    Industries you're interested in
+                  </p>
+                </div>
+              </div>
+
+              {/* Experience Card - Full Width */}
+              <div className="card">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+                  <Briefcase className="h-5 w-5 text-primary-600 dark:text-primary-400" />
+                  Experience
+                </h3>
+                <textarea
+                  name="experience"
+                  value={formData.experience}
+                  onChange={handleInputChange}
+                  placeholder="Brief summary of your experience, projects, or achievements&#10;&#10;E.g.,&#10;Software Engineer Intern - ABC Corp (Jun 2023 - Aug 2023)&#10;- Built web applications using React and Node.js&#10;- Improved API performance by 40%"
+                  rows="6"
+                  className="input-field resize-none"
+                />
+              </div>
+
+              {/* Save Button */}
+              <div className="card">
+                <button
+                  type="submit"
+                  disabled={isSaving}
+                  className="btn-primary w-full"
+                >
+                  {isSaving ? (
+                    <>
+                      <LoadingSpinner size="sm" />
+                      <span className="ml-2">Saving...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Save className="h-4 w-4 mr-2" />
+                      Save Profile
+                    </>
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
+
+          {/* Right Column - Profile Summary Sidebar (1/3 width) */}
+          <div className="space-y-6">
+            {/* Profile Completion Card */}
+            <div className="card">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                Profile Completion
+              </h3>
+              <div className="flex items-center justify-center mb-4">
+                <div className="relative w-32 h-32">
+                  <svg className="w-32 h-32 transform -rotate-90">
+                    <circle
+                      cx="64"
+                      cy="64"
+                      r="56"
+                      stroke="currentColor"
+                      strokeWidth="8"
+                      fill="none"
+                      className="text-gray-200 dark:text-gray-700"
+                    />
+                    <circle
+                      cx="64"
+                      cy="64"
+                      r="56"
+                      stroke="currentColor"
+                      strokeWidth="8"
+                      fill="none"
+                      strokeDasharray={`${2 * Math.PI * 56}`}
+                      strokeDashoffset={`${2 * Math.PI * 56 * (1 - completionPercentage / 100)}`}
+                      className="text-primary-600 dark:text-primary-400 transition-all duration-500"
+                      strokeLinecap="round"
+                    />
+                  </svg>
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <span className="text-3xl font-bold text-gray-900 dark:text-white">
+                      {completionPercentage}%
+                    </span>
+                  </div>
+                </div>
+              </div>
+              <p className="text-sm text-center text-gray-600 dark:text-gray-400">
+                {completionPercentage === 100 
+                  ? '🎉 Profile is complete!' 
+                  : `Complete your profile to get better recommendations`}
+              </p>
+            </div>
+
+            {/* Profile Stats Card */}
+            <div className="card">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                Profile Stats
+              </h3>
+              <div className="space-y-3">
+                <div className="flex items-center justify-between py-2 border-b border-gray-200 dark:border-gray-700">
+                  <span className="text-sm text-gray-600 dark:text-gray-400 flex items-center gap-2">
+                    <Award className="h-4 w-4" />
+                    Total Skills
+                  </span>
+                  <span className="font-semibold text-gray-900 dark:text-white">
+                    {formData.skills.length}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between py-2 border-b border-gray-200 dark:border-gray-700">
+                  <span className="text-sm text-gray-600 dark:text-gray-400 flex items-center gap-2">
+                    <MapPin className="h-4 w-4" />
+                    Location
+                  </span>
+                  <span className="font-semibold text-gray-900 dark:text-white text-right text-sm">
+                    {formData.location || 'Not set'}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between py-2 border-b border-gray-200 dark:border-gray-700">
+                  <span className="text-sm text-gray-600 dark:text-gray-400 flex items-center gap-2">
+                    <GraduationCap className="h-4 w-4" />
+                    Education
+                  </span>
+                  <span className="font-semibold text-gray-900 dark:text-white text-right text-sm">
+                    {formData.education ? 'Added' : 'Not set'}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between py-2">
+                  <span className="text-sm text-gray-600 dark:text-gray-400 flex items-center gap-2">
+                    <Target className="h-4 w-4" />
+                    Interests
+                  </span>
+                  <span className="font-semibold text-gray-900 dark:text-white">
+                    {formData.sector_interests.length}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Profile Info Card */}
+            <div className="card">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+                <User className="h-5 w-5" />
+                Quick Info
+              </h3>
+              <div className="space-y-3">
+                <div>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Username</p>
+                  <p className="text-sm font-medium text-gray-900 dark:text-white">
+                    {user?.username || 'N/A'}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Candidate ID</p>
+                  <p className="text-sm font-mono text-gray-900 dark:text-white">
+                    {user?.candidate_id || 'Not assigned'}
+                  </p>
+                </div>
+                <div className="pt-3 border-t border-gray-200 dark:border-gray-700">
+                  <p className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1">
+                    <Clock className="h-3 w-3" />
+                    Last updated: {success ? 'Just now' : 'Not saved yet'}
+                  </p>
                 </div>
               </div>
             </div>
           </div>
-
-          <div>
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-              <Briefcase className="h-5 w-5" />
-              Skills *
-            </h3>
-            <SkillsInput
-              skills={formData.skills}
-              onChange={handleSkillsChange}
-              placeholder="Type skills and press Enter (e.g., Python, JavaScript, React...)"
-            />
-          </div>
-
-          <div>
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-              <GraduationCap className="h-5 w-5" />
-              Education
-            </h3>
-            <textarea
-              name="education"
-              value={formData.education}
-              onChange={handleInputChange}
-              placeholder="E.g., B.Tech in Computer Science, XYZ University (2020-2024)"
-              rows="3"
-              className="input-field resize-none"
-            />
-          </div>
-
-          <div>
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-              <Briefcase className="h-5 w-5" />
-              Experience
-            </h3>
-            <textarea
-              name="experience"
-              value={formData.experience}
-              onChange={handleInputChange}
-              placeholder="Brief summary of your experience, projects, or achievements"
-              rows="4"
-              className="input-field resize-none"
-            />
-          </div>
-
-          <div className="flex gap-4">
-            <button
-              type="submit"
-              disabled={isSaving}
-              className="btn-primary flex-1"
-            >
-              {isSaving ? (
-                <>
-                  <LoadingSpinner size="sm" />
-                  <span className="ml-2">Saving...</span>
-                </>
-              ) : (
-                <>
-                  <Save className="h-4 w-4 mr-2" />
-                  Save Profile
-                </>
-              )}
-            </button>
-          </div>
-        </form>
+        </div>
       </div>
     </div>
   );
