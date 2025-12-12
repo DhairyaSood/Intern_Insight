@@ -115,8 +115,8 @@ def extract_text_from_image(image_path):
         text = ' '.join(text_lines)
         return text
     except Exception as e:
-        app_logger.error(f\"OCR extraction failed: {e}\")
-        return \"\"
+        app_logger.error(f"OCR extraction failed: {e}")
+        return ""
 
 
 def extract_with_ai(ocr_text):
