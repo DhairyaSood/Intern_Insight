@@ -285,9 +285,9 @@ const ProfilePage = () => {
       
       setSuccess(true);
       
-      // Navigate to home page after 1.5 seconds
+      // Navigate to internships page after 1.5 seconds
       setTimeout(() => {
-        navigate('/');
+        navigate('/internships');
       }, 1500);
     } catch (err) {
       console.error('Failed to save profile:', err);

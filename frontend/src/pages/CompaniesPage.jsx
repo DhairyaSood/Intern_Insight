@@ -39,8 +39,12 @@ const CompaniesPage = () => {
         getCompanyStats()
       ]);
 
-      setCompanies(companiesRes.data.companies || []);
-      setSectors(sectorsRes.data || []);
+      console.log('Companies API Response:', companiesRes);
+      console.log('Sectors API Response:', sectorsRes);
+      console.log('Stats API Response:', statsRes);
+
+      setCompanies(companiesRes.data?.companies || companiesRes.data || []);
+      setSectors(sectorsRes.data?.sectors || sectorsRes.data || []);
       setStats(statsRes.data || null);
     } catch (err) {
       console.error('Error fetching companies:', err);
@@ -51,6 +55,11 @@ const CompaniesPage = () => {
   };
 
   const filterAndSortCompanies = () => {
+    if (!companies || companies.length === 0) {
+      setFilteredCompanies([]);
+      return;
+    }
+
     let filtered = [...companies];
 
     // Apply search filter
@@ -226,11 +235,15 @@ const CompaniesPage = () => {
                 className="input-field rounded-lg"
               >
                 <option value="">All Sectors</option>
-                {sectors.map((sector) => (
-                  <option key={sector.sector} value={sector.sector}>
-                    {sector.sector} ({sector.count})
-                  </option>
-                ))}
+                {sectors && sectors.length > 0 && sectors.map((sector, index) => {
+                  const sectorName = typeof sector === 'string' ? sector : sector.sector;
+                  const sectorCount = typeof sector === 'object' ? sector.count : '';
+                  return (
+                    <option key={sectorName || index} value={sectorName}>
+                      {sectorName} {sectorCount ? `(${sectorCount})` : ''}
+                    </option>
+                  );
+                })}
               </select>
             </div>
 
@@ -309,8 +322,8 @@ const CompaniesPage = () => {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredCompanies.map((company) => (
-              <CompanyCard key={company.company_id} company={company} />
+            {filteredCompanies.map((company, index) => (
+              <CompanyCard key={company.company_id || company._id || index} company={company} />
             ))}
           </div>
         )}

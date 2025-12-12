@@ -560,31 +560,64 @@ const InternshipDetailPage = () => {
                   Similar Opportunities
                 </h3>
                 <div className="space-y-3 max-h-[480px] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-gray-400 dark:scrollbar-thumb-gray-600 scrollbar-track-gray-200 dark:scrollbar-track-gray-800">
-                  {similarInternships.map((similar, idx) => (
+                  {similarInternships.map((similar, idx) => {
+                    const similarId = similar.internship_id || similar._id;
+                    const isSimilarBookmarked = user?.username ? (() => {
+                      const bookmarkKey = `bookmarkedInternships_${user.username}`;
+                      const bookmarkedIds = JSON.parse(localStorage.getItem(bookmarkKey) || '[]');
+                      return bookmarkedIds.includes(similarId);
+                    })() : false;
+                    
+                    return (
                     <div
                       key={idx}
-                      onClick={() => handleViewSimilar(similar)}
-                      className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer transition-colors border border-gray-200 dark:border-gray-700"
+                      className="relative p-3 bg-gray-50 dark:bg-gray-800 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors border border-gray-200 dark:border-gray-700"
                     >
-                      <h4 className="font-semibold text-gray-900 dark:text-white text-sm mb-1">
-                        {similar.title}
-                      </h4>
-                      <p className="text-xs text-gray-600 dark:text-gray-400 mb-2">
-                        {similar.organization}
-                      </p>
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1">
-                          <MapPin className="h-3 w-3" />
-                          {similar.location}
-                        </span>
-                        {similar.match_score && (
-                          <span className="text-xs font-semibold text-primary-600 dark:text-primary-400">
-                            {Math.round(similar.match_score)}% match
+                      {/* Bookmark button for similar internship */}
+                      {user?.username && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            const bookmarkKey = `bookmarkedInternships_${user.username}`;
+                            const bookmarkedIds = JSON.parse(localStorage.getItem(bookmarkKey) || '[]');
+                            const updated = bookmarkedIds.includes(similarId)
+                              ? bookmarkedIds.filter(id => id !== similarId)
+                              : [...bookmarkedIds, similarId];
+                            localStorage.setItem(bookmarkKey, JSON.stringify(updated));
+                            // Force re-render by updating state
+                            setInternship({...internship});
+                          }}
+                          className={`absolute top-2 right-2 p-1.5 rounded-lg transition-all z-10 ${
+                            isSimilarBookmarked
+                              ? 'bg-primary-500 text-white hover:bg-primary-600'
+                              : 'bg-white dark:bg-gray-700 text-gray-400 hover:text-primary-500 border border-gray-200 dark:border-gray-600'
+                          }`}
+                          title={isSimilarBookmarked ? 'Remove bookmark' : 'Bookmark'}
+                        >
+                          <Bookmark className={`h-3 w-3 ${isSimilarBookmarked ? 'fill-current' : ''}`} />
+                        </button>
+                      )}
+                      <div onClick={() => handleViewSimilar(similar)} className="cursor-pointer">
+                        <h4 className="font-semibold text-gray-900 dark:text-white text-sm mb-1 pr-8">
+                          {similar.title}
+                        </h4>
+                        <p className="text-xs text-gray-600 dark:text-gray-400 mb-2">
+                          {similar.organization}
+                        </p>
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1">
+                            <MapPin className="h-3 w-3" />
+                            {similar.location}
                           </span>
-                        )}
+                          {similar.match_score && (
+                            <span className="text-xs font-semibold text-primary-600 dark:text-primary-400">
+                              {Math.round(similar.match_score)}% match
+                            </span>
+                          )}
+                        </div>
                       </div>
                     </div>
-                  ))}
+                  )})}
                 </div>
               </div>
             )}

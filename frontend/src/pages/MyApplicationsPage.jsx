@@ -120,17 +120,13 @@ const MyApplicationsPage = () => {
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {appliedInternships.map((internship) => (
-                <div key={internship.internship_id || internship._id} className="relative">
-                  <InternshipCard 
-                    internship={internship}
-                    isBookmarked={bookmarkedIds.includes(internship.internship_id || internship._id)}
-                    onToggleBookmark={toggleBookmark}
-                  />
-                  <div className="absolute top-14 right-4 bg-green-500 text-white px-3 py-1 rounded-full text-xs font-semibold shadow-lg flex items-center gap-1 z-10">
-                    <CheckCircle className="h-3 w-3" />
-                    Applied
-                  </div>
-                </div>
+                <InternshipCard 
+                  key={internship.internship_id || internship._id}
+                  internship={internship}
+                  isBookmarked={bookmarkedIds.includes(internship.internship_id || internship._id)}
+                  onToggleBookmark={toggleBookmark}
+                  hasApplied={true}
+                />
               ))}
             </div>
           </>

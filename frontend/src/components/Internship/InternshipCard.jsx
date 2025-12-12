@@ -1,8 +1,8 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { MapPin, Sparkles, Bookmark } from 'lucide-react';
+import { MapPin, Sparkles, Bookmark, CheckCircle } from 'lucide-react';
 
-const InternshipCard = ({ internship, onShowSimilar, showMatchScore = false, isBookmarked = false, onToggleBookmark }) => {
+const InternshipCard = ({ internship, onShowSimilar, showMatchScore = false, isBookmarked = false, onToggleBookmark, hasApplied = false }) => {
   const navigate = useNavigate();
 
   const handleViewDetails = () => {
@@ -40,6 +40,13 @@ const InternshipCard = ({ internship, onShowSimilar, showMatchScore = false, isB
       {showMatchScore && (internship.match_score || internship.matchScore) && (
         <div className="absolute top-14 right-4 bg-green-500 text-white px-2 py-1 rounded-full text-xs font-semibold shadow-lg z-10">
           {Math.round(internship.match_score || internship.matchScore)}% Match
+        </div>
+      )}
+      {/* Applied Badge - Below Match Score */}
+      {hasApplied && (
+        <div className={`absolute ${showMatchScore && (internship.match_score || internship.matchScore) ? 'top-24' : 'top-14'} right-4 bg-blue-500 text-white px-2 py-1 rounded-full text-xs font-semibold shadow-lg flex items-center gap-1 z-10`}>
+          <CheckCircle className="h-3 w-3" />
+          Applied
         </div>
       )}
       <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2 pr-12 line-clamp-2 min-h-[3.5rem]">

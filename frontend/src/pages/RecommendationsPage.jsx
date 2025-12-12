@@ -261,17 +261,26 @@ const RecommendationsPage = () => {
         )}
 
         <div className="space-y-6">
-          {recommendations.map((internship) => (
-            <div key={internship.internship_id}>
+          {recommendations.map((internship) => {
+            const internshipId = internship.internship_id || internship._id;
+            const hasApplied = user?.username ? (() => {
+              const appliedKey = `appliedInternships_${user.username}`;
+              const appliedIds = JSON.parse(localStorage.getItem(appliedKey) || '[]');
+              return appliedIds.includes(internshipId);
+            })() : false;
+            
+            return (
+            <div key={internshipId}>
               <InternshipCard 
                 internship={internship}
                 onShowSimilar={handleShowSimilar}
                 showMatchScore={internship.matchScore > 0}
-                isBookmarked={bookmarkedIds.includes(internship.internship_id || internship._id)}
+                isBookmarked={bookmarkedIds.includes(internshipId)}
                 onToggleBookmark={toggleBookmark}
+                hasApplied={hasApplied}
               />
             </div>
-          ))}
+          )})}
         </div>
       </div>
     </div>
