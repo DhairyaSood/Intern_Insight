@@ -5,6 +5,7 @@ services:
     env: python
     plan: free
     region: oregon
+    runtime: python-3.11
     buildCommand: pip install -r requirements.txt
     startCommand: gunicorn -w 3 -k gthread -t 120 -b 0.0.0.0:$PORT wsgi:app
     envVars:
