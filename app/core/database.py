@@ -133,13 +133,8 @@ def load_data(collection_name, use_cache=True):
             db = get_database()
             collection = db[collection_name]
             
-            # Add basic indexing for common queries
-            if collection_name == "profiles":
-                collection.create_index("candidate_id")
-                collection.create_index("name")
-            elif collection_name == "internships":
-                collection.create_index("internship_id")
-                collection.create_index("skills_required")
+            # No index creation here - indexes should be created once during setup
+            # Removed create_index calls to avoid index conflicts
             
             data = list(collection.find())
             log(f"[DB] Fetched '{collection_name}' from MongoDB ({len(data)} records) in {time.time() - start_time:.3f}s")
