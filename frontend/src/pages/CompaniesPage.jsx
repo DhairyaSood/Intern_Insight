@@ -93,11 +93,12 @@ const CompaniesPage = () => {
       console.log('Stats API Response:', statsRes);
 
       // Handle different response structures
-      const companiesData = companiesRes.data?.companies || companiesRes.data || [];
-      // Backend returns sectors array directly in data, not nested
-      const sectorsData = Array.isArray(sectorsRes.data) ? sectorsRes.data : (sectorsRes.data?.sectors || sectorsRes.data || []);
-      const statsData = statsRes.data || null;
+      const companiesData = companiesRes.data?.data?.companies || companiesRes.data?.companies || companiesRes.data || [];
+      // Backend returns sectors in data.data (wrapped response)
+      const sectorsData = sectorsRes.data?.data || sectorsRes.data?.sectors || sectorsRes.data || [];
+      const statsData = statsRes.data?.data || statsRes.data || null;
 
+      console.log('Raw sectors response:', sectorsRes.data);
       console.log('Parsed companies:', companiesData);
       console.log('Parsed sectors:', sectorsData);
       console.log('Sectors count:', sectorsData.length);

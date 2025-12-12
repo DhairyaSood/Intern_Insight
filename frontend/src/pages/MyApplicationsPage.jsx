@@ -126,6 +126,7 @@ const MyApplicationsPage = () => {
                   isBookmarked={bookmarkedIds.includes(internship.internship_id || internship._id)}
                   onToggleBookmark={toggleBookmark}
                   hasApplied={true}
+                  showMatchScore={true}
                 />
               ))}
             </div>
