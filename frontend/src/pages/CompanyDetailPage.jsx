@@ -21,6 +21,7 @@ const CompanyDetailPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [userProfile, setUserProfile] = useState(null);
+  const [backendRecommendations, setBackendRecommendations] = useState([]);
   const [bookmarkedIds, setBookmarkedIds] = useState(() => {
     if (!user?.username) return [];
     const bookmarkKey = `bookmarkedInternships_${user.username}`;
@@ -51,48 +52,41 @@ const CompanyDetailPage = () => {
   useEffect(() => {
     if (user?.username) {
       profileService.getByUsername(user.username)
-        .then(profile => setUserProfile(profile))
+        .then(async (profile) => {
+          setUserProfile(profile);
+          // Fetch backend recommendations for match scores
+          if (profile?.candidate_id) {
+            try {
+              const { internshipService } = await import('../services/internships');
+              const recData = await internshipService.getRecommendations(profile.candidate_id);
+              setBackendRecommendations(recData.recommendations || []);
+            } catch (err) {
+              console.warn('Could not fetch backend recommendations:', err);
+              setBackendRecommendations([]);
+            }
+          }
+        })
         .catch(err => console.error('Failed to load profile:', err));
     }
   }, [user]);
 
-  // Recalculate match scores when userProfile loads
+  // Recalculate match scores when backend recommendations load
   useEffect(() => {
-    if (userProfile && internships.length > 0) {
+    if (backendRecommendations.length > 0 && internships.length > 0) {
+      // Create score map from backend recommendations
+      const scoreMap = {};
+      backendRecommendations.forEach(rec => {
+        const id = rec.internship_id || rec._id;
+        scoreMap[id] = rec.match_score || rec.matchScore || 0;
+      });
+      
       const internshipsWithScores = internships.map(internship => ({
         ...internship,
-        match_score: calculateMatchScore(userProfile, internship)
+        match_score: scoreMap[internship.internship_id || internship._id] || 0
       }));
       setInternships(internshipsWithScores);
     }
-  }, [userProfile]);
-
-  const calculateMatchScore = (profile, internship) => {
-    if (!profile) return 0;
-    
-    const userSkills = (profile?.skills_possessed || profile?.skills || []).map(s => s.toLowerCase());
-    const userLocation = (profile?.location_preference || profile?.location || profile?.city || '').toLowerCase();
-    
-    if (userSkills.length === 0) {
-      return 0;
-    }
-
-    let score = 0;
-    
-    const internshipSkills = (internship.skills_required || []).map(s => s.toLowerCase());
-    const matchingSkills = userSkills.filter(userSkill =>
-      internshipSkills.some(intSkill => 
-        intSkill.includes(userSkill) || userSkill.includes(intSkill)
-      )
-    );
-    score += (matchingSkills.length / Math.max(userSkills.length, 1)) * 100;
-
-    if (userLocation && internship.location?.toLowerCase().includes(userLocation)) {
-      score += 50;
-    }
-
-    return Math.round(score);
-  };
+  }, [backendRecommendations]);
 
   const fetchCompanyDetails = async () => {
     try {
@@ -122,10 +116,10 @@ const CompanyDetailPage = () => {
       
       setCompany(response.data);
       const internshipsData = response.data?.internships || [];
-      // Add match scores to internships
+      // Match scores will be added when backend recommendations load
       const internshipsWithScores = internshipsData.map(internship => ({
         ...internship,
-        match_score: userProfile ? calculateMatchScore(userProfile, internship) : 0
+        match_score: 0 // Will be updated by backend recommendations
       }));
       console.log('Setting internships state to:', internshipsWithScores);
       setInternships(internshipsWithScores);

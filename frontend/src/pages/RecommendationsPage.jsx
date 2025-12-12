@@ -3,6 +3,7 @@ import { useLocation } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 import { useInternshipStore } from '../store/internshipStore';
 import { profileService } from '../services/profile';
+import { internshipService } from '../services/internships';
 import LoadingSpinner from '../components/Common/LoadingSpinner';
 import ErrorMessage from '../components/Common/ErrorMessage';
 import InternshipCard from '../components/Internship/InternshipCard';
@@ -54,70 +55,38 @@ const RecommendationsPage = () => {
         const similarTo = location.state?.similarTo;
         
         if (similarTo && internships.length > 0) {
-          // Show similar internships instead of recommendations
+          // Show similar internships - still use findSimilarInternships for similarity scores
           const similar = findSimilarInternships(similarTo);
           setRecommendations(similar);
           setIsLoadingProfile(false);
           return;
         }
 
-        // Fetch user profile for personalized recommendations
+        // Fetch user profile
         const profile = await profileService.getByUsername(user.username);
         setUserProfile(profile);
 
-        // Generate recommendations based on profile
-        if (profile && internships.length > 0) {
-          const recommended = generateRecommendations(profile, internships);
-          setRecommendations(recommended);
+        // Use backend recommendations API
+        if (profile?.candidate_id) {
+          const recData = await internshipService.getRecommendations(profile.candidate_id);
+          const backendRecs = recData.recommendations || [];
+          setRecommendations(backendRecs);
+        } else {
+          setProfileError('Please complete your profile to get personalized recommendations.');
+          setRecommendations([]);
         }
       } catch (err) {
-        console.error('Failed to load profile:', err);
+        console.error('Failed to load recommendations:', err);
         setProfileError('Please complete your profile to get personalized recommendations.');
       } finally {
         setIsLoadingProfile(false);
       }
     };
 
-    if (internships.length > 0) {
+    if (internships.length > 0 || user?.username) {
       loadProfileAndRecommendations();
     }
   }, [user, internships, location.state]);
-
-  const generateRecommendations = (profile, allInternships) => {
-    const userSkills = (profile.skills_possessed || profile.skills || []).map(s => s.toLowerCase());
-    const userLocation = (profile.location_preference || profile.location || profile.city || '').toLowerCase();
-    
-    if (userSkills.length === 0) {
-      return [];
-    }
-
-    // Score each internship based on skill match and location
-    const scored = allInternships.map(internship => {
-      let score = 0;
-      
-      // Skill matching (max 100 points)
-      const internshipSkills = (internship.skills_required || []).map(s => s.toLowerCase());
-      const matchingSkills = userSkills.filter(userSkill =>
-        internshipSkills.some(intSkill => 
-          intSkill.includes(userSkill) || userSkill.includes(intSkill)
-        )
-      );
-      score += (matchingSkills.length / Math.max(userSkills.length, 1)) * 100;
-
-      // Location matching (bonus 50 points)
-      if (userLocation && internship.location?.toLowerCase().includes(userLocation)) {
-        score += 50;
-      }
-
-      return { ...internship, matchScore: score, matchingSkills };
-    });
-
-    // Filter internships with at least one skill match and sort by score
-    return scored
-      .filter(item => item.matchScore > 0)
-      .sort((a, b) => b.matchScore - a.matchScore)
-      .slice(0, 20); // Top 20 recommendations
-  };
 
   const findSimilarInternships = (internship) => {
     // Find internships similar to the given one

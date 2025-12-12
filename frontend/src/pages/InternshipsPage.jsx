@@ -87,9 +87,14 @@ const InternshipsPage = () => {
       const profile = await profileService.getByUsername(user.username);
       setUserProfile(profile);
 
-      if (profile && internships.length > 0) {
-        const recommended = generateRecommendations(profile, internships);
-        setRecommendations(recommended);
+      if (profile && profile.candidate_id) {
+        // Use backend recommendations API
+        const { internshipService } = await import('../services/internships');
+        const recData = await internshipService.getRecommendations(profile.candidate_id);
+        const backendRecs = recData.recommendations || [];
+        setRecommendations(backendRecs);
+      } else {
+        setRecommendations([]);
       }
     } catch (err) {
       console.error('Failed to load recommendations:', err);
@@ -100,56 +105,28 @@ const InternshipsPage = () => {
   };
 
   // Load user profile for general search too
+  const [backendRecommendations, setBackendRecommendations] = useState([]);
+  
   useEffect(() => {
     if (user?.username && viewMode === 'general') {
       profileService.getByUsername(user.username)
-        .then(profile => setUserProfile(profile))
+        .then(async (profile) => {
+          setUserProfile(profile);
+          // Fetch backend recommendations for match scores
+          if (profile?.candidate_id) {
+            try {
+              const { internshipService } = await import('../services/internships');
+              const recData = await internshipService.getRecommendations(profile.candidate_id);
+              setBackendRecommendations(recData.recommendations || []);
+            } catch (err) {
+              console.warn('Could not fetch backend recommendations:', err);
+              setBackendRecommendations([]);
+            }
+          }
+        })
         .catch(err => console.error('Failed to load profile:', err));
     }
   }, [user, viewMode]);
-
-  const calculateMatchScore = (profile, internship) => {
-    const userSkills = (profile?.skills_possessed || profile?.skills || []).map(s => s.toLowerCase());
-    const userLocation = (profile?.location_preference || profile?.location || profile?.city || '').toLowerCase();
-    
-    if (userSkills.length === 0) {
-      return 0;
-    }
-
-    let score = 0;
-    
-    const internshipSkills = (internship.skills_required || []).map(s => s.toLowerCase());
-    const matchingSkills = userSkills.filter(userSkill =>
-      internshipSkills.some(intSkill => 
-        intSkill.includes(userSkill) || userSkill.includes(intSkill)
-      )
-    );
-    score += (matchingSkills.length / Math.max(userSkills.length, 1)) * 100;
-
-    if (userLocation && internship.location?.toLowerCase().includes(userLocation)) {
-      score += 50;
-    }
-
-    return score;
-  };
-
-  const generateRecommendations = (profile, allInternships) => {
-    const userSkills = (profile.skills_possessed || profile.skills || []).map(s => s.toLowerCase());
-    
-    if (userSkills.length === 0) {
-      return [];
-    }
-
-    const scored = allInternships.map(internship => {
-      const score = calculateMatchScore(profile, internship);
-      return { ...internship, matchScore: score };
-    });
-
-    return scored
-      .filter(item => item.matchScore > 0)
-      .sort((a, b) => b.matchScore - a.matchScore)
-      .slice(0, 50);
-  };
 
   const findSimilarInternships = (internship) => {
     const baseSkills = (internship.skills_required || []).map(s => s.toLowerCase());
@@ -183,8 +160,12 @@ const InternshipsPage = () => {
         const commonWords = titleWords.filter(w => candidateTitleWords.includes(w));
         score = Math.min(score + (commonWords.length * 5), 100);
         
-        // Calculate user match score
-        const userMatchScore = userProfile ? calculateMatchScore(userProfile, i) : 0;
+        // Calculate user match score from backend recommendations
+        const userMatchScore = backendRecommendations.find(rec => 
+          (rec.internship_id || rec._id) === (i.internship_id || i._id)
+        )?.match_score || backendRecommendations.find(rec => 
+          (rec.internship_id || rec._id) === (i.internship_id || i._id)
+        )?.matchScore || 0;
         
         return { ...i, similarityScore: Math.round(score), userMatchScore: Math.round(userMatchScore) };
       })
@@ -252,29 +233,46 @@ const InternshipsPage = () => {
     });
   };
 
-  // Add match scores to general search internships - memoized for performance
+  // Add match scores to general search internships - from backend API
   const generalInternshipsWithScores = useMemo(() => {
-    if (!userProfile) {
-      return filteredInternships;
+    if (!userProfile || backendRecommendations.length === 0) {
+      return filteredInternships.map(i => ({ ...i, matchScore: 0 }));
     }
+    // Create score map from backend recommendations
+    const scoreMap = {};
+    backendRecommendations.forEach(rec => {
+      const id = rec.internship_id || rec._id;
+      scoreMap[id] = rec.match_score || rec.matchScore || 0;
+    });
+    
     return filteredInternships.map(internship => ({
       ...internship,
-      matchScore: calculateMatchScore(userProfile, internship)
+      matchScore: scoreMap[internship.internship_id || internship._id] || 0
     }));
-  }, [filteredInternships, userProfile]);
+  }, [filteredInternships, userProfile, backendRecommendations]);
 
-  // Get bookmarked internships
+  // Get bookmarked internships with backend match scores
   const bookmarkedInternships = useMemo(() => {
-    return internships.filter(internship => 
+    const bookmarked = internships.filter(internship => 
       bookmarkedIds.includes(internship.internship_id || internship._id)
-    ).map(internship => {
-      if (!userProfile) return internship;
-      return {
-        ...internship,
-        matchScore: calculateMatchScore(userProfile, internship)
-      };
+    );
+    
+    if (!userProfile || backendRecommendations.length === 0) {
+      return bookmarked.map(i => ({ ...i, matchScore: 0 }));
+    }
+    
+    // Create score map from backend recommendations
+    const scoreMap = {};
+    backendRecommendations.forEach(rec => {
+      const id = rec.internship_id || rec._id;
+      scoreMap[id] = rec.match_score || rec.matchScore || 0;
     });
-  }, [internships, bookmarkedIds, userProfile]);
+    
+    return bookmarked.map(internship => ({
+      ...internship,
+      matchScore: scoreMap[internship.internship_id || internship._id] || 0
+    }));
+  }, [internships, bookmarkedIds, userProfile, backendRecommendations]);
 
   const allDisplayedInternships = viewMode === 'recommended' 
     ? getFilteredRecommendations() 
