@@ -81,7 +81,7 @@ const InternshipDetailPage = () => {
       // Fetch similar internships
       try {
         const similarData = await internshipService.getSimilar(id);
-        setSimilarInternships(similarData.recommendations?.slice(0, 6) || []);
+        setSimilarInternships(similarData.recommendations || []);
       } catch (err) {
         console.warn('Could not fetch similar internships:', err);
       }
@@ -453,6 +453,41 @@ const InternshipDetailPage = () => {
                       💡 Ranking based on skills match, education, experience, and profile completeness
                     </p>
                   </div>
+
+                  {/* Improvement Suggestions */}
+                  {ranking.percentile < 100 && (
+                    <div className="pt-4 border-t border-purple-200 dark:border-purple-800">
+                      <p className="text-sm font-semibold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
+                        <span>🚀</span> How to Rank Higher
+                      </p>
+                      <div className="space-y-2 text-xs text-gray-700 dark:text-gray-300">
+                        {ranking.percentile < 90 && (
+                          <div className="flex items-start gap-2">
+                            <span className="text-green-500 mt-0.5">✓</span>
+                            <p>Add more relevant skills matching: <span className="font-medium">{internship.skills_required?.slice(0, 3).join(', ')}</span></p>
+                          </div>
+                        )}
+                        {ranking.percentile < 80 && (
+                          <div className="flex items-start gap-2">
+                            <span className="text-green-500 mt-0.5">✓</span>
+                            <p>Include past experience in <span className="font-medium">{internship.sector || 'this field'}</span></p>
+                          </div>
+                        )}
+                        {ranking.percentile < 70 && (
+                          <div className="flex items-start gap-2">
+                            <span className="text-green-500 mt-0.5">✓</span>
+                            <p>Complete your profile with certifications and education details</p>
+                          </div>
+                        )}
+                        {ranking.percentile < 60 && (
+                          <div className="flex items-start gap-2">
+                            <span className="text-green-500 mt-0.5">✓</span>
+                            <p>Set location preference to <span className="font-medium">{internship.location}</span></p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             )}
@@ -474,7 +509,7 @@ const InternshipDetailPage = () => {
                   <Sparkles className="h-5 w-5 text-primary-600 dark:text-primary-400" />
                   Similar Opportunities
                 </h3>
-                <div className="space-y-3 max-h-[600px] overflow-y-auto pr-2">
+                <div className="space-y-3 max-h-[480px] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-gray-400 dark:scrollbar-thumb-gray-600 scrollbar-track-gray-200 dark:scrollbar-track-gray-800">
                   {similarInternships.map((similar, idx) => (
                     <div
                       key={idx}

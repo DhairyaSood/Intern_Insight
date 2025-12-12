@@ -198,6 +198,61 @@ def get_candidate_ranking(internship_id):
         else:
             rank_category = 'Below Average'
         
+        # Generate improvement suggestions based on profile gaps
+        improvement_suggestions = []
+        
+        # Check skills match
+        required_skills = [s.lower() for s in (internship.get('skills_required') or [])]
+        possessed_skills = [s.lower() for s in (user_profile.get('skills_possessed') or user_profile.get('skills') or [])]
+        missing_skills = [s for s in required_skills if s not in possessed_skills]
+        
+        if missing_skills and len(missing_skills) > 0:
+            improvement_suggestions.append({
+                'type': 'skills',
+                'priority': 'high',
+                'message': f'Add these required skills: {", ".join(missing_skills[:3])}',
+                'impact': 'Can improve ranking by up to 40%'
+            })
+        
+        # Check experience
+        if not user_profile.get('past_experience') or len(user_profile.get('past_experience', '')) < 50:
+            improvement_suggestions.append({
+                'type': 'experience',
+                'priority': 'medium',
+                'message': f'Add relevant experience in {internship.get("sector", "this field")}',
+                'impact': 'Can improve ranking by up to 20%'
+            })
+        
+        # Check profile completeness
+        completeness_fields = [
+            user_profile.get('skills_possessed') or user_profile.get('skills'),
+            user_profile.get('education'),
+            user_profile.get('past_experience'),
+            user_profile.get('location'),
+            user_profile.get('certifications')
+        ]
+        filled_fields = sum(1 for field in completeness_fields if field)
+        
+        if filled_fields < len(completeness_fields):
+            improvement_suggestions.append({
+                'type': 'completeness',
+                'priority': 'medium',
+                'message': 'Complete missing profile sections (certifications, education details)',
+                'impact': 'Can improve ranking by up to 10%'
+            })
+        
+        # Check location match
+        profile_location = (user_profile.get('location') or '').lower()
+        internship_location = (internship.get('location') or '').lower()
+        
+        if profile_location != internship_location and internship_location:
+            improvement_suggestions.append({
+                'type': 'location',
+                'priority': 'low',
+                'message': f'Update location preference to {internship.get("location")}',
+                'impact': 'Can improve ranking by up to 10%'
+            })
+        
         return jsonify({
             'success': True,
             'rank': user_rank,
@@ -205,7 +260,8 @@ def get_candidate_ranking(internship_id):
             'percentile': round(percentile, 1),
             'score': user_score,
             'rank_category': rank_category,
-            'message': f'You rank #{user_rank} out of {total_applicants} candidates'
+            'message': f'You rank #{user_rank} out of {total_applicants} candidates',
+            'improvement_suggestions': improvement_suggestions
         }), 200
         
     except Exception as e:

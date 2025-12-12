@@ -77,20 +77,18 @@ const MyApplicationsPage = () => {
           </div>
         ) : (
           <>
-            {/* Stats Card */}
-            <div className="card mb-8 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 border-green-200 dark:border-green-800">
-              <div className="flex items-center gap-4">
-                <div className="p-4 bg-green-500 rounded-lg">
-                  <CheckCircle className="h-8 w-8 text-white" />
-                </div>
-                <div>
-                  <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
-                    {appliedInternships.length}
-                  </h2>
-                  <p className="text-gray-600 dark:text-gray-400">
-                    Application{appliedInternships.length !== 1 ? 's' : ''} Submitted
-                  </p>
-                </div>
+            {/* Stats Card - Compact */}
+            <div className="inline-flex items-center gap-3 mb-6 px-4 py-3 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 border border-green-200 dark:border-green-800 rounded-lg">
+              <div className="p-2 bg-green-500 rounded-lg">
+                <CheckCircle className="h-5 w-5 text-white" />
+              </div>
+              <div>
+                <p className="text-lg font-bold text-gray-900 dark:text-white">
+                  {appliedInternships.length} Application{appliedInternships.length !== 1 ? 's' : ''}
+                </p>
+                <p className="text-xs text-gray-600 dark:text-gray-400">
+                  Submitted
+                </p>
               </div>
             </div>
 
