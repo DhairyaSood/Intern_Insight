@@ -6,7 +6,7 @@ import SkillsInput from '../components/Profile/SkillsInput';
 import CountryCodeSelector, { detectCountryFromPhone } from '../components/Profile/CountryCodeSelector';
 import LoadingSpinner from '../components/Common/LoadingSpinner';
 import ErrorMessage from '../components/Common/ErrorMessage';
-import { User, Mail, MapPin, Briefcase, GraduationCap, Save, Upload as UploadIcon, CheckCircle2, Clock, Award, Target } from 'lucide-react';
+import { User, Mail, MapPin, Briefcase, GraduationCap, Save, Upload as UploadIcon, CheckCircle2, Award, Target } from 'lucide-react';
 
 const ProfilePage = () => {
   const { user } = useAuthStore();
@@ -25,8 +25,7 @@ const ProfilePage = () => {
     education: '',
     experience: '',
     skills: [],
-    field_of_study: '',
-    sector_interests: [],
+    sector_interests: []
   });
 
   // Load existing profile
@@ -131,7 +130,6 @@ const ProfilePage = () => {
       formData.education,
       formData.experience,
       formData.skills.length > 0,
-      formData.field_of_study,
       formData.sector_interests.length > 0,
     ];
     const filledFields = fields.filter(Boolean).length;
@@ -149,16 +147,24 @@ const ProfilePage = () => {
       phoneNumber = phoneNumber.replace(/^\+\d+\s*/, '').trim();
     }
     
+    // Normalize name: capitalize first letter of each word, rest lowercase
+    const normalizeName = (name) => {
+      if (!name) return name;
+      return name
+        .split(' ')
+        .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+        .join(' ');
+    };
+    
     setFormData(prev => ({
       ...prev,
-      name: data.name || prev.name,
+      name: normalizeName(data.name) || prev.name,
       email: data.email || prev.email,
       phone: phoneNumber || prev.phone,
       location: data.location || prev.location,
       education: data.education || prev.education,
       experience: data.experience || prev.experience,
       skills: data.skills && data.skills.length > 0 ? data.skills : prev.skills,
-      field_of_study: data.field_of_study || prev.field_of_study,
       sector_interests: data.sector_interests && data.sector_interests.length > 0 ? data.sector_interests : prev.sector_interests,
     }));
     
@@ -209,7 +215,6 @@ const ProfilePage = () => {
         education_level: formData.education.trim(),
         experience: formData.experience.trim(),
         skills_possessed: formData.skills,
-        field_of_study: formData.field_of_study.trim() || '',
         sector_interests: formData.sector_interests || []
       };
 
@@ -392,39 +397,20 @@ const ProfilePage = () => {
                 </div>
               </div>
 
-              {/* Skills and Field of Study Row */}
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                {/* Skills Card */}
-                <div className="lg:col-span-2 card">
-                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-                    <Award className="h-5 w-5 text-primary-600 dark:text-primary-400" />
-                    Skills <span className="text-red-500">*</span>
-                  </h3>
-                  <SkillsInput
-                    skills={formData.skills}
-                    onChange={handleSkillsChange}
-                    placeholder="Type skills and press Enter (e.g., Python, React...)"
-                  />
-                  <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
-                    {formData.skills.length} skill{formData.skills.length !== 1 ? 's' : ''} added
-                  </p>
-                </div>
-
-                {/* Field of Study Card */}
-                <div className="card">
-                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-                    <GraduationCap className="h-5 w-5 text-primary-600 dark:text-primary-400" />
-                    Field of Study
-                  </h3>
-                  <input
-                    type="text"
-                    name="field_of_study"
-                    value={formData.field_of_study}
-                    onChange={handleInputChange}
-                    placeholder="e.g., Computer Science"
-                    className="input-field"
-                  />
-                </div>
+              {/* Skills Card - Full Width */}
+              <div className="card">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+                  <Award className="h-5 w-5 text-primary-600 dark:text-primary-400" />
+                  Skills <span className="text-red-500">*</span>
+                </h3>
+                <SkillsInput
+                  skills={formData.skills}
+                  onChange={handleSkillsChange}
+                  placeholder="Type skills and press Enter (e.g., Python, React...)"
+                />
+                <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
+                  {formData.skills.length} skill{formData.skills.length !== 1 ? 's' : ''} added
+                </p>
               </div>
 
               {/* Education and Sector Interests Row */}
@@ -440,7 +426,7 @@ const ProfilePage = () => {
                     value={formData.education}
                     onChange={handleInputChange}
                     placeholder="E.g., B.Tech in Computer Science&#10;XYZ University (2020-2024)&#10;CGPA: 8.5/10"
-                    rows="4"
+                    rows="6"
                     className="input-field resize-none"
                   />
                 </div>
@@ -454,10 +440,10 @@ const ProfilePage = () => {
                   <SkillsInput
                     skills={formData.sector_interests}
                     onChange={handleSectorInterestsChange}
-                    placeholder="Type sectors (e.g., Technology, Finance...)"
+                    placeholder="Type sectors and press Enter (e.g., Technology, Finance...)"
                   />
                   <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
-                    Industries you're interested in
+                    {formData.sector_interests.length} sector{formData.sector_interests.length !== 1 ? 's' : ''} added
                   </p>
                 </div>
               </div>
@@ -473,7 +459,7 @@ const ProfilePage = () => {
                   value={formData.experience}
                   onChange={handleInputChange}
                   placeholder="Brief summary of your experience, projects, or achievements&#10;&#10;E.g.,&#10;Software Engineer Intern - ABC Corp (Jun 2023 - Aug 2023)&#10;- Built web applications using React and Node.js&#10;- Improved API performance by 40%"
-                  rows="6"
+                  rows="8"
                   className="input-field resize-none"
                 />
               </div>
@@ -503,12 +489,14 @@ const ProfilePage = () => {
 
           {/* Right Column - Profile Summary Sidebar (1/3 width) */}
           <div className="space-y-6">
-            {/* Profile Completion Card */}
+            {/* Combined Profile Completion & Stats Card */}
             <div className="card">
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                Profile Completion
+                Profile Overview
               </h3>
-              <div className="flex items-center justify-center mb-4">
+              
+              {/* Completion Circle */}
+              <div className="flex items-center justify-center mb-6">
                 <div className="relative w-32 h-32">
                   <svg className="w-32 h-32 transform -rotate-90">
                     <circle
@@ -540,18 +528,13 @@ const ProfilePage = () => {
                   </div>
                 </div>
               </div>
-              <p className="text-sm text-center text-gray-600 dark:text-gray-400">
+              <p className="text-sm text-center text-gray-600 dark:text-gray-400 mb-6 pb-6 border-b border-gray-200 dark:border-gray-700">
                 {completionPercentage === 100 
                   ? '🎉 Profile is complete!' 
                   : `Complete your profile to get better recommendations`}
               </p>
-            </div>
-
-            {/* Profile Stats Card */}
-            <div className="card">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                Profile Stats
-              </h3>
+              
+              {/* Stats */}
               <div className="space-y-3">
                 <div className="flex items-center justify-between py-2 border-b border-gray-200 dark:border-gray-700">
                   <span className="text-sm text-gray-600 dark:text-gray-400 flex items-center gap-2">
@@ -588,34 +571,6 @@ const ProfilePage = () => {
                   <span className="font-semibold text-gray-900 dark:text-white">
                     {formData.sector_interests.length}
                   </span>
-                </div>
-              </div>
-            </div>
-
-            {/* Profile Info Card */}
-            <div className="card">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-                <User className="h-5 w-5" />
-                Quick Info
-              </h3>
-              <div className="space-y-3">
-                <div>
-                  <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Username</p>
-                  <p className="text-sm font-medium text-gray-900 dark:text-white">
-                    {user?.username || 'N/A'}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Candidate ID</p>
-                  <p className="text-sm font-mono text-gray-900 dark:text-white">
-                    {user?.candidate_id || 'Not assigned'}
-                  </p>
-                </div>
-                <div className="pt-3 border-t border-gray-200 dark:border-gray-700">
-                  <p className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1">
-                    <Clock className="h-3 w-3" />
-                    Last updated: {success ? 'Just now' : 'Not saved yet'}
-                  </p>
                 </div>
               </div>
             </div>
