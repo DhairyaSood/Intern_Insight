@@ -44,7 +44,10 @@ const CompaniesPage = () => {
 
     // Apply sector filter
     if (selectedSector && selectedSector.trim()) {
-      filtered = filtered.filter(company => company.sector === selectedSector);
+      const trimmedSector = selectedSector.trim();
+      filtered = filtered.filter(company => 
+        company.sector && company.sector.trim() === trimmedSector
+      );
     }
 
     // Apply hiring filter
@@ -294,19 +297,24 @@ const CompaniesPage = () => {
               <select
                 value={selectedSector}
                 onChange={(e) => setSelectedSector(e.target.value)}
-                className="input-field rounded-lg"
+                className="input-field rounded-lg max-h-60 overflow-y-auto"
+                size="1"
               >
                 <option value="">All Sectors</option>
-                {Array.isArray(sectors) && sectors.map((sector, index) => {
-                  // Handle both string and object formats
-                  const sectorName = typeof sector === 'string' ? sector : (sector.sector || sector.name || 'Unknown');
-                  const sectorCount = typeof sector === 'object' ? sector.count : '';
-                  return (
-                    <option key={index} value={sectorName}>
-                      {sectorName}{sectorCount ? ` (${sectorCount})` : ''}
-                    </option>
-                  );
-                })}
+                {sectors.length > 0 ? (
+                  sectors.map((sector, index) => {
+                    // Handle both string and object formats
+                    const sectorName = typeof sector === 'string' ? sector : (sector.sector || sector.name || 'Unknown');
+                    const sectorCount = typeof sector === 'object' && sector.count ? sector.count : '';
+                    return (
+                      <option key={index} value={sectorName}>
+                        {sectorName}{sectorCount ? ` (${sectorCount})` : ''}
+                      </option>
+                    );
+                  })
+                ) : (
+                  <option disabled>Loading sectors...</option>
+                )}
               </select>
             </div>
 
