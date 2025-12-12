@@ -38,6 +38,7 @@ const InternshipDetailPage = () => {
   const [ranking, setRanking] = useState(null);
   const [isLoadingRanking, setIsLoadingRanking] = useState(false);
   const [hasApplied, setHasApplied] = useState(false);
+  const [similarBookmarks, setSimilarBookmarks] = useState({});
 
   useEffect(() => {
     fetchInternshipDetails();
@@ -93,7 +94,20 @@ const InternshipDetailPage = () => {
       // Fetch similar internships
       try {
         const similarData = await internshipService.getSimilar(id);
-        setSimilarInternships(similarData.recommendations || []);
+        const similar = similarData.recommendations || [];
+        setSimilarInternships(similar);
+        
+        // Initialize bookmark state for similar internships
+        if (user?.username) {
+          const bookmarkKey = `bookmarkedInternships_${user.username}`;
+          const bookmarkedIds = JSON.parse(localStorage.getItem(bookmarkKey) || '[]');
+          const bookmarkState = {};
+          similar.forEach(s => {
+            const simId = s.internship_id || s._id;
+            bookmarkState[simId] = bookmarkedIds.includes(simId);
+          });
+          setSimilarBookmarks(bookmarkState);
+        }
       } catch (err) {
         console.warn('Could not fetch similar internships:', err);
       }
@@ -135,6 +149,27 @@ const InternshipDetailPage = () => {
         alert('Application submitted successfully! You can view it in My Applications page.');
       }
     }
+  };
+
+  const toggleSimilarBookmark = (similarId) => {
+    if (!user?.username) {
+      alert('Please login to bookmark internships!');
+      return;
+    }
+    
+    const bookmarkKey = `bookmarkedInternships_${user.username}`;
+    const bookmarkedIds = JSON.parse(localStorage.getItem(bookmarkKey) || '[]');
+    
+    const isCurrentlyBookmarked = bookmarkedIds.includes(similarId);
+    const updatedIds = isCurrentlyBookmarked
+      ? bookmarkedIds.filter(id => id !== similarId)
+      : [...bookmarkedIds, similarId];
+    
+    localStorage.setItem(bookmarkKey, JSON.stringify(updatedIds));
+    setSimilarBookmarks(prev => ({
+      ...prev,
+      [similarId]: !isCurrentlyBookmarked
+    }));
   };
 
   const handleBookmark = () => {
@@ -562,11 +597,7 @@ const InternshipDetailPage = () => {
                 <div className="space-y-3 max-h-[480px] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-gray-400 dark:scrollbar-thumb-gray-600 scrollbar-track-gray-200 dark:scrollbar-track-gray-800">
                   {similarInternships.map((similar, idx) => {
                     const similarId = similar.internship_id || similar._id;
-                    const isSimilarBookmarked = user?.username ? (() => {
-                      const bookmarkKey = `bookmarkedInternships_${user.username}`;
-                      const bookmarkedIds = JSON.parse(localStorage.getItem(bookmarkKey) || '[]');
-                      return bookmarkedIds.includes(similarId);
-                    })() : false;
+                    const isSimilarBookmarked = similarBookmarks[similarId] || false;
                     
                     return (
                     <div
@@ -574,29 +605,20 @@ const InternshipDetailPage = () => {
                       className="relative p-3 bg-gray-50 dark:bg-gray-800 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors border border-gray-200 dark:border-gray-700"
                     >
                       {/* Bookmark button for similar internship */}
-                      {user?.username && (
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            const bookmarkKey = `bookmarkedInternships_${user.username}`;
-                            const bookmarkedIds = JSON.parse(localStorage.getItem(bookmarkKey) || '[]');
-                            const updated = bookmarkedIds.includes(similarId)
-                              ? bookmarkedIds.filter(id => id !== similarId)
-                              : [...bookmarkedIds, similarId];
-                            localStorage.setItem(bookmarkKey, JSON.stringify(updated));
-                            // Force re-render by updating state
-                            setInternship({...internship});
-                          }}
-                          className={`absolute top-2 right-2 p-1.5 rounded-lg transition-all z-10 ${
-                            isSimilarBookmarked
-                              ? 'bg-primary-500 text-white hover:bg-primary-600'
-                              : 'bg-white dark:bg-gray-700 text-gray-400 hover:text-primary-500 border border-gray-200 dark:border-gray-600'
-                          }`}
-                          title={isSimilarBookmarked ? 'Remove bookmark' : 'Bookmark'}
-                        >
-                          <Bookmark className={`h-3 w-3 ${isSimilarBookmarked ? 'fill-current' : ''}`} />
-                        </button>
-                      )}
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          toggleSimilarBookmark(similarId);
+                        }}
+                        className={`absolute top-2 right-2 p-1.5 rounded-lg transition-all z-10 ${
+                          isSimilarBookmarked
+                            ? 'bg-primary-500 text-white hover:bg-primary-600'
+                            : 'bg-white dark:bg-gray-700 text-gray-400 hover:text-primary-500 border border-gray-200 dark:border-gray-600'
+                        }`}
+                        title={isSimilarBookmarked ? 'Remove bookmark' : 'Bookmark'}
+                      >
+                        <Bookmark className={`h-3 w-3 ${isSimilarBookmarked ? 'fill-current' : ''}`} />
+                      </button>
                       <div onClick={() => handleViewSimilar(similar)} className="cursor-pointer">
                         <h4 className="font-semibold text-gray-900 dark:text-white text-sm mb-1 pr-8">
                           {similar.title}

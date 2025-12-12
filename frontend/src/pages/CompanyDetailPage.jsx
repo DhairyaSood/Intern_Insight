@@ -5,6 +5,7 @@ import {
   Award, TrendingUp, ArrowLeft, Globe, Heart
 } from 'lucide-react';
 import { getCompanyById, getCompanyByName } from '../services/companies';
+import { useAuthStore } from '../store/authStore';
 import InternshipCard from '../components/Internship/InternshipCard';
 import LoadingSpinner from '../components/Common/LoadingSpinner';
 import ErrorMessage from '../components/Common/ErrorMessage';
@@ -12,11 +13,34 @@ import ErrorMessage from '../components/Common/ErrorMessage';
 const CompanyDetailPage = () => {
   const { companyId } = useParams();
   const navigate = useNavigate();
+  const { user } = useAuthStore();
   
   const [company, setCompany] = useState(null);
   const [internships, setInternships] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [bookmarkedIds, setBookmarkedIds] = useState(() => {
+    if (!user?.username) return [];
+    const bookmarkKey = `bookmarkedInternships_${user.username}`;
+    const saved = localStorage.getItem(bookmarkKey);
+    return saved ? JSON.parse(saved) : [];
+  });
+
+  const toggleBookmark = (internshipId) => {
+    if (!user?.username) {
+      alert('Please login to bookmark internships!');
+      return;
+    }
+    
+    setBookmarkedIds(prev => {
+      const updated = prev.includes(internshipId)
+        ? prev.filter(id => id !== internshipId)
+        : [...prev, internshipId];
+      const bookmarkKey = `bookmarkedInternships_${user.username}`;
+      localStorage.setItem(bookmarkKey, JSON.stringify(updated));
+      return updated;
+    });
+  };
 
   useEffect(() => {
     fetchCompanyDetails();
@@ -36,8 +60,12 @@ const CompanyDetailPage = () => {
         response = await getCompanyByName(decodeURIComponent(companyId));
       }
       
+      console.log('Company Detail Response:', response);
+      console.log('Company data:', response.data);
+      console.log('Internships:', response.data?.internships || []);
+      
       setCompany(response.data);
-      setInternships(response.data.internships || []);
+      setInternships(response.data?.internships || []);
     } catch (err) {
       console.error('Error fetching company details:', err);
       setError(err.response?.data?.message || 'Failed to load company details');
@@ -287,14 +315,24 @@ const CompanyDetailPage = () => {
                 </div>
               ) : (
                 <div className="grid grid-cols-1 gap-6">
-                  {internships.map((internship) => (
-                    <InternshipCard
-                      key={internship.internship_id}
-                      internship={internship}
-                      isBookmarked={false}
-                      onToggleBookmark={() => {}}
-                    />
-                  ))}
+                  {internships.map((internship) => {
+                    const internshipId = internship.internship_id || internship._id;
+                    const hasApplied = user?.username ? (() => {
+                      const appliedKey = `appliedInternships_${user.username}`;
+                      const appliedIds = JSON.parse(localStorage.getItem(appliedKey) || '[]');
+                      return appliedIds.includes(internshipId);
+                    })() : false;
+                    
+                    return (
+                      <InternshipCard
+                        key={internshipId}
+                        internship={internship}
+                        isBookmarked={bookmarkedIds.includes(internshipId)}
+                        onToggleBookmark={toggleBookmark}
+                        hasApplied={hasApplied}
+                      />
+                    );
+                  })}
                 </div>
               )}
             </div>

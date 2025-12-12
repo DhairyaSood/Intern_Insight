@@ -43,9 +43,17 @@ const CompaniesPage = () => {
       console.log('Sectors API Response:', sectorsRes);
       console.log('Stats API Response:', statsRes);
 
-      setCompanies(companiesRes.data?.companies || companiesRes.data || []);
-      setSectors(sectorsRes.data?.sectors || sectorsRes.data || []);
-      setStats(statsRes.data || null);
+      // Handle different response structures
+      const companiesData = companiesRes.data?.companies || companiesRes.data || [];
+      const sectorsData = sectorsRes.data?.sectors || sectorsRes.data || [];
+      const statsData = statsRes.data || null;
+
+      console.log('Parsed companies:', companiesData);
+      console.log('Parsed sectors:', sectorsData);
+      
+      setCompanies(companiesData);
+      setSectors(sectorsData);
+      setStats(statsData);
     } catch (err) {
       console.error('Error fetching companies:', err);
       setError(err.response?.data?.message || 'Failed to load companies');
@@ -63,26 +71,27 @@ const CompaniesPage = () => {
     let filtered = [...companies];
 
     // Apply search filter
-    if (searchQuery) {
+    if (searchQuery && searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
       filtered = filtered.filter(company =>
-        company.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        company.description.toLowerCase().includes(searchQuery.toLowerCase())
+        (company.name && company.name.toLowerCase().includes(query)) ||
+        (company.description && company.description.toLowerCase().includes(query))
       );
     }
 
     // Apply sector filter
-    if (selectedSector) {
+    if (selectedSector && selectedSector.trim()) {
       filtered = filtered.filter(company => company.sector === selectedSector);
     }
 
     // Apply hiring filter
     if (hiringOnly) {
-      filtered = filtered.filter(company => company.is_hiring);
+      filtered = filtered.filter(company => company.is_hiring === true);
     }
 
     // Apply rating filter
     if (minRating > 0) {
-      filtered = filtered.filter(company => company.rating >= minRating);
+      filtered = filtered.filter(company => (company.rating || 0) >= minRating);
     }
 
     // Apply sorting
