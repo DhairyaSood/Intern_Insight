@@ -6,7 +6,7 @@ import { profileService } from '../services/profile';
 import LoadingSpinner from '../components/Common/LoadingSpinner';
 import ErrorMessage from '../components/Common/ErrorMessage';
 import InternshipCard from '../components/Internship/InternshipCard';
-import { Search, MapPin, X, Sparkles, Grid3x3, ChevronRight, ChevronDown } from 'lucide-react';
+import { Search, MapPin, X, Sparkles, Grid3x3, ChevronRight, ChevronDown, Bookmark } from 'lucide-react';
 
 const ITEMS_PER_PAGE = 24; // Show 24 items initially (8x3 grid)
 const LOAD_MORE_COUNT = 12; // Load 12 more items when clicking "Load More"
@@ -25,7 +25,7 @@ const InternshipsPage = () => {
     clearFilters 
   } = useInternshipStore();
 
-  const [viewMode, setViewMode] = useState('general'); // 'general' or 'recommended'
+  const [viewMode, setViewMode] = useState('general'); // 'general', 'recommended', or 'bookmarks'
   const [recommendations, setRecommendations] = useState([]);
   const [isLoadingRecommendations, setIsLoadingRecommendations] = useState(false);
   const [userProfile, setUserProfile] = useState(null);
@@ -34,10 +34,19 @@ const InternshipsPage = () => {
   const [showSidebar, setShowSidebar] = useState(false);
   const [recommendedFilters, setRecommendedFilters] = useState({ search: '', location: '' });
   const [displayCount, setDisplayCount] = useState(ITEMS_PER_PAGE);
+  const [bookmarkedIds, setBookmarkedIds] = useState(() => {
+    const saved = localStorage.getItem('bookmarkedInternships');
+    return saved ? JSON.parse(saved) : [];
+  });
 
   useEffect(() => {
     fetchInternships();
   }, [fetchInternships]);
+
+  useEffect(() => {
+    // Save bookmarks to localStorage whenever they change
+    localStorage.setItem('bookmarkedInternships', JSON.stringify(bookmarkedIds));
+  }, [bookmarkedIds]);
 
   useEffect(() => {
     if (viewMode === 'recommended' && user?.username) {
@@ -233,8 +242,23 @@ const InternshipsPage = () => {
     }));
   }, [filteredInternships, userProfile]);
 
+  // Get bookmarked internships
+  const bookmarkedInternships = useMemo(() => {
+    return internships.filter(internship => 
+      bookmarkedIds.includes(internship.internship_id || internship._id)
+    ).map(internship => {
+      if (!userProfile) return internship;
+      return {
+        ...internship,
+        matchScore: calculateMatchScore(userProfile, internship)
+      };
+    });
+  }, [internships, bookmarkedIds, userProfile]);
+
   const allDisplayedInternships = viewMode === 'recommended' 
     ? getFilteredRecommendations() 
+    : viewMode === 'bookmarks'
+    ? bookmarkedInternships
     : generalInternshipsWithScores;
   
   // Paginate the results
@@ -276,6 +300,17 @@ const InternshipsPage = () => {
             >
               <Sparkles className="h-5 w-5" />
               Recommended For You
+            </button>
+            <button
+              onClick={() => setViewMode('bookmarks')}
+              className={`flex items-center justify-center gap-2 px-6 py-3 rounded-lg font-medium transition-all ${
+                viewMode === 'bookmarks'
+                  ? 'bg-white text-primary-700'
+                  : 'bg-white/10 text-white hover:bg-white/20'
+              }`}
+            >
+              <Bookmark className="h-5 w-5" />
+              Bookmarks ({bookmarkedIds.length})
             </button>
           </div>
         </div>

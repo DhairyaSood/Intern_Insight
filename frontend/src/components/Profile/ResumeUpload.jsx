@@ -129,49 +129,65 @@ const ResumeUpload = ({ onDataExtracted }) => {
 
       {/* Processing State */}
       {isProcessing && (
-        <div className="card text-center">
-          <div className="relative">
-            <LoadingSpinner size="xl" />
-            <div className="absolute inset-0 flex items-center justify-center">
-              <span className="text-2xl font-bold text-primary-600 dark:text-primary-400">
+        <div className="card text-center py-12">
+          {/* Elegant Spinning Loader */}
+          <div className="relative inline-flex items-center justify-center mb-8">
+            {/* Outer rotating ring */}
+            <div className="absolute w-32 h-32 rounded-full border-4 border-primary-200 dark:border-primary-900/40"></div>
+            
+            {/* Animated gradient ring */}
+            <div className="absolute w-32 h-32 rounded-full border-4 border-transparent border-t-primary-600 dark:border-t-primary-400 animate-spin"></div>
+            
+            {/* Inner pulsing circle */}
+            <div className="relative w-24 h-24 rounded-full bg-gradient-to-br from-primary-500 to-primary-700 dark:from-primary-600 dark:to-primary-800 flex items-center justify-center shadow-xl animate-pulse">
+              <FileText className="h-10 w-10 text-white" />
+            </div>
+            
+            {/* Percentage badge */}
+            <div className="absolute -bottom-2 bg-white dark:bg-gray-800 px-4 py-1 rounded-full shadow-lg border-2 border-primary-500 dark:border-primary-400">
+              <span className="text-lg font-bold text-primary-600 dark:text-primary-400">
                 {progress}%
               </span>
             </div>
           </div>
-          <p className="text-gray-900 dark:text-gray-100 font-semibold text-lg mt-6">
-            Processing your resume...
+
+          <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-2">
+            Processing Your Resume
+          </h3>
+          <p className="text-gray-600 dark:text-gray-400 mb-6">
+            Extracting your information...
           </p>
-          <div className="mt-4 space-y-2">
-            <div className="flex items-center justify-center gap-2 text-sm">
-              <div className={`w-2 h-2 rounded-full ${
-                progress >= 20 ? 'bg-green-500 animate-pulse' : 'bg-gray-300 dark:bg-gray-600'
-              }`} />
-              <span className={progress >= 20 ? 'text-green-600 dark:text-green-400' : 'text-gray-500 dark:text-gray-400'}>
-                Uploading file
-              </span>
-            </div>
-            <div className="flex items-center justify-center gap-2 text-sm">
-              <div className={`w-2 h-2 rounded-full ${
-                progress >= 50 ? 'bg-green-500 animate-pulse' : 'bg-gray-300 dark:bg-gray-600'
-              }`} />
-              <span className={progress >= 50 ? 'text-green-600 dark:text-green-400' : 'text-gray-500 dark:text-gray-400'}>
-                Extracting text
-              </span>
-            </div>
-            <div className="flex items-center justify-center gap-2 text-sm">
-              <div className={`w-2 h-2 rounded-full ${
-                progress >= 80 ? 'bg-green-500 animate-pulse' : 'bg-gray-300 dark:bg-gray-600'
-              }`} />
-              <span className={progress >= 80 ? 'text-green-600 dark:text-green-400' : 'text-gray-500 dark:text-gray-400'}>
-                Parsing information
-              </span>
+
+          {/* Progress bar */}
+          <div className="max-w-md mx-auto">
+            <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2 overflow-hidden">
+              <div
+                className="bg-gradient-to-r from-primary-500 via-primary-600 to-primary-500 h-2 rounded-full transition-all duration-500 ease-out shadow-lg bg-[length:200%_100%] animate-shimmer"
+                style={{ width: `${progress}%` }}
+              />
             </div>
           </div>
-          <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3 mt-6 overflow-hidden">
-            <div
-              className="bg-gradient-to-r from-primary-500 to-primary-600 h-3 rounded-full transition-all duration-500 ease-out shadow-lg"
-              style={{ width: `${progress}%` }}
-            />
+
+          {/* Status indicator */}
+          <div className="mt-6 text-sm text-gray-500 dark:text-gray-400">
+            {progress < 30 && (
+              <span className="flex items-center justify-center gap-2">
+                <div className="w-2 h-2 bg-primary-500 rounded-full animate-pulse"></div>
+                Uploading file...
+              </span>
+            )}
+            {progress >= 30 && progress < 70 && (
+              <span className="flex items-center justify-center gap-2">
+                <div className="w-2 h-2 bg-primary-500 rounded-full animate-pulse"></div>
+                Extracting text...
+              </span>
+            )}
+            {progress >= 70 && (
+              <span className="flex items-center justify-center gap-2">
+                <div className="w-2 h-2 bg-primary-500 rounded-full animate-pulse"></div>
+                Parsing information...
+              </span>
+            )}
           </div>
         </div>
       )}

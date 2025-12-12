@@ -21,7 +21,9 @@ import {
   ExternalLink,
   Bookmark,
   Share2,
-  Sparkles
+  Sparkles,
+  TrendingUp,
+  Medal
 } from 'lucide-react';
 
 const InternshipDetailPage = () => {
@@ -33,10 +35,39 @@ const InternshipDetailPage = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isBookmarked, setIsBookmarked] = useState(false);
+  const [ranking, setRanking] = useState(null);
+  const [isLoadingRanking, setIsLoadingRanking] = useState(false);
 
   useEffect(() => {
     fetchInternshipDetails();
   }, [id]);
+
+  useEffect(() => {
+    // Check if internship is bookmarked when internship data loads
+    if (internship) {
+      const internshipId = internship.internship_id || internship._id;
+      const bookmarkedIds = JSON.parse(localStorage.getItem('bookmarkedInternships') || '[]');
+      setIsBookmarked(bookmarkedIds.includes(internshipId));
+      
+      // Fetch ranking if user is logged in
+      if (user?.username) {
+        fetchRanking(internshipId);
+      }
+    }
+  }, [internship, user]);
+
+  const fetchRanking = async (internshipId) => {
+    try {
+      setIsLoadingRanking(true);
+      const rankingData = await internshipService.getRanking(internshipId, user.username);
+      setRanking(rankingData);
+    } catch (err) {
+      console.warn('Could not fetch ranking:', err);
+      // Don't set error - ranking is optional feature
+    } finally {
+      setIsLoadingRanking(false);
+    }
+  };
 
   const fetchInternshipDetails = async () => {
     try {
@@ -50,7 +81,7 @@ const InternshipDetailPage = () => {
       // Fetch similar internships
       try {
         const similarData = await internshipService.getSimilar(id);
-        setSimilarInternships(similarData.recommendations?.slice(0, 3) || []);
+        setSimilarInternships(similarData.recommendations?.slice(0, 6) || []);
       } catch (err) {
         console.warn('Could not fetch similar internships:', err);
       }
@@ -68,13 +99,39 @@ const InternshipDetailPage = () => {
   };
 
   const handleApply = () => {
-    // TODO: Implement application logic
-    alert('Application feature coming soon!');
+    if (!internship) return;
+    
+    const internshipId = internship.internship_id || internship._id;
+    const appliedIds = JSON.parse(localStorage.getItem('appliedInternships') || '[]');
+    
+    if (!appliedIds.includes(internshipId)) {
+      appliedIds.push(internshipId);
+      localStorage.setItem('appliedInternships', JSON.stringify(appliedIds));
+      alert('Application submitted successfully! You can view it in My Applications page.');
+    } else {
+      alert('You have already applied to this internship!');
+    }
   };
 
   const handleBookmark = () => {
+    if (!internship) return;
+    
+    const internshipId = internship.internship_id || internship._id;
+    const bookmarkedIds = JSON.parse(localStorage.getItem('bookmarkedInternships') || '[]');
+    
+    if (isBookmarked) {
+      // Remove bookmark
+      const updatedIds = bookmarkedIds.filter(id => id !== internshipId);
+      localStorage.setItem('bookmarkedInternships', JSON.stringify(updatedIds));
+    } else {
+      // Add bookmark
+      if (!bookmarkedIds.includes(internshipId)) {
+        bookmarkedIds.push(internshipId);
+        localStorage.setItem('bookmarkedInternships', JSON.stringify(bookmarkedIds));
+      }
+    }
+    
     setIsBookmarked(!isBookmarked);
-    // TODO: Implement bookmark persistence
   };
 
   const handleShare = async () => {
@@ -149,26 +206,6 @@ const InternshipDetailPage = () => {
                     <span className="font-semibold">{internship.organization || internship.company}</span>
                   </div>
                 </div>
-                <div className="flex gap-2">
-                  <button
-                    onClick={handleBookmark}
-                    className={`p-2 rounded-lg border transition-colors ${
-                      isBookmarked
-                        ? 'bg-primary-50 dark:bg-primary-900/20 border-primary-500 text-primary-600 dark:text-primary-400'
-                        : 'border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-400 hover:border-primary-500 hover:text-primary-600'
-                    }`}
-                    title={isBookmarked ? 'Remove bookmark' : 'Bookmark'}
-                  >
-                    <Bookmark className={`h-5 w-5 ${isBookmarked ? 'fill-current' : ''}`} />
-                  </button>
-                  <button
-                    onClick={handleShare}
-                    className="p-2 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-400 hover:border-primary-500 hover:text-primary-600 transition-colors"
-                    title="Share"
-                  >
-                    <Share2 className="h-5 w-5" />
-                  </button>
-                </div>
               </div>
 
               {/* Key Info Grid */}
@@ -210,15 +247,23 @@ const InternshipDetailPage = () => {
                     </div>
                   </div>
                 )}
-              </div>
 
-              {/* Apply Button */}
-              <button
-                onClick={handleApply}
-                className="btn-primary w-full py-3 text-lg font-semibold"
-              >
-                Apply Now
-              </button>
+                {internship.application_deadline && (
+                  <div className="flex items-center gap-3 p-3 bg-orange-50 dark:bg-orange-900/20 rounded-lg border border-orange-200 dark:border-orange-800">
+                    <Calendar className="h-5 w-5 text-orange-600 dark:text-orange-400 flex-shrink-0" />
+                    <div>
+                      <p className="text-xs text-orange-700 dark:text-orange-300">Application Deadline</p>
+                      <p className="font-medium text-orange-900 dark:text-orange-100">
+                        {new Date(internship.application_deadline).toLocaleDateString('en-US', {
+                          year: 'numeric',
+                          month: 'short',
+                          day: 'numeric'
+                        })}
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
 
             {/* Description Card */}
@@ -308,30 +353,12 @@ const InternshipDetailPage = () => {
               </div>
             )}
 
-            {/* Additional Info */}
-            {internship.application_deadline && (
-              <div className="card bg-orange-50 dark:bg-orange-900/20 border-orange-200 dark:border-orange-800">
-                <div className="flex items-center gap-3">
-                  <Calendar className="h-6 w-6 text-orange-600 dark:text-orange-400" />
-                  <div>
-                    <p className="text-sm text-orange-700 dark:text-orange-300">Application Deadline</p>
-                    <p className="text-lg font-bold text-orange-900 dark:text-orange-100">
-                      {new Date(internship.application_deadline).toLocaleDateString('en-US', {
-                        year: 'numeric',
-                        month: 'long',
-                        day: 'numeric'
-                      })}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            )}
           </div>
 
           {/* Right Column - Sidebar */}
           <div className="space-y-6">
             {/* Quick Actions Card */}
-            <div className="card sticky top-6">
+            <div className="card">
               <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">
                 Quick Actions
               </h3>
@@ -363,36 +390,82 @@ const InternshipDetailPage = () => {
               </div>
             </div>
 
-            {/* Company Info Card */}
-            <div className="card">
-              <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-                <Building2 className="h-5 w-5 text-primary-600 dark:text-primary-400" />
-                Company Details
-              </h3>
-              <div className="space-y-3">
-                <div>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">Organization</p>
-                  <p className="text-gray-900 dark:text-white font-semibold text-lg">
-                    {internship.organization || internship.company}
-                  </p>
-                </div>
-                {internship.location && (
+            {/* Candidate Ranking Card */}
+            {user && ranking && (
+              <div className="card bg-gradient-to-br from-purple-50 to-indigo-50 dark:from-purple-900/20 dark:to-indigo-900/20 border-purple-200 dark:border-purple-800">
+                <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+                  <TrendingUp className="h-5 w-5 text-purple-600 dark:text-purple-400" />
+                  Your Ranking
+                </h3>
+                <div className="space-y-4">
+                  {/* Rank Display */}
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="p-3 bg-purple-500 rounded-full">
+                        <Medal className="h-6 w-6 text-white" />
+                      </div>
+                      <div>
+                        <p className="text-3xl font-bold text-gray-900 dark:text-white">
+                          #{ranking.rank}
+                        </p>
+                        <p className="text-sm text-gray-600 dark:text-gray-400">
+                          out of {ranking.total_applicants} candidates
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Percentile Bar */}
                   <div>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">Location</p>
-                    <p className="text-gray-900 dark:text-white font-medium flex items-center gap-1">
-                      <MapPin className="h-4 w-4" />
-                      {internship.location}
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                        {ranking.rank_category}
+                      </span>
+                      <span className="text-sm font-bold text-purple-600 dark:text-purple-400">
+                        {ranking.percentile}th percentile
+                      </span>
+                    </div>
+                    <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3">
+                      <div 
+                        className={`h-3 rounded-full transition-all ${
+                          ranking.percentile >= 90 ? 'bg-green-500' :
+                          ranking.percentile >= 75 ? 'bg-blue-500' :
+                          ranking.percentile >= 50 ? 'bg-yellow-500' :
+                          ranking.percentile >= 25 ? 'bg-orange-500' :
+                          'bg-red-500'
+                        }`}
+                        style={{ width: `${ranking.percentile}%` }}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Score */}
+                  <div className="pt-3 border-t border-purple-200 dark:border-purple-800">
+                    <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">Match Score</p>
+                    <p className="text-2xl font-bold text-purple-600 dark:text-purple-400">
+                      {ranking.score}/100
                     </p>
                   </div>
-                )}
-                {internship.sector && (
-                  <div>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">Industry</p>
-                    <p className="text-gray-900 dark:text-white font-medium">{internship.sector}</p>
+
+                  {/* Info */}
+                  <div className="text-xs text-gray-600 dark:text-gray-400 bg-white/50 dark:bg-gray-800/50 p-3 rounded-lg">
+                    <p>
+                      💡 Ranking based on skills match, education, experience, and profile completeness
+                    </p>
                   </div>
-                )}
+                </div>
               </div>
-            </div>
+            )}
+
+            {/* Loading Ranking */}
+            {user && isLoadingRanking && (
+              <div className="card">
+                <div className="flex items-center justify-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
+                  <span className="ml-3 text-gray-600 dark:text-gray-400">Loading your ranking...</span>
+                </div>
+              </div>
+            )}
 
             {/* Similar Internships Card */}
             {similarInternships.length > 0 && (
@@ -401,7 +474,7 @@ const InternshipDetailPage = () => {
                   <Sparkles className="h-5 w-5 text-primary-600 dark:text-primary-400" />
                   Similar Opportunities
                 </h3>
-                <div className="space-y-3">
+                <div className="space-y-3 max-h-[600px] overflow-y-auto pr-2">
                   {similarInternships.map((similar, idx) => (
                     <div
                       key={idx}
@@ -430,14 +503,6 @@ const InternshipDetailPage = () => {
                 </div>
               </div>
             )}
-
-            {/* Internship ID Card (for reference) */}
-            <div className="card bg-gray-50 dark:bg-gray-800">
-              <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Internship ID</p>
-              <p className="text-sm font-mono text-gray-900 dark:text-white">
-                {internship.internship_id || internship._id}
-              </p>
-            </div>
           </div>
         </div>
       </div>

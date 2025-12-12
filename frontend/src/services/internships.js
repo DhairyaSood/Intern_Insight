@@ -50,6 +50,12 @@ export const internshipService = {
     const response = await api.get(`/internships/search?q=${encodeURIComponent(query)}`);
     return response.data;
   },
+
+  // Get candidate ranking for an internship
+  getRanking: async (internshipId, username) => {
+    const response = await api.get(`/ranking/${internshipId}?username=${username}`);
+    return response.data;
+  },
 };
 
 export default internshipService;

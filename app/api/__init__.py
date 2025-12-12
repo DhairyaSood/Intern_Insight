@@ -12,6 +12,7 @@ from app.api.profiles import create_or_update_profile, get_profile_by_username, 
 from app.api.cities import list_cities
 from app.api.admin import db_stats
 from app.api.resume_parser import parse_resume
+from app.api.candidate_ranking import get_candidate_ranking
 
 # Create API blueprint
 api_bp = Blueprint('api', __name__, url_prefix='/api')
@@ -92,3 +93,9 @@ def admin_db_stats_endpoint():
 def parse_resume_endpoint():
     """Parse resume file and extract data"""
     return parse_resume()
+
+# Candidate ranking route
+@api_bp.route('/ranking/<internship_id>', methods=['GET'])
+def candidate_ranking_endpoint(internship_id):
+    """Get candidate's ranking for a specific internship"""
+    return get_candidate_ranking(internship_id)

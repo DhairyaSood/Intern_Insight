@@ -134,12 +134,25 @@
   }
 }
 
+@keyframes shimmer {
+  0% {
+    background-position: 200% center;
+  }
+  100% {
+    background-position: -200% center;
+  }
+}
+
 .animate-fadeIn {
   animation: fadeIn 0.3s ease-out;
 }
 
 .animate-slideDown {
   animation: slideDown 0.2s ease-out;
+}
+
+.animate-shimmer {
+  animation: shimmer 2s ease-in-out infinite;
 }
 
 /* Mobile-specific optimizations */
