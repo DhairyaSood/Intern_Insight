@@ -1,14 +1,14 @@
-# PM Intern Recommender 🎯
+# Intern Insight 🎯
 
-A sophisticated, production-ready internship recommendation system that connects students with personalized internship opportunities through advanced machine learning algorithms, intelligent matching, and a modern, scalable architecture.
+A sophisticated, production-ready internship recommendation system that connects students with personalized internship opportunities through advanced machine learning algorithms, intelligent matching, cloud-based AI parsing, and a modern React architecture.
 
 ## ✨ Overview
 
-PM Intern Recommender is a professional-grade web application featuring a **modular Flask backend** with an **Atlas-first datastore** (MongoDB Atlas; no JSON at runtime), **comprehensive error handling**, **standardized API responses**, and a **responsive frontend** with organized asset management.
+Intern Insight is a professional-grade web application featuring a **modular Flask backend** with **MongoDB Atlas** database, **cloud-based OCR** (OCR.space), **AI-powered resume parsing** (OpenRouter with 11 models), **comprehensive error handling**, **standardized API responses**, and a **modern React frontend** with Tailwind CSS styling and dark mode support.
 
 ## 🚀 Quick Start
 
-### Installation
+### Backend Setup
 ```bash
 git clone <repository-url>
 cd PM_Intern
@@ -20,21 +20,28 @@ pip install -r requirements.txt
 ### Configuration
 ```bash
 copy .env.example .env
-# Edit .env with your Atlas connection (recommended)
+# Edit .env with:
+# - MongoDB Atlas connection string
+# - OCR_SPACE_API_KEY (get free key at https://ocr.space/ocrapi)
+# - OPENROUTER_API_KEY (get free key at https://openrouter.ai/)
+# - SECRET_KEY and JWT_SECRET_KEY
 ```
 
-### Run the Application
+### Run Backend
 ```bash
 python run.py --debug
 ```
 
-Frontend (served by the backend) is available at:
+### Frontend Setup
+```bash
+cd frontend
+npm install
+npm start
+```
 
-- http://127.0.0.1:3000/frontend/pages/index.html
-
-API base (same origin) is:
-
-- http://127.0.0.1:3000/api
+**Access Application**:
+- Frontend: http://localhost:3000 (React dev server)
+- Backend API: http://127.0.0.1:3000/api (Flask server on port 3000)
 
 ## 🌟 Key Features
 
@@ -42,147 +49,240 @@ API base (same origin) is:
 - **Advanced Search & Filtering**: Multi-criteria search across titles, companies, skills, and locations
 - **AI-Powered Recommendations**: ML-driven "Find Similar" functionality with personalized scoring
 - **Real-time Results**: Live internship listings with instant search feedback
-- **Interactive UI**: Dark/light theme toggle with persistent preferences
+- **Modern React UI**: Responsive design with dark/light theme toggle and persistent preferences
 
 ### 👤 **Comprehensive Profile Management**
-- **Profile Builder**: Personal info, education, location preferences, skills, and interests
-- **Smart Autocomplete**: Dynamic skills management with intelligent suggestions
-- **Progress Tracking**: Visual indicators for profile completion and optimization
+- **AI-Powered Resume Parser**: Upload PDF/Image resumes for automatic profile filling
+  - Cloud OCR (OCR.space API) for image text extraction (25k/month free tier)
+  - AI parsing with OpenRouter (11 free models with rotation)
+  - Models: Llama, Gemini, Mistral, Qwen, Nemotron, and more
+- **Smart Profile Builder**: Personal info, education, location preferences, skills, and interests
+- **Dynamic Skills Management**: Tag-based skills input with intelligent suggestions
 - **Data Persistence**: Automatic saving with MongoDB Atlas
 
 ### 🔐 **Secure Authentication**
-- **User Registration & Login**: Secure account creation and session management
-- **Password Security**: Industry-standard hashing with Werkzeug
-- **Session Persistence**: Maintained login state across browser sessions
-- **Validation & Error Handling**: User-friendly feedback and robust error management
+- **JWT-based Authentication**: Secure token-based auth with refresh tokens
+- **Password Security**: Industry-standard bcrypt hashing
+- **Protected Routes**: Client-side and server-side route protection
+- **Session Management**: Persistent login state with Zustand store
 
 ### 🤖 **Advanced AI Recommendation Engine**
 - **Multi-factor Scoring Algorithm**:
-  - Skills matching (weighted up to 50 points)
+  - Skills matching with fuzzy text matching (weighted up to 50 points)
   - Geographic proximity with distance calculations (25 points)
   - Sector alignment and field compatibility (20 points)
   - Education level matching (5 points)
-- **Intelligent Processing**: Skill normalization, synonym mapping, and fuzzy text matching
-- **Performance Optimized**: Efficient algorithms with response caching
+- **Intelligent Processing**: Skill normalization, synonym mapping (rapidfuzz)
+- **Model Rotation**: Random rotation through 11 AI models for reliability
 
 ## 🏗️ Architecture
 
-### **New Modular Structure (v2.0)**
+### **Modern Full-Stack Structure**
 ```
-PM_Intern/
-├── app/                    # 🚀 Runtime Application
-│   ├── main.py            # Flask factory & routing
-│   ├── config.py          # Environment configuration
-│   ├── api/               # Modular API endpoints
-│   ├── core/              # Business logic & database
-│   ├── utils/             # Shared utilities
-│   └── models/            # Data models & schemas
-├── scripts/               # 🔧 Maintenance Tools
-├── frontend/              # 🎨 Organized Client Assets
-│   ├── pages/            # HTML templates
-│   ├── assets/           # CSS, JS, images
-│   └── components/       # Reusable UI components
-├── docs/                  # 📚 Professional Documentation
-│   ├── architecture/     # System design docs
-│   ├── guides/           # Development guides
-│   └── api/              # API references
-└── data/                  # 💾 JSON data storage
+Intern_Insight/
+├── app/                     # 🚀 Flask Backend
+│   ├── main.py             # Flask app factory
+│   ├── config.py           # Environment config
+│   ├── api/                # REST API endpoints
+│   │   ├── auth.py         # JWT authentication
+│   │   ├── internships.py  # Internship CRUD
+│   │   ├── recommendations.py  # ML recommendations
+│   │   ├── profiles.py     # User profiles
+│   │   └── resume_parser.py # AI resume parsing
+│   ├── core/               # Business logic
+│   │   └── database.py     # MongoDB connection
+│   └── utils/              # Shared utilities
+│       ├── jwt_auth.py      # JWT helpers
+│       ├── logger.py        # Logging
+│       └── response_helpers.py  # API responses
+├── frontend/                # 🎨 React Frontend
+│   ├── src/
+│   │   ├── components/      # React components
+│   │   │   ├── Auth/        # Login, Signup
+│   │   │   ├── Common/      # Navbar, Footer, Theme
+│   │   │   ├── Profile/     # Profile, Resume Upload
+│   │   │   └── Internship/  # Internship cards
+│   │   ├── pages/           # Page components
+│   │   ├── services/        # API services
+│   │   ├── store/           # Zustand stores
+│   │   └── App.jsx          # Root component
+│   └── package.json
+├── tests/                   # 🧪 All Test Files
+│   ├── test_api.py
+│   ├── test_login.py
+│   └── test_signup.py
+├── scripts/                 # 🔧 Utility Scripts
+├── docs/                    # 📚 Documentation
+├── requirements.txt         # Python dependencies
+├── run.py                   # Backend entry point
+└── wsgi.py                  # Production WSGI
+```
+
+### **Data Flow**
+```
+User (Browser)
+    ↓
+React Frontend (Port 3000)
+    ↓ HTTP/JSON
+Flask Backend (Port 3000)
+    ↓
+  ├───> MongoDB Atlas (Database)
+  ├───> OCR.space API (Image OCR)
+  └───> OpenRouter API (AI Parsing)
 ```
 
 ### **Technology Stack**
 
 #### Backend
-- **Python 3.8+** with Flask framework
-- **MongoDB Atlas** primary database (strict Atlas-only mode supported)
+- **Python 3.13+** with Flask 3.1.2
+- **MongoDB Atlas** primary database with connection pooling
 - **Flask-CORS** for cross-origin support
-- **Modular Architecture** with separation of concerns
-- **Comprehensive Error Handling** and logging
-- **Standardized API Responses** with success/error patterns
+- **PyJWT** for JWT authentication
+- **OCR.space API** for cloud-based OCR (no heavy dependencies)
+- **OpenRouter API** for AI resume parsing (11 free models)
+- **PyPDF2** for PDF text extraction
+- **rapidfuzz** for fuzzy text matching in recommendations
+- **Gunicorn** for production WSGI server
+- **Comprehensive Error Handling** and structured logging
 
 #### Frontend
-- **HTML5** with semantic markup
-- **Modern CSS3** with custom properties and responsive design
-- **Vanilla JavaScript** with ES6+ features and Fetch API
-- **Component-based Architecture** for reusable UI elements
-- **Organized Asset Management** with dedicated folders
- - Responsive design patterns; subtle animations/transitions
+- **React 18** with hooks and functional components
+- **React Router v6** for client-side routing
+- **Tailwind CSS** for modern, responsive styling
+- **Zustand** for lightweight state management
+- **Axios** for HTTP requests with interceptors
+- **Lucide React** for beautiful icons
+- **Dark/Light Theme** with system preference detection
+- **Responsive Design** optimized for mobile, tablet, desktop
 
-#### Data Layer
-- **MongoDB Atlas** for scalable primary storage
-- Optional legacy JSON files for development/migration only (not used at runtime when Atlas-only is enabled)
-- **Connection Pooling** and health checks
+#### AI & Cloud Services
+- **OCR.space API** - Free tier: 25,000 requests/month
+- **OpenRouter** - 11 free AI models with rotation:
+  - meta-llama/llama-3.2-3b-instruct:free
+  - google/gemini-2.0-flash-exp:free
+  - mistralai/mistral-7b-instruct:free
+  - And 8 more models for reliability
+
+#### Database & Deployment
+- **MongoDB Atlas** for scalable cloud storage
+- **Render** for backend deployment
+- **Render Static Site** for frontend deployment
+- **Environment Variables** for secure configuration
 
 ### **API Design**
 
-#### **Authentication**
-- `POST /signup` - User registration (legacy-compatible alias for `/api/auth/signup`)
-- `POST /login` - User authentication and session management (alias for `/api/auth/login`)
-- `POST /logout` - Logout (alias for `/api/auth/logout`)
+#### **Authentication** (`/api/auth`)
+- `POST /api/auth/signup` - User registration with validation
+- `POST /api/auth/login` - JWT-based authentication
+- `POST /api/auth/logout` - Token invalidation
+- `GET /api/auth/me` - Get current user info
 
 #### **Core API Endpoints**
-- `GET /api/internships` - Get internship listings with filtering
+- `GET /api/internships` - Get internship listings with search/filter
 - `GET /api/recommendations/{candidate_id}` - Get personalized recommendations
-- `GET /api/recommendations/by_internship/{internship_id}` - Get internships similar to a selected one
+- `GET /api/recommendations/by_internship/{internship_id}` - Find similar internships
 
-#### **Profile Management**
+#### **Profile Management** (`/api/profile`)
 - `POST /api/profile` - Create/update user profiles
 - `GET /api/profile/{candidate_id}` - Retrieve profile data
 - `GET /api/profiles/by_username/{username}` - Fetch by username
 
-#### **Health & Monitoring**
-- `GET /health` - Application health check and status
-- Comprehensive error responses with standardized format
-- Request/response logging and monitoring
+#### **Resume Parsing** (`/api/parse-resume`)
+- `POST /api/parse-resume` - Upload resume (PDF/Image) for AI parsing
+  - Supports: PDF, JPG, PNG (max 5MB)
+  - Returns: name, email, phone, skills, education, experience
+  - Uses: OCR.space + OpenRouter AI with 11 models
+
+#### **Admin & Monitoring**
+- `GET /health` - Application health check
+- `GET /api/admin/db-stats` - Database statistics (Atlas)
+- Standardized error responses with status codes
 
 ## 🚀 Getting Started
 
 ### **Prerequisites**
-- Python 3.8+ 
-- MongoDB (optional - JSON fallback available)
+- Python 3.13+ (backend)
+- Node.js 16+ (frontend)
+- MongoDB Atlas account (free tier available)
+- OCR.space API key (free: 25k/month)
+- OpenRouter API key (free tier available)
 - Modern web browser
 - Git
 
-### **Installation**
+### **Backend Installation**
 
 1. **Clone the Repository**
    ```bash
-   git clone <repository-url>
-   cd PM_Intern
+   git clone https://github.com/DhairyaSood/Intern_Insight.git
+   cd Intern_Insight
    ```
 
-2. **Setup Environment**
+2. **Setup Python Environment**
    ```bash
    python -m venv venv
    venv\Scripts\activate  # Windows
    # source venv/bin/activate  # Linux/Mac
    ```
 
-3. **Install Dependencies**
+3. **Install Backend Dependencies**
    ```bash
    pip install -r requirements.txt
    ```
 
-4. **Setup MongoDB (Atlas Recommended)**
-   - Create a free MongoDB Atlas cluster and a database (e.g., `pm_intern`)
-   - In `.env`, set:
-     - `MONGO_URI=mongodb+srv://<user>:<pass>@<cluster>/pm_intern?retryWrites=true&w=majority`
-     - `DB_NAME=pm_intern`
-     - `DISABLE_JSON_FALLBACK=True` (strict Atlas-only runtime)
-   - Allow your IP in Atlas Network Access
-
-5. **Configuration**
+4. **Environment Configuration**
    ```bash
    copy .env.example .env  # Windows
-# Edit .env for MongoDB Atlas connection
+   # cp .env.example .env  # Linux/Mac
+   ```
+   
+   Edit `.env` with your configuration:
+   ```env
+   # Database
+   MONGO_URI=mongodb+srv://<user>:<pass>@<cluster>/pm_intern?retryWrites=true&w=majority
+   DB_NAME=pm_intern
+   
+   # Security
+   SECRET_KEY=your-secure-secret-key
+   JWT_SECRET_KEY=your-jwt-secret-key
+   
+   # AI Services (Required for resume parsing)
+   OCR_SPACE_API_KEY=your-ocr-space-key
+   OPENROUTER_API_KEY=your-openrouter-key
+   
+   # CORS
+   CORS_ORIGINS=http://localhost:3000
+   
+   # Environment
+   FLASK_ENV=development
+   API_PORT=3000
    ```
 
-6. **Run Application**
+5. **Run Backend Server**
    ```bash
    python run.py --debug
+   # Backend runs on http://127.0.0.1:3000
    ```
 
-6. **Access Application**
-   - Open browser to `http://127.0.0.1:3000/frontend/pages/index.html`
+### **Frontend Installation**
+
+1. **Navigate to Frontend**
+   ```bash
+   cd frontend
+   ```
+
+2. **Install Dependencies**
+   ```bash
+   npm install
+   ```
+
+3. **Start Development Server**
+   ```bash
+   npm start
+   # Frontend runs on http://localhost:3000
+   ```
+
+4. **Access Application**
+   - Open browser to `http://localhost:3000`
    - Application ready! 🎉
 
 ### **Development & Verification Commands**
@@ -206,10 +306,34 @@ curl http://127.0.0.1:3000/api/admin/db-stats
 ```json
 {
   "candidate_id": "CAND_xxxxxxxx",
+  "username": "string",
   "name": "string",
-  "skills_possessed": ["skill1", "skill2"],
-  "location_preference": "string",
-  "education_level": "Undergraduate|Postgraduate",
+  "email": "email@example.com",
+  "phone": "+1234567890",
+  "skills_possessed": ["Python", "React", "MongoDB"],
+  "location_preference": "City, State",
+  "education_level": "Bachelor's|Master's|PhD",
+  "field_of_study": "Computer Science",
+  "experience": "Work experience description",
+  "sector_interests": ["Technology", "Finance"],
+  "created_at": "2024-01-01T00:00:00Z",
+  "updated_at": "2024-01-01T00:00:00Z"
+}
+```
+
+### **Resume Parse Response**
+```json
+{
+  "success": true,
+  "data": {
+    "name": "John Doe",
+    "email": "john@example.com",
+    "phone": "+1234567890",
+    "skills": ["Python", "JavaScript", "SQL"],
+    "education": "Bachelor of Science in Computer Science\nXYZ University, 2020-2024",
+    "experience": "Software Engineer Intern\nABC Corp, Summer 2023"
+  },
+  "message": "Resume parsed successfully"
 }
 ```
 
@@ -241,74 +365,112 @@ curl http://127.0.0.1:3000/api/admin/db-stats
 
 ## 🎯 Usage Guide
 
-### For Students
+### **For Students**
 
-1. **Getting Started**:
-   - Visit the application homepage
-   - Create an account using the signup feature
+1. **Getting Started**
+   - Visit http://localhost:3000 (after starting frontend)
+   - Click "Sign Up" to create an account
    - Complete your profile with accurate information
 
-2. **Profile Optimization**:
-   - Add all relevant skills (system supports skill synonyms)
-### **For Users**
+2. **Smart Profile Creation**
+   - **Option 1: Manual Entry**
+     - Fill in name, email, phone with country code
+     - Add skills using the tag input
+     - Specify location, education, and experience
+   
+   - **Option 2: AI-Powered Resume Upload**
+     - Click "Upload Resume" on profile page
+     - Upload PDF or image (JPG/PNG) resume
+     - Watch AI extract information automatically
+     - Review and edit extracted data
 
-1. **Create Account & Profile**
-   - Register with unique username/password
-   - Complete profile with skills, location, education
-   - Set sector interests and field of study
+3. **Discover Internships**
+   - Browse internship listings on the home page
+   - Use search and filters (location, skills, company)
+   - View detailed internship information
+   - Get personalized recommendations based on your profile
 
-2. **Discover Internships**
-   - Browse internship listings on home page
-   - Use advanced search and filtering
-   - Get personalized recommendations from your profile
-   - Use "Find Similar" feature for targeted discovery
-
-3. **Profile Optimization**
-   - Keep skills updated and relevant
+4. **Profile Optimization**
+   - Keep skills updated and comprehensive
    - Specify accurate location preferences
-   - Complete all profile sections for better recommendations
+   - Complete all profile sections for better matching
+   - Use the resume parser to update quickly
 
 ### **For Developers**
 
 1. **Development Setup**
    ```bash
+   # Backend (Terminal 1)
    python run.py --debug
-   # Access frontend at http://127.0.0.1:3000/frontend/pages/index.html
+   
+   # Frontend (Terminal 2)
+   cd frontend && npm start
    ```
 
 2. **Adding Features**
-   - Create new API endpoints in `app/api/`
-   - Add frontend components in `frontend/components/`
-   - Use standardized response helpers from `app/utils/`
+   - Backend: Create endpoints in `app/api/`
+   - Frontend: Add components in `frontend/src/components/`
+   - State: Use Zustand stores in `frontend/src/store/`
+   - Styling: Use Tailwind CSS utility classes
 
-3. **Database Operations**
+3. **API Integration**
+   ```javascript
+   // frontend/src/services/api.js
+   import api from './api';
+   const response = await api.get('/internships');
+   ```
+
+4. **Database Operations**
    ```python
+   # app/core/database.py
    from app.core.database import db_manager
    db = db_manager.get_db()
-   # MongoDB Atlas operations only (when DISABLE_JSON_FALLBACK=True)
+   profiles = db.profiles.find({"username": username})
    ```
 
 ## 🧪 Testing & Validation
 
+### **Run Tests**
+```bash
+# All tests in tests/ folder
+python -m pytest tests/
+
+# Specific test file
+python -m pytest tests/test_api.py
+
+# With coverage
+python -m pytest tests/ --cov=app
+```
+
 ### **Health Checks**
 ```bash
+# Application health
 curl http://127.0.0.1:3000/health
-# Returns application status and version
+
+# Database stats
+curl http://127.0.0.1:3000/api/admin/db-stats
 ```
 
 ### **API Testing**
 ```bash
-# Test internships endpoint
+# Get internships
 curl http://127.0.0.1:3000/api/internships
 
-# Test recommendations
-curl http://127.0.0.1:3000/api/recommendations/CAND_xxxxxxxx
+# Get recommendations (requires auth token)
+curl -H "Authorization: Bearer <token>" \
+  http://127.0.0.1:3000/api/recommendations/CAND_xxxxxxxx
+
+# Upload resume for parsing
+curl -X POST -F "file=@resume.pdf" \
+  -H "Authorization: Bearer <token>" \
+  http://127.0.0.1:3000/api/parse-resume
 ```
 
-### **Data Validation**
-- Automatic data integrity checks
-- Input validation and sanitization
-- Error logging and monitoring
+### **Frontend Testing**
+```bash
+cd frontend
+npm test
+```
 
 ## 🔒 Security & Performance
 
@@ -331,18 +493,39 @@ curl http://127.0.0.1:3000/api/recommendations/CAND_xxxxxxxx
 - **Interview Preparation**: Resources and practice modules
 
 ### **Security Features**
-- **Password Security**: Werkzeug-based hashing with salt
-- **Input Validation**: Server-side validation and sanitization
-- **CORS Protection**: Configured for secure cross-origin requests
-- **Session Management**: Secure session handling with proper timeouts
+- **JWT Authentication**: Token-based auth with bcrypt password hashing
+- **Environment Variables**: All sensitive data in `.env` (gitignored)
+- **CORS Protection**: Configured for specific origins only
+- **Input Validation**: Server-side validation for all user inputs
+- **SQL Injection Prevention**: MongoDB parameterized queries
+- **XSS Protection**: React's built-in XSS protection
+- **No API Keys in Code**: All keys loaded from environment
 - **Error Handling**: Graceful error responses without information leakage
 - **Request Logging**: Comprehensive request/response monitoring
 
 ### **Performance Optimizations**
-- **Database Connection Pooling**: Efficient MongoDB connections
+- **Connection Pooling**: MongoDB connection pooling (max 10)
+- **Model Rotation**: AI model rotation for reliability and load distribution
+- **Lazy Loading**: React lazy loading for code splitting
+- **Caching**: Browser caching for static assets
+- **Optimized Builds**: Production builds with minification
+- **Efficient Algorithms**: O(n log n) recommendation scoring
+- **Cloud Services**: No heavy local OCR dependencies
 - **Modular Architecture**: Reduced loading times and improved maintainability
-- **Optimized Frontend**: Organized assets and component-based structure
-- **Efficient Algorithms**: Optimized recommendation scoring and matching
+
+## 🔮 Future Roadmap
+
+### **Planned Features**
+- [ ] **Email Notifications**: Alerts for new matching internships
+- [ ] **Application Tracking**: Track application status and deadlines
+- [ ] **Company Profiles**: Detailed company information and reviews
+- [ ] **Advanced Filters**: Salary range, duration, remote options
+- [ ] **Analytics Dashboard**: Profile views, application success rate
+- [ ] **Interview Preparation**: Resources and tips for interviews
+- [ ] **Referral System**: Get bonus features by referring friends
+- [ ] **Mobile App**: React Native mobile application
+- [ ] **Real-time Chat**: Direct messaging with recruiters
+- [ ] **Video Interviews**: Integrated video interview platform
 
 ## 📚 Documentation
 
@@ -357,55 +540,107 @@ curl http://127.0.0.1:3000/api/recommendations/CAND_xxxxxxxx
 - **API Documentation**: Check [API Reference](docs/api/API_REFERENCE.md)
 - **Architecture Details**: View [Architecture Docs](docs/architecture/)
 
-## 🚀 Deployment & Production
+## 🚀 Deployment
+
+### **Production Deployment (Render)**
+
+This project is deployed on Render:
+- **Backend**: https://pm-intern-fobb.onrender.com
+- **Frontend**: https://intern-insight-n1wn.onrender.com
+
+### **Backend Deployment Steps**
+
+1. **Create Web Service on Render**
+   - Connect GitHub repository
+   - Build command: `pip install -r requirements.txt`
+   - Start command: `gunicorn wsgi:app`
+   - Environment: Python 3.13
+
+2. **Set Environment Variables**
+   ```
+   MONGO_URI=mongodb+srv://...
+   DB_NAME=pm_intern
+   SECRET_KEY=<secure-key>
+   JWT_SECRET_KEY=<secure-jwt-key>
+   OCR_SPACE_API_KEY=<your-key>
+   OPENROUTER_API_KEY=<your-key>
+   CORS_ORIGINS=https://intern-insight-n1wn.onrender.com
+   FLASK_ENV=production
+   FLASK_DEBUG=False
+   ```
+
+3. **Deploy**
+   - Push to main branch
+   - Render auto-deploys on commit
+
+### **Frontend Deployment Steps**
+
+1. **Create Static Site on Render**
+   - Connect GitHub repository
+   - Build command: `cd frontend && npm install && npm run build`
+   - Publish directory: `frontend/build`
+
+2. **Environment Variables**
+   ```
+   REACT_APP_API_URL=https://pm-intern-fobb.onrender.com
+   ```
+
+3. **Deploy**
+   - Push to main branch
+   - Render builds and deploys automatically
 
 ### **Production Checklist**
-- [ ] Set `DEBUG=False` in environment
-- [ ] Configure MongoDB connection
-- [ ] Set secure `SECRET_KEY`
-- [ ] Configure CORS for production domains
-- [ ] Set up reverse proxy (nginx recommended)
-- [ ] Configure application logging
-
-### **Docker Support**
-```dockerfile
-FROM python:3.9-slim
-WORKDIR /app
-COPY requirements.txt .
-RUN pip install -r requirements.txt
-COPY . .
-EXPOSE 3000
-CMD ["python", "run.py", "--port", "3000"]
-```
+- [ ] Set `FLASK_DEBUG=False`
+- [ ] Use strong `SECRET_KEY` and `JWT_SECRET_KEY`
+- [ ] Configure MongoDB Atlas IP whitelist (0.0.0.0/0 for Render)
+- [ ] Add frontend URL to `CORS_ORIGINS`
+- [ ] Set up environment variables in Render dashboard
+- [ ] Test all API endpoints after deployment
+- [ ] Monitor logs for errors
 
 ## 🤝 Contributing
 
+We welcome contributions! Please follow these steps:
+
 1. **Fork the repository**
-2. **Create feature branch**: `git checkout -b feature-name`
-3. **Make changes** following code standards
-4. **Add tests** for new functionality
-5. **Update documentation** as needed
-6. **Submit pull request**
+2. **Create feature branch**: `git checkout -b feature/amazing-feature`
+3. **Commit changes**: `git commit -m 'Add amazing feature'`
+4. **Push to branch**: `git push origin feature/amazing-feature`
+5. **Open Pull Request**
 
 ### **Code Standards**
-- **Python**: Follow PEP 8 guidelines
-- **JavaScript**: Use ES6+ features and consistent formatting
-- **Documentation**: Update README and docs for significant changes
-- **Testing**: Add comprehensive tests for new features
+- **Python**: Follow PEP 8, use type hints where applicable
+- **JavaScript/React**: ESLint configuration, use functional components
+- **Commits**: Clear, descriptive commit messages
+- **Documentation**: Update docs for significant changes
+- **Testing**: Add tests for new features (in `tests/` folder)
+
+---
 
 ## 📄 License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
+---
+
 ## 🙏 Acknowledgments
 
-- **Flask Community** for the excellent web framework
-- **MongoDB** for scalable database technology
-- **Open Source Libraries**: scikit-learn, geopy, and other dependencies
-- **Contributors** and community feedback
+- **Flask** - Excellent Python web framework
+- **React** - Modern UI library
+- **MongoDB Atlas** - Scalable cloud database
+- **OCR.space** - Free OCR API service (25k requests/month)
+- **OpenRouter** - Free AI model access (11 models)
+- **Tailwind CSS** - Utility-first CSS framework
+- **Render** - Easy deployment platform
+- **Zustand** - Simple state management
+- **PyPDF2** - PDF text extraction
 
 ---
 
-**PM Intern Recommender v2.0** - Professional Internship Matching Platform 🎯
+**Intern Insight v3.0** - Intelligent Internship Matching Platform 🎯
 
-**Made with ❤️ for connecting students with their dream internships**
+**Live Deployment**: [intern-insight-n1wn.onrender.com](https://intern-insight-n1wn.onrender.com)
+
+**Backend API**: [pm-intern-fobb.onrender.com](https://pm-intern-fobb.onrender.com)
+
+**Made with ❤️ by [DhairyaSood](https://github.com/DhairyaSood)**

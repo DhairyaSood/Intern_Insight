@@ -1,19 +1,19 @@
 # Intern Insight - React Frontend
 
-Modern React frontend for the Intern Insight internship recommendation platform.
+Modern, responsive React frontend for the Intern Insight internship recommendation platform with AI-powered resume parsing and intelligent matching.
 
 ## 🚀 Quick Start
 
 ### Prerequisites
-- Node.js (v16 or higher)
-- npm or yarn
+- Node.js 16+ (with npm)
 - Backend API running on http://127.0.0.1:3000
+- Modern web browser
 
 ### Installation
 
 ```bash
-# Navigate to frontend-new directory
-cd frontend-new
+# Navigate to frontend directory
+cd frontend
 
 # Install dependencies
 npm install
@@ -26,37 +26,49 @@ The app will open at `http://localhost:3000`
 
 ## 📦 Tech Stack
 
-- **React 18** - UI library
-- **React Router v6** - Routing
-- **Tailwind CSS** - Styling
-- **Zustand** - State management
-- **Axios** - HTTP client
-- **Tesseract.js** - OCR for resume parsing
-- **Lucide React** - Icons
-- **React Hook Form** - Form handling
+- **React 18** - Modern UI library with hooks
+- **React Router v6** - Client-side routing
+- **Tailwind CSS** - Utility-first styling framework
+- **Zustand** - Lightweight state management
+- **Axios** - HTTP client with interceptors
+- **Lucide React** - Beautiful icon library
+- **React Hook Form** - Efficient form handling
 
 ## 🏗️ Project Structure
 
 ```
-frontend-new/
+frontend/
 ├── public/
-│   └── index.html
+│   └── index.html          # HTML template
 ├── src/
 │   ├── components/
 │   │   ├── Auth/           # Login, Signup, ProtectedRoute
-│   │   ├── Common/         # Navbar, Footer, ThemeToggle, etc.
-│   │   ├── Internships/    # Internship components (to be built)
-│   │   ├── Profile/        # Profile form, Resume upload (to be built)
-│   │   ├── Company/        # Company dashboard (to be built)
-│   │   └── Recommendations/ # AI recommendations (to be built)
-│   ├── pages/              # Page components
+│   │   ├── Common/         # Navbar, Footer, ThemeToggle, LoadingSpinner
+│   │   ├── Internship/     # InternshipCard, InternshipList
+│   │   ├── Profile/        # ProfileForm, ResumeUpload, SkillsInput
+│   │   └── Recommendations/ # Recommendation components
+│   ├── pages/              # Page-level components
+│   │   ├── LandingPage.jsx
+│   │   ├── LoginPage.jsx
+│   │   ├── SignupPage.jsx
+│   │   ├── ProfilePage.jsx
+│   │   ├── InternshipsPage.jsx
+│   │   └── RecommendationsPage.jsx
 │   ├── services/           # API service functions
+│   │   ├── api.js          # Axios instance with auth
+│   │   ├── auth.js         # Authentication API
+│   │   ├── profile.js      # Profile API
+│   │   ├── internships.js  # Internships API
+│   │   └── ocr.js          # Resume parsing API
 │   ├── store/              # Zustand state stores
-│   ├── utils/              # Helper functions
+│   │   ├── authStore.js    # Auth state & user data
+│   │   ├── themeStore.js   # Dark/Light theme
+│   │   └── internshipStore.js # Internship data
 │   ├── hooks/              # Custom React hooks
-│   ├── App.jsx             # Main app component
+│   ├── utils/              # Helper functions
+│   ├── App.jsx             # Main app with routes
 │   ├── index.js            # Entry point
-│   └── index.css           # Global styles
+│   └── index.css           # Global Tailwind styles
 ├── package.json
 ├── tailwind.config.js
 └── README.md
@@ -64,26 +76,25 @@ frontend-new/
 
 ## 🎨 Features Implemented
 
-### ✅ Complete
-- Authentication (Login/Signup)
-- Protected routes
-- Dark/Light theme toggle
-- Responsive navigation
-- API integration with backend
-- State management (Zustand)
-- Tailwind CSS styling
-- Error handling
-- Loading states
-
-### 🚧 To Be Built
-- Internship detail pages
-- Profile form with validation
-- Resume upload with OCR
-- Like/Dislike functionality
-- Recommendations panel
-- Applications tracking
-- Company dashboard
-- Advanced filters
+### ✅ Complete & Production-Ready
+- ✅ JWT Authentication (Login/Signup/Logout)
+- ✅ Protected routes with auto-redirect
+- ✅ Dark/Light theme toggle with persistence
+- ✅ Responsive navigation with mobile menu
+- ✅ AI-powered resume upload & parsing
+  - OCR for images (JPG, PNG)
+  - PDF text extraction
+  - Auto-fill profile from resume
+- ✅ Profile management with validation
+- ✅ Skills tag input with auto-suggestions
+- ✅ Country code selector for phone numbers
+- ✅ Internship listings with search/filter
+- ✅ Personalized recommendations
+- ✅ Beautiful loading states & animations
+- ✅ Error handling & user feedback
+- ✅ API integration with backend
+- ✅ State management (Zustand)
+- ✅ Responsive design (mobile-first)
 
 ## 🔧 Available Scripts
 
@@ -97,79 +108,133 @@ npm run build
 # Run tests
 npm test
 
-# Eject (one-way operation)
+# Run ESLint
+npm run lint
+
+# Format code
+npm run format
+```
 npm run eject
 ```
 
 ## 🌐 Environment Variables
 
-Create a `.env` file in the root:
+Create a `.env` file in the frontend directory:
 
 ```env
-REACT_APP_API_BASE_URL=http://127.0.0.1:3000/api
-REACT_APP_API_VERSION=v1
+REACT_APP_API_BASE_URL=http://127.0.0.1:3000
 REACT_APP_ENV=development
+```
+
+For production (Render):
+```env
+REACT_APP_API_BASE_URL=https://pm-intern-fobb.onrender.com
+REACT_APP_ENV=production
 ```
 
 ## 🎯 API Integration
 
-The app connects to the Flask backend API. Make sure the backend is running:
+The app connects to the Flask backend API using Axios. The API client in `src/services/api.js` automatically:
+- Adds JWT token to requests
+- Handles authentication errors
+- Provides centralized error handling
+- Supports request/response interceptors
 
+**Backend must be running**:
 ```bash
 # In the main project directory
-python run.py
+python run.py --debug
 ```
 
 ## 📱 Responsive Design
 
-The app is fully responsive and optimized for:
-- Mobile (320px+)
-- Tablet (768px+)
-- Desktop (1024px+)
-- Large screens (1440px+)
+Fully responsive design optimized for all devices:
+- **Mobile**: 320px+ (responsive navigation, touch-friendly)
+- **Tablet**: 768px+ (optimized layouts)
+- **Desktop**: 1024px+ (full features)
+- **Large screens**: 1440px+ (wide layouts)
 
 ## 🎨 Theming
 
-Dark mode is supported and persisted in localStorage. Users can toggle between light and dark themes using the moon/sun icon in the navbar.
+**Dark/Light Mode**:
+- Auto-detects system preference on first visit
+- Toggle using moon/sun icon in navbar
+- Preference persisted in localStorage
+- Smooth transitions between themes
+- All components support both themes
 
 ## 🔒 Authentication Flow
 
-1. User signs up or logs in
-2. JWT token is stored in localStorage
-3. Token is automatically included in all API requests
-4. Protected routes check authentication status
-5. Unauthorized users are redirected to login
+1. **Signup/Login** → JWT token received from backend
+2. **Token Storage** → Stored in localStorage (authStore)
+3. **Auto-Include** → Axios interceptor adds to all requests
+4. **Route Protection** → `ProtectedRoute` checks authentication
+5. **Auto-Redirect** → Unauthorized users → login page
+6. **Token Refresh** → Automatic token validation
 
-## 📝 Next Steps
+## 🚀 Deployment
 
-1. Build internship listing components
-2. Implement profile form with resume OCR
-3. Add like/dislike interaction buttons
-4. Create recommendations panel
-5. Build application tracking system
-6. Implement company dashboard
+### Build for Production
+```bash
+npm run build
+```
+
+### Deploy to Render
+1. Connect GitHub repository
+2. Set build command: `npm install && npm run build`
+3. Set publish directory: `build`
+4. Add environment variables (see above)
+5. Deploy!
 
 ## 🐛 Troubleshooting
 
 ### Port already in use
 ```bash
-# Kill process on port 3000
+# Windows
 netstat -ano | findstr :3000
 taskkill /PID <PID> /F
 
+# Linux/Mac
+lsof -ti:3000 | xargs kill -9
+
 # Or use different port
-set PORT=3001 && npm start
+PORT=3001 npm start
 ```
 
 ### Module not found errors
 ```bash
 # Clear cache and reinstall
-rm -rf node_modules
+rm -rf node_modules package-lock.json
 npm install
 ```
 
 ### Tailwind styles not working
 ```bash
+# Rebuild Tailwind
+npm run build:css
+# Or restart dev server
+npm start
+```
+
+### API connection issues
+- Check backend is running on correct port
+- Verify CORS is configured for frontend URL
+- Check `.env` has correct `REACT_APP_API_BASE_URL`
+- Open browser console for detailed errors
+
+---
+
+## 📚 Learn More
+
+- [React Documentation](https://react.dev/)
+- [React Router](https://reactrouter.com/)
+- [Tailwind CSS](https://tailwindcss.com/)
+- [Zustand](https://github.com/pmndrs/zustand)
+- [Axios](https://axios-http.com/)
+
+---
+
+**Built with ❤️ using React & Tailwind CSS**
 # Restart dev server
 npm start
 ```
