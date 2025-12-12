@@ -542,12 +542,32 @@ const InternshipsPage = () => {
                     No similar internships found
                   </p>
                 ) : (
-                  similarInternships.map((internship) => (
+                  similarInternships.map((internship) => {
+                    const internshipId = internship.internship_id || internship._id;
+                    const isBookmarked = bookmarkedIds.includes(internshipId);
+                    
+                    return (
                     <div
-                      key={internship.internship_id}
-                      className="card-compact"
+                      key={internshipId}
+                      className="card-compact relative"
                     >
-                      <div className="mb-3">
+                      {/* Bookmark button */}
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          toggleBookmark(internshipId);
+                        }}
+                        className={`absolute top-3 right-3 p-1.5 rounded-lg transition-all z-10 ${
+                          isBookmarked
+                            ? 'bg-primary-500 text-white hover:bg-primary-600'
+                            : 'bg-white dark:bg-gray-700 text-gray-400 hover:text-primary-500 border border-gray-200 dark:border-gray-600'
+                        }`}
+                        title={isBookmarked ? 'Remove bookmark' : 'Bookmark'}
+                      >
+                        <Bookmark className={`h-3.5 w-3.5 ${isBookmarked ? 'fill-current' : ''}`} />
+                      </button>
+
+                      <div className="mb-3 pr-8">
                         <h4 className="font-semibold text-gray-900 dark:text-white text-sm mb-1">
                           {internship.title}
                         </h4>
@@ -602,7 +622,7 @@ const InternshipsPage = () => {
                         </button>
                       </div>
                     </div>
-                  ))
+                  )})
                 )}
               </div>
             </div>

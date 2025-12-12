@@ -45,11 +45,13 @@ const CompaniesPage = () => {
 
       // Handle different response structures
       const companiesData = companiesRes.data?.companies || companiesRes.data || [];
-      const sectorsData = sectorsRes.data?.sectors || sectorsRes.data || [];
+      // Backend returns sectors array directly in data, not nested
+      const sectorsData = Array.isArray(sectorsRes.data) ? sectorsRes.data : (sectorsRes.data?.sectors || sectorsRes.data || []);
       const statsData = statsRes.data || null;
 
       console.log('Parsed companies:', companiesData);
       console.log('Parsed sectors:', sectorsData);
+      console.log('Sectors count:', sectorsData.length);
       
       setCompanies(companiesData);
       setSectors(sectorsData);
@@ -244,15 +246,20 @@ const CompaniesPage = () => {
                 className="input-field rounded-lg"
               >
                 <option value="">All Sectors</option>
-                {sectors && sectors.length > 0 && sectors.map((sector, index) => {
-                  const sectorName = typeof sector === 'string' ? sector : sector.sector;
-                  const sectorCount = typeof sector === 'object' ? sector.count : '';
-                  return (
-                    <option key={sectorName || index} value={sectorName}>
-                      {sectorName} {sectorCount ? `(${sectorCount})` : ''}
-                    </option>
-                  );
-                })}
+                {sectors && sectors.length > 0 ? (
+                  sectors.map((sector, index) => {
+                    // Handle both string and object formats
+                    const sectorName = typeof sector === 'string' ? sector : (sector.sector || sector.name || 'Unknown');
+                    const sectorCount = typeof sector === 'object' ? sector.count : '';
+                    return (
+                      <option key={index} value={sectorName}>
+                        {sectorName}{sectorCount ? ` (${sectorCount})` : ''}
+                      </option>
+                    );
+                  })
+                ) : (
+                  <option disabled>Loading sectors...</option>
+                )}
               </select>
             </div>
 

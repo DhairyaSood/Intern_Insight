@@ -279,6 +279,28 @@ const InternshipDetailPage = () => {
                     <span className="font-semibold group-hover:underline">{internship.organization || internship.company}</span>
                   </button>
                 </div>
+                
+                {/* Top-right action buttons */}
+                <div className="flex items-center gap-2 ml-4">
+                  <button
+                    onClick={handleBookmark}
+                    className={`p-2.5 rounded-lg transition-all ${
+                      isBookmarked
+                        ? 'bg-primary-500 text-white hover:bg-primary-600'
+                        : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-primary-50 dark:hover:bg-primary-900/20 hover:text-primary-600 dark:hover:text-primary-400 border border-gray-200 dark:border-gray-700'
+                    }`}
+                    title={isBookmarked ? 'Remove bookmark' : 'Bookmark'}
+                  >
+                    <Bookmark className={`h-5 w-5 ${isBookmarked ? 'fill-current' : ''}`} />
+                  </button>
+                  <button
+                    onClick={handleShare}
+                    className="p-2.5 rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-primary-50 dark:hover:bg-primary-900/20 hover:text-primary-600 dark:hover:text-primary-400 border border-gray-200 dark:border-gray-700 transition-all"
+                    title="Share internship"
+                  >
+                    <Share2 className="h-5 w-5" />
+                  </button>
+                </div>
               </div>
 
               {/* Key Info Grid */}
@@ -322,9 +344,9 @@ const InternshipDetailPage = () => {
                 )}
 
                 {internship.application_deadline && (
-                  <div className="flex items-center gap-3 p-3 bg-orange-50 dark:bg-orange-900/20 rounded-lg border border-orange-200 dark:border-orange-800">
+                  <div className="md:col-span-2 flex items-center gap-3 p-3 bg-orange-50 dark:bg-orange-900/20 rounded-lg border border-orange-200 dark:border-orange-800">
                     <Calendar className="h-5 w-5 text-orange-600 dark:text-orange-400 flex-shrink-0" />
-                    <div>
+                    <div className="flex-1">
                       <p className="text-xs text-orange-700 dark:text-orange-300">Application Deadline</p>
                       <p className="font-medium text-orange-900 dark:text-orange-100">
                         {new Date(internship.application_deadline).toLocaleDateString('en-US', {
@@ -334,6 +356,24 @@ const InternshipDetailPage = () => {
                         })}
                       </p>
                     </div>
+                    <button
+                      onClick={handleApply}
+                      className={`px-6 py-2.5 rounded-lg font-semibold transition-all whitespace-nowrap group ${
+                        hasApplied
+                          ? 'bg-green-500 hover:bg-red-600 text-white'
+                          : 'bg-primary-600 hover:bg-primary-700 text-white shadow-lg hover:shadow-xl'
+                      }`}
+                    >
+                      {hasApplied ? (
+                        <span className="flex items-center gap-2">
+                          <CheckCircle className="h-5 w-5" />
+                          <span className="group-hover:hidden">Applied</span>
+                          <span className="hidden group-hover:inline">Withdraw</span>
+                        </span>
+                      ) : (
+                        'Apply Now'
+                      )}
+                    </button>
                   </div>
                 )}
               </div>
@@ -430,51 +470,6 @@ const InternshipDetailPage = () => {
 
           {/* Right Column - Sidebar */}
           <div className="space-y-6">
-            {/* Quick Actions Card */}
-            <div className="card">
-              <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">
-                Quick Actions
-              </h3>
-              <div className="space-y-3">
-                <button
-                  onClick={handleApply}
-                  className={`w-full py-3 px-4 rounded-lg font-semibold transition-all group ${
-                    hasApplied
-                      ? 'bg-green-500 hover:bg-red-600 text-white'
-                      : 'btn-primary'
-                  }`}
-                >
-                  {hasApplied ? (
-                    <span className="flex items-center justify-center gap-2">
-                      <CheckCircle className="h-5 w-5" />
-                      <span className="group-hover:hidden">Applied</span>
-                      <span className="hidden group-hover:inline">Withdraw Application</span>
-                    </span>
-                  ) : (
-                    'Apply Now'
-                  )}
-                </button>
-                <button
-                  onClick={handleBookmark}
-                  className={`w-full px-4 py-2 rounded-lg border transition-colors ${
-                    isBookmarked
-                      ? 'bg-primary-50 dark:bg-primary-900/20 border-primary-500 text-primary-600 dark:text-primary-400'
-                      : 'border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-400 hover:border-primary-500'
-                  }`}
-                >
-                  <Bookmark className={`h-4 w-4 inline mr-2 ${isBookmarked ? 'fill-current' : ''}`} />
-                  {isBookmarked ? 'Bookmarked' : 'Save for Later'}
-                </button>
-                <button
-                  onClick={handleShare}
-                  className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-400 hover:border-primary-500 transition-colors"
-                >
-                  <Share2 className="h-4 w-4 inline mr-2" />
-                  Share Internship
-                </button>
-              </div>
-            </div>
-
             {/* Candidate Ranking Card */}
             {user && ranking && (
               <div className="card bg-gradient-to-br from-purple-50 to-indigo-50 dark:from-purple-900/20 dark:to-indigo-900/20 border-purple-200 dark:border-purple-800">
