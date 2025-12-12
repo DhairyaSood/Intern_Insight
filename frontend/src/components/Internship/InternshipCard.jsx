@@ -1,16 +1,38 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { MapPin, Sparkles } from 'lucide-react';
+import { MapPin, Sparkles, Bookmark } from 'lucide-react';
 
-const InternshipCard = ({ internship, onShowSimilar, showMatchScore = false }) => {
+const InternshipCard = ({ internship, onShowSimilar, showMatchScore = false, isBookmarked = false, onToggleBookmark }) => {
   const navigate = useNavigate();
 
   const handleViewDetails = () => {
     navigate(`/internship/${internship.internship_id || internship._id}`);
   };
 
+  const handleBookmarkClick = (e) => {
+    e.stopPropagation();
+    if (onToggleBookmark) {
+      onToggleBookmark(internship.internship_id || internship._id);
+    }
+  };
+
   return (
     <div className="card-compact md:hover:scale-105 transition-transform relative h-full flex flex-col">
+      {/* Bookmark Button */}
+      {onToggleBookmark && (
+        <button
+          onClick={handleBookmarkClick}
+          className={`absolute top-3 right-3 p-2 rounded-lg transition-all z-10 ${
+            isBookmarked
+              ? 'bg-primary-500 text-white hover:bg-primary-600'
+              : 'bg-white dark:bg-gray-700 text-gray-400 hover:text-primary-500 border border-gray-200 dark:border-gray-600'
+          }`}
+          title={isBookmarked ? 'Remove bookmark' : 'Bookmark'}
+        >
+          <Bookmark className={`h-4 w-4 ${isBookmarked ? 'fill-current' : ''}`} />
+        </button>
+      )}
+      
       <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2 pr-24 line-clamp-2 min-h-[3.5rem]">
         {internship.title}
       </h3>

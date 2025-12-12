@@ -16,6 +16,20 @@ const RecommendationsPage = () => {
   const [isLoadingProfile, setIsLoadingProfile] = useState(true);
   const [profileError, setProfileError] = useState(null);
   const [userProfile, setUserProfile] = useState(null);
+  const [bookmarkedIds, setBookmarkedIds] = useState(() => {
+    const saved = localStorage.getItem('bookmarkedInternships');
+    return saved ? JSON.parse(saved) : [];
+  });
+
+  const toggleBookmark = (internshipId) => {
+    setBookmarkedIds(prev => {
+      const updated = prev.includes(internshipId)
+        ? prev.filter(id => id !== internshipId)
+        : [...prev, internshipId];
+      localStorage.setItem('bookmarkedInternships', JSON.stringify(updated));
+      return updated;
+    });
+  };
 
   useEffect(() => {
     fetchInternships();
@@ -248,6 +262,8 @@ const RecommendationsPage = () => {
                 internship={internship}
                 onShowSimilar={handleShowSimilar}
                 showMatchScore={internship.matchScore > 0}
+                isBookmarked={bookmarkedIds.includes(internship.internship_id || internship._id)}
+                onToggleBookmark={toggleBookmark}
               />
               {internship.matchScore && (
                 <div className="absolute top-2 right-2 sm:top-4 sm:right-4 bg-green-500 text-white px-2 py-1 sm:px-3 rounded-full text-xs sm:text-sm font-semibold shadow-lg">

@@ -39,6 +39,16 @@ const InternshipsPage = () => {
     return saved ? JSON.parse(saved) : [];
   });
 
+  const toggleBookmark = (internshipId) => {
+    setBookmarkedIds(prev => {
+      const updated = prev.includes(internshipId)
+        ? prev.filter(id => id !== internshipId)
+        : [...prev, internshipId];
+      localStorage.setItem('bookmarkedInternships', JSON.stringify(updated));
+      return updated;
+    });
+  };
+
   useEffect(() => {
     fetchInternships();
   }, [fetchInternships]);
@@ -449,6 +459,8 @@ const InternshipsPage = () => {
                     <InternshipCard
                       internship={internship}
                       onShowSimilar={handleShowSimilar}
+                      isBookmarked={bookmarkedIds.includes(internship.internship_id || internship._id)}
+                      onToggleBookmark={toggleBookmark}
                     />
                     {internship.matchScore > 0 && (
                       <div className="absolute top-2 right-2 bg-green-500 text-white px-2 py-1 rounded-full text-xs font-semibold shadow-lg">

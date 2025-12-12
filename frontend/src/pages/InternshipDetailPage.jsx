@@ -37,6 +37,7 @@ const InternshipDetailPage = () => {
   const [isBookmarked, setIsBookmarked] = useState(false);
   const [ranking, setRanking] = useState(null);
   const [isLoadingRanking, setIsLoadingRanking] = useState(false);
+  const [hasApplied, setHasApplied] = useState(false);
 
   useEffect(() => {
     fetchInternshipDetails();
@@ -48,6 +49,12 @@ const InternshipDetailPage = () => {
       const internshipId = internship.internship_id || internship._id;
       const bookmarkedIds = JSON.parse(localStorage.getItem('bookmarkedInternships') || '[]');
       setIsBookmarked(bookmarkedIds.includes(internshipId));
+      
+      // Check if user has applied
+      if (user?.username) {
+        const userApplications = JSON.parse(localStorage.getItem(`appliedInternships_${user.username}`) || '[]');
+        setHasApplied(userApplications.includes(internshipId));
+      }
       
       // Fetch ranking if user is logged in
       if (user?.username) {
@@ -99,14 +106,19 @@ const InternshipDetailPage = () => {
   };
 
   const handleApply = () => {
-    if (!internship) return;
+    if (!internship || !user?.username) {
+      alert('Please login to apply for internships!');
+      return;
+    }
     
     const internshipId = internship.internship_id || internship._id;
-    const appliedIds = JSON.parse(localStorage.getItem('appliedInternships') || '[]');
+    const storageKey = `appliedInternships_${user.username}`;
+    const appliedIds = JSON.parse(localStorage.getItem(storageKey) || '[]');
     
     if (!appliedIds.includes(internshipId)) {
       appliedIds.push(internshipId);
-      localStorage.setItem('appliedInternships', JSON.stringify(appliedIds));
+      localStorage.setItem(storageKey, JSON.stringify(appliedIds));
+      setHasApplied(true);
       alert('Application submitted successfully! You can view it in My Applications page.');
     } else {
       alert('You have already applied to this internship!');
@@ -365,9 +377,21 @@ const InternshipDetailPage = () => {
               <div className="space-y-3">
                 <button
                   onClick={handleApply}
-                  className="btn-primary w-full"
+                  disabled={hasApplied}
+                  className={`w-full py-3 px-4 rounded-lg font-semibold transition-all ${
+                    hasApplied
+                      ? 'bg-green-500 text-white cursor-not-allowed'
+                      : 'btn-primary'
+                  }`}
                 >
-                  Apply Now
+                  {hasApplied ? (
+                    <span className="flex items-center justify-center gap-2">
+                      <CheckCircle className="h-5 w-5" />
+                      Applied
+                    </span>
+                  ) : (
+                    'Apply Now'
+                  )}
                 </button>
                 <button
                   onClick={handleBookmark}

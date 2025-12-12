@@ -12,6 +12,20 @@ const MyApplicationsPage = () => {
   const { internships, fetchInternships } = useInternshipStore();
   const [appliedInternships, setAppliedInternships] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [bookmarkedIds, setBookmarkedIds] = useState(() => {
+    const saved = localStorage.getItem('bookmarkedInternships');
+    return saved ? JSON.parse(saved) : [];
+  });
+
+  const toggleBookmark = (internshipId) => {
+    setBookmarkedIds(prev => {
+      const updated = prev.includes(internshipId)
+        ? prev.filter(id => id !== internshipId)
+        : [...prev, internshipId];
+      localStorage.setItem('bookmarkedInternships', JSON.stringify(updated));
+      return updated;
+    });
+  };
 
   useEffect(() => {
     if (!user) {
@@ -23,8 +37,9 @@ const MyApplicationsPage = () => {
       setIsLoading(true);
       await fetchInternships();
       
-      // Get applied internship IDs from localStorage
-      const appliedIds = JSON.parse(localStorage.getItem('appliedInternships') || '[]');
+      // Get applied internship IDs from user-specific localStorage
+      const storageKey = `appliedInternships_${user.username}`;
+      const appliedIds = JSON.parse(localStorage.getItem(storageKey) || '[]');
       
       // Filter internships that user has applied to
       const applied = internships.filter(internship => 
@@ -101,7 +116,11 @@ const MyApplicationsPage = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {appliedInternships.map((internship) => (
                 <div key={internship.internship_id || internship._id} className="relative">
-                  <InternshipCard internship={internship} />
+                  <InternshipCard 
+                    internship={internship}
+                    isBookmarked={bookmarkedIds.includes(internship.internship_id || internship._id)}
+                    onToggleBookmark={toggleBookmark}
+                  />
                   <div className="absolute top-2 right-2 bg-green-500 text-white px-3 py-1 rounded-full text-xs font-semibold shadow-lg flex items-center gap-1">
                     <CheckCircle className="h-3 w-3" />
                     Applied

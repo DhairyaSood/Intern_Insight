@@ -494,16 +494,16 @@ const ProfilePage = () => {
                 <button
                   type="submit"
                   disabled={isSaving}
-                  className="btn-primary px-8"
+                  className="btn-primary px-8 py-3 inline-flex items-center gap-2"
                 >
                   {isSaving ? (
                     <>
-                      <LoadingSpinner size="sm" />
-                      <span className="ml-2">Saving...</span>
+                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                      <span>Saving...</span>
                     </>
                   ) : (
                     <>
-                      <Save className="h-4 w-4 mr-2" />
+                      <Save className="h-5 w-5" />
                       Save Profile
                     </>
                   )}
