@@ -17,13 +17,17 @@ try:
     # Initialize PaddleOCR (cached globally for performance)
     ocr = PaddleOCR(use_angle_cls=True, lang='en', use_gpu=False, show_log=False)
     OCR_AVAILABLE = True
-    app_logger.info("PaddleOCR initialized successfully")
-except ImportError:
+    app_logger.info("✅ PaddleOCR initialized successfully")
+except ImportError as ie:
     OCR_AVAILABLE = False
-    app_logger.warning("PaddleOCR not available. Resume parsing will use basic extraction only.")
+    ocr = None
+    app_logger.error(f"❌ PaddleOCR import failed: {ie}")
 except Exception as e:
     OCR_AVAILABLE = False
-    app_logger.warning(f"PaddleOCR initialization failed: {e}")
+    ocr = None
+    app_logger.error(f"❌ PaddleOCR initialization failed: {e}")
+    import traceback
+    app_logger.error(traceback.format_exc())
 
 try:
     import requests
@@ -69,10 +73,18 @@ def parse_resume():
         try:
             # Extract text using OCR
             if OCR_AVAILABLE and file_ext in {'png', 'jpg', 'jpeg'}:
+                app_logger.info(f"Processing {file_ext} image with PaddleOCR")
                 text = extract_text_from_image(tmp_path)
                 app_logger.info(f"OCR extracted {len(text)} characters")
             else:
-                # For PDF or if OCR unavailable, return empty structure
+                # For PDF or if OCR unavailable, try basic text extraction
+                if not OCR_AVAILABLE and file_ext in {'png', 'jpg', 'jpeg'}:
+                    app_logger.warning(f"⚠️ OCR not available - cannot extract text from {file_ext} image")
+                    # Return a helpful message
+                    return error_response(
+                        "Resume image upload requires OCR support. Please try uploading a PDF or text-based resume, or contact support.",
+                        503
+                    )
                 text = ""
                 app_logger.warning(f"Cannot process {file_ext} files or OCR unavailable")
             
