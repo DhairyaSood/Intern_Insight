@@ -100,7 +100,7 @@ def parse_resume():
 
 
 def extract_text_from_image(image_path):
-    \"\"\"Extract text from image using PaddleOCR\"\"\"
+    """Extract text from image using PaddleOCR"""
     try:
         # Use PaddleOCR to read text from image
         result = ocr.ocr(image_path, cls=True)

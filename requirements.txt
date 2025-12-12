@@ -22,6 +22,9 @@ cryptography==46.0.3
 Pillow==11.0.0
 paddleocr==3.3.2
 
+# ML & Text Processing
+rapidfuzz==3.10.1
+
 # HTTP & API
 requests==2.32.5
 urllib3==2.5.0
