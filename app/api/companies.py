@@ -4,7 +4,7 @@ Provides company information and their associated internships
 """
 
 from flask import Blueprint, request, jsonify
-from app.core.database import DatabaseManager
+from app.core.database import DatabaseManager, load_data
 from app.utils.logger import app_logger
 from app.utils.response_helpers import success_response, error_response
 from app.utils.error_handler import handle_errors
@@ -54,7 +54,30 @@ def get_companies():
             filter_query['name'] = {'$regex': search, '$options': 'i'}
         
         # Get companies from database
-        companies = db.load_data('companies', filter_query)
+        companies = load_data('companies', use_cache=False) or []
+        
+        # Apply filters manually
+        if filter_query:
+            filtered = []
+            for company in companies:
+                match = True
+                for key, value in filter_query.items():
+                    if isinstance(value, dict) and '$gte' in value:
+                        if company.get(key, 0) < value['$gte']:
+                            match = False
+                            break
+                    elif isinstance(value, dict) and '$regex' in value:
+                        import re
+                        pattern = re.compile(value['$regex'], re.IGNORECASE if value.get('$options') == 'i' else 0)
+                        if not pattern.search(str(company.get(key, ''))):
+                            match = False
+                            break
+                    elif company.get(key) != value:
+                        match = False
+                        break
+                if match:
+                    filtered.append(company)
+            companies = filtered
         
         # Sort companies
         sort_order = 1 if order == 'asc' else -1
@@ -98,7 +121,8 @@ def get_company(company_id):
     """
     try:
         # Get company by ID
-        companies = db.load_data('companies', {'company_id': company_id})
+        companies = load_data('companies', use_cache=False) or []
+        companies = [c for c in companies if c.get('company_id') == company_id]
         
         if not companies:
             return error_response(f"Company with ID {company_id} not found", 404)
@@ -110,9 +134,8 @@ def get_company(company_id):
         internships = []
         
         if internship_ids:
-            internships = db.load_data('internships', {
-                'internship_id': {'$in': internship_ids}
-            })
+            all_internships = load_data('internships', use_cache=False) or []
+            internships = [i for i in all_internships if i.get('internship_id') in internship_ids]
         
         # Add internships to company data
         company['internships'] = internships
@@ -138,9 +161,8 @@ def get_company_by_name(company_name):
     """
     try:
         # Search for company by name (case-insensitive)
-        companies = db.load_data('companies', {
-            'name': {'$regex': f'^{company_name}$', '$options': 'i'}
-        })
+        companies = load_data('companies', use_cache=False) or []
+        companies = [c for c in companies if c.get('name', '').lower() == company_name.lower()]
         
         if not companies:
             return error_response(f"Company '{company_name}' not found", 404)
@@ -152,9 +174,8 @@ def get_company_by_name(company_name):
         internships = []
         
         if internship_ids:
-            internships = db.load_data('internships', {
-                'internship_id': {'$in': internship_ids}
-            })
+            all_internships = load_data('internships', use_cache=False) or []
+            internships = [i for i in all_internships if i.get('internship_id') in internship_ids]
         
         # Add internships to company data
         company['internships'] = internships

@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { useThemeStore } from './store/themeStore';
 import Navbar from './components/Common/Navbar';
 import Footer from './components/Common/Footer';
+import ScrollToTop from './components/Common/ScrollToTop';
 import ProtectedRoute from './components/Auth/ProtectedRoute';
 
 // Pages
@@ -27,6 +28,7 @@ function App() {
 
   return (
     <Router>
+      <ScrollToTop />
       <div className="flex flex-col min-h-screen">
         <Navbar />
         <main className="flex-1">

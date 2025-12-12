@@ -39,22 +39,26 @@ const InternshipCard = ({ internship, onShowSimilar, showMatchScore = false, isB
         <MapPin className="h-4 w-4 mr-1" />
         {internship.location}
       </div>
+      {/* Match Score and Bookmark */}
       {showMatchScore && internship.match_score && (
-        <div className="flex items-center justify-between mb-2">
-          <div className="flex items-center gap-2">
+        <div className="mb-3">
+          <div className="flex items-center gap-2 mb-2">
             <Sparkles className="h-4 w-4 text-primary-500" />
             <span className="text-sm font-semibold text-primary-600 dark:text-primary-400">
               {internship.match_score}% Match
             </span>
           </div>
           {onToggleBookmark && (
-            <button
-              onClick={handleBookmarkClick}
-              className={`p-1.5 rounded-lg transition-all ${isBookmarked ? 'bg-primary-500 text-white hover:bg-primary-600' : 'bg-white dark:bg-gray-700 text-gray-400 hover:text-primary-500 border border-gray-200 dark:border-gray-600'}`}
-              title={isBookmarked ? 'Remove bookmark' : 'Bookmark'}
-            >
-              <Bookmark className={`h-4 w-4 ${isBookmarked ? 'fill-current' : ''}`} />
-            </button>
+            <div className="flex justify-start">
+              <button
+                onClick={handleBookmarkClick}
+                className={`p-1.5 rounded-lg transition-all inline-flex items-center gap-1.5 text-sm ${isBookmarked ? 'bg-primary-500 text-white hover:bg-primary-600' : 'bg-white dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:text-primary-500 dark:hover:text-primary-400 border border-gray-200 dark:border-gray-600'}`}
+                title={isBookmarked ? 'Remove bookmark' : 'Bookmark'}
+              >
+                <Bookmark className={`h-4 w-4 ${isBookmarked ? 'fill-current' : ''}`} />
+                <span>{isBookmarked ? 'Bookmarked' : 'Bookmark'}</span>
+              </button>
+            </div>
           )}
         </div>
       )}

@@ -120,13 +120,20 @@ const InternshipDetailPage = () => {
     const storageKey = `appliedInternships_${user.username}`;
     const appliedIds = JSON.parse(localStorage.getItem(storageKey) || '[]');
     
-    if (!appliedIds.includes(internshipId)) {
-      appliedIds.push(internshipId);
-      localStorage.setItem(storageKey, JSON.stringify(appliedIds));
-      setHasApplied(true);
-      alert('Application submitted successfully! You can view it in My Applications page.');
+    if (hasApplied) {
+      // Unapply
+      const updatedIds = appliedIds.filter(id => id !== internshipId);
+      localStorage.setItem(storageKey, JSON.stringify(updatedIds));
+      setHasApplied(false);
+      alert('Application withdrawn successfully!');
     } else {
-      alert('You have already applied to this internship!');
+      // Apply
+      if (!appliedIds.includes(internshipId)) {
+        appliedIds.push(internshipId);
+        localStorage.setItem(storageKey, JSON.stringify(appliedIds));
+        setHasApplied(true);
+        alert('Application submitted successfully! You can view it in My Applications page.');
+      }
     }
   };
 
@@ -396,17 +403,17 @@ const InternshipDetailPage = () => {
               <div className="space-y-3">
                 <button
                   onClick={handleApply}
-                  disabled={hasApplied}
-                  className={`w-full py-3 px-4 rounded-lg font-semibold transition-all ${
+                  className={`w-full py-3 px-4 rounded-lg font-semibold transition-all group ${
                     hasApplied
-                      ? 'bg-green-500 text-white cursor-not-allowed'
+                      ? 'bg-green-500 hover:bg-red-600 text-white'
                       : 'btn-primary'
                   }`}
                 >
                   {hasApplied ? (
                     <span className="flex items-center justify-center gap-2">
                       <CheckCircle className="h-5 w-5" />
-                      Applied
+                      <span className="group-hover:hidden">Applied</span>
+                      <span className="hidden group-hover:inline">Withdraw Application</span>
                     </span>
                   ) : (
                     'Apply Now'

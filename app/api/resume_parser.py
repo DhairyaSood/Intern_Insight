@@ -264,6 +264,14 @@ EXTRACTION GUIDELINES:
    - DO NOT combine skills into one string
    - Extract 5-20 skills typically
 
+4b. SECTOR INTERESTS EXTRACTION:
+   - Identify the industry sectors or domains the candidate is interested in
+   - Look for keywords like: "Interested in", "Career goals", "Seeking opportunities in"
+   - Common sectors: Technology, Finance, Healthcare, E-commerce, Embedded Systems, AI/ML, Data Science, Cybersecurity, Cloud Computing, Mobile Development, Web Development, Blockchain, Gaming, EdTech, FinTech, etc.
+   - Extract as array: ["Technology", "AI/ML", "Embedded Systems"]
+   - If not explicitly mentioned, infer from skills/experience (e.g., React/Node.js → Web Development, Python/TensorFlow → AI/ML)
+   - Return 1-5 sector interests typically
+
 5. EDUCATION EXTRACTION:
    - Look for section: "EDUCATION", "ACADEMIC BACKGROUND", "QUALIFICATIONS"
    - Extract degree names: Bachelor's, Master's, PhD, B.Tech, M.Tech, B.Sc, M.Sc, etc.
@@ -304,6 +312,7 @@ DO NOT make up information - only extract what is clearly present in the resume 
   "email": "email@example.com",
   "phone": "+1234567890",
   "skills": ["skill1", "skill2", "skill3", "skill4", "skill5"],
+  "sector_interests": ["Technology", "AI/ML", "Web Development"],
   "education": "Degree Name\\nInstitution Name, Year\\nGPA or relevant details",
   "experience": "Job Title\\nCompany Name, Dates\\n- Responsibility 1\\n- Responsibility 2"
 }}"""
