@@ -4,22 +4,7 @@ export const ocrService = {
   // Parse resume using backend API
   parseResume: async (file, onProgress) => {
     try {
-      // For PDF files, show message
-      if (file.type === 'application/pdf') {
-        if (onProgress) onProgress(100);
-        return {
-          name: '',
-          email: '',
-          phone: '',
-          skills: [],
-          education: '',
-          experience: '',
-          rawText: 'PDF uploaded. Backend processing not yet supported for PDFs.',
-          isPDF: true,
-        };
-      }
-      
-      // For images, send to backend
+      // Send both PDFs and images to backend
       if (onProgress) onProgress(20);
       
       const formData = new FormData();

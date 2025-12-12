@@ -11,7 +11,7 @@ import os
 import json
 
 # OCR.space Free API Configuration
-OCR_SPACE_API_KEY = "K83826061188957"
+OCR_SPACE_API_KEY = os.getenv('OCR_SPACE_API_KEY', 'K83826061188957')
 OCR_AVAILABLE = True
 OCR_BACKEND = 'ocrspace'
 app_logger.info("✅ Using OCR.space cloud API")
@@ -32,14 +32,11 @@ except ImportError:
     PDF_AVAILABLE = False
     app_logger.warning("⚠️ PyPDF2 not available. PDF support disabled.")
 
-# OpenRouter Configuration
-OPENROUTER_API_KEY = "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"
+# OpenRouter Configuration (Optional - using regex fallback if not configured)
+OPENROUTER_API_KEY = os.getenv('OPENROUTER_API_KEY', None)
 OPENROUTER_MODELS = [
-    "meta-llama/llama-3.2-3b-instruct:free",  # Fast, reliable free model
-    "google/gemini-2.0-flash-exp:free",       # Backup
-    "nousresearch/hermes-3-llama-3.1-405b:free",# backup
-    "openai/gpt-oss-20b:free",# another backup
-    "google/gemma-3n-e2b-it:free"# Another backup
+    "meta-llama/llama-3.2-3b-instruct:free",
+    "google/gemini-2.0-flash-exp:free",
 ]
 OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
 
@@ -92,10 +89,12 @@ def parse_resume():
                 text = ""
                 app_logger.warning(f"Unsupported file type: {file_ext}")
             
-            # Parse using AI if available, otherwise fallback to regex
-            if text and REQUESTS_AVAILABLE:
+            # Parse using AI if available and configured, otherwise fallback to regex
+            if text and REQUESTS_AVAILABLE and OPENROUTER_API_KEY:
                 parsed_data = extract_with_ai(text)
             else:
+                if text:
+                    app_logger.info("Using regex fallback parser (AI not configured)")
                 parsed_data = extract_resume_fields_fallback(text)
             
             return success_response({
