@@ -103,7 +103,7 @@ const SectorInterestsInput = ({ sectors, onChange, availableSectors, placeholder
 
       {/* Dropdown */}
       {isOpen && filteredSectors.length > 0 && (
-        <div className="absolute z-10 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+        <div className="absolute z-10 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg max-h-48 overflow-y-auto">
           {filteredSectors.map(sector => (
             <button
               key={sector}

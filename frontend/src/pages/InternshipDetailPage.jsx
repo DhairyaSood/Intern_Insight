@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { internshipService } from '../services/internships';
+import { profileService } from '../services/profile';
 import { useAuthStore } from '../store/authStore';
 import LoadingSpinner from '../components/Common/LoadingSpinner';
 import ErrorMessage from '../components/Common/ErrorMessage';
@@ -92,21 +93,27 @@ const InternshipDetailPage = () => {
       let internshipData = data.internship;
       
       // Fetch match score from backend recommendations if user is logged in
-      if (user?.candidate_id) {
+      if (user?.username) {
         try {
-          const recommendations = await internshipService.getRecommendations(user.candidate_id);
-          const recWithScores = recommendations.recommendations || [];
-          
-          // Find this internship in recommendations
-          const matchedRec = recWithScores.find(rec => 
-            (rec.internship_id || rec._id) === (internshipData.internship_id || internshipData._id)
-          );
-          
-          if (matchedRec) {
-            internshipData = {
-              ...internshipData,
-              match_score: matchedRec.match_score || matchedRec.matchScore || 0
-            };
+          // Fetch profile to get correct candidate_id
+          const profile = await profileService.getByUsername(user.username);
+          if (profile?.candidate_id) {
+            const recommendations = await internshipService.getRecommendations(profile.candidate_id);
+            const recWithScores = recommendations.recommendations || [];
+            
+            // Find this internship in recommendations
+            const matchedRec = recWithScores.find(rec => 
+              (rec.internship_id || rec._id) === (internshipData.internship_id || internshipData._id)
+            );
+            
+            if (matchedRec) {
+              internshipData = {
+                ...internshipData,
+                match_score: matchedRec.match_score || matchedRec.matchScore || 0
+              };
+            } else {
+              internshipData = { ...internshipData, match_score: 0 };
+            }
           } else {
             internshipData = { ...internshipData, match_score: 0 };
           }
