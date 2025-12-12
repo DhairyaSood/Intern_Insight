@@ -12,7 +12,7 @@ class Config:
     
     # Database
     MONGO_URI = os.getenv('MONGO_URI', 'mongodb://localhost:27017/')
-    DB_NAME = os.getenv('DB_NAME', 'internship_recommender')
+    DB_NAME = os.getenv('DB_NAME', 'internships')
     MONGODB_POOL_SIZE = int(os.getenv('MONGODB_POOL_SIZE', 10))
     # Atlas-only toggle (no JSON fallbacks)
     DISABLE_JSON_FALLBACK = os.getenv('DISABLE_JSON_FALLBACK', 'False').lower() == 'true'

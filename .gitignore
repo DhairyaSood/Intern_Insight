@@ -48,6 +48,11 @@ local_settings.py
 
 # Note: .env.production is tracked for Render deployment
 
+# Sensitive data files (migration passwords)
+data/user_passwords.json
+*_passwords.json
+*.credentials.json
+
 # Logging - Important for this project!
 logs/
 *.log

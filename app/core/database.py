@@ -21,7 +21,7 @@ try:
 except ImportError:
     import os
     MONGO_URI = os.getenv('MONGO_URI', 'mongodb://localhost:27017/')
-    DB_NAME = os.getenv('DB_NAME', 'internship_recommender')
+    DB_NAME = os.getenv('DB_NAME', 'internships')
     BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
     DATA_DIR = os.path.join(BASE_DIR, "data")
     POOL_SIZE = int(os.getenv('MONGODB_POOL_SIZE', 10))
