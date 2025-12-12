@@ -511,8 +511,8 @@ const ProfilePage = () => {
                   : 'Complete your profile to get better recommendations'}
               </p>
               
-              {/* Stats */}
-              <div className="space-y-3">
+              {/* Stats - Desktop */}
+              <div className="space-y-3 hidden md:block">
                 <div className="flex items-center justify-between py-2 border-b border-gray-200 dark:border-gray-700">
                   <span className="text-sm text-gray-600 dark:text-gray-400 flex items-center gap-2">
                     <Award className="h-4 w-4" />
@@ -556,6 +556,46 @@ const ProfilePage = () => {
                   </span>
                   <span className="font-semibold text-gray-900 dark:text-white text-right text-sm">
                     {formData.experience ? 'Added' : 'Not set'}
+                  </span>
+                </div>
+              </div>
+
+              {/* Stats - Mobile 2x2 Grid */}
+              <div className="grid grid-cols-2 gap-3 md:hidden">
+                <div className="bg-gray-50 dark:bg-gray-800 p-3 rounded-lg">
+                  <div className="flex items-center gap-2 mb-1">
+                    <Award className="h-4 w-4 text-primary-600" />
+                    <span className="text-xs text-gray-600 dark:text-gray-400">Skills</span>
+                  </div>
+                  <span className="text-xl font-bold text-gray-900 dark:text-white">
+                    {formData.skills.length}
+                  </span>
+                </div>
+                <div className="bg-gray-50 dark:bg-gray-800 p-3 rounded-lg">
+                  <div className="flex items-center gap-2 mb-1">
+                    <Target className="h-4 w-4 text-primary-600" />
+                    <span className="text-xs text-gray-600 dark:text-gray-400">Sectors</span>
+                  </div>
+                  <span className="text-xl font-bold text-gray-900 dark:text-white">
+                    {formData.sector_interests.length}
+                  </span>
+                </div>
+                <div className="bg-gray-50 dark:bg-gray-800 p-3 rounded-lg">
+                  <div className="flex items-center gap-2 mb-1">
+                    <MapPin className="h-4 w-4 text-primary-600" />
+                    <span className="text-xs text-gray-600 dark:text-gray-400">Location</span>
+                  </div>
+                  <span className="text-sm font-semibold text-gray-900 dark:text-white truncate">
+                    {formData.location || 'Not set'}
+                  </span>
+                </div>
+                <div className="bg-gray-50 dark:bg-gray-800 p-3 rounded-lg">
+                  <div className="flex items-center gap-2 mb-1">
+                    <GraduationCap className="h-4 w-4 text-primary-600" />
+                    <span className="text-xs text-gray-600 dark:text-gray-400">Education</span>
+                  </div>
+                  <span className="text-sm font-semibold text-gray-900 dark:text-white">
+                    {formData.education ? '✓ Added' : 'Not set'}
                   </span>
                 </div>
               </div>

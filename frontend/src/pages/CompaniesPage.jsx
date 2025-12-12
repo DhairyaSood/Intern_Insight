@@ -207,6 +207,60 @@ const CompaniesPage = () => {
 
         {error && <ErrorMessage message={error} type="error" onClose={() => setError('')} />}
 
+        {/* Quick Filters - Mobile Only (Horizontal Scroll) */}
+        <div className="md:hidden mb-4">
+          <div className="flex gap-2 overflow-x-auto scrollbar-none pb-2">
+            <button
+              onClick={() => setHiringOnly(!hiringOnly)}
+              className={`px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${
+                hiringOnly
+                  ? 'bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300 border-2 border-green-500'
+                  : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300'
+              }`}
+            >
+              Hiring Now
+            </button>
+            <button
+              onClick={() => setMinRating(minRating === 4.0 ? 0 : 4.0)}
+              className={`px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${
+                minRating === 4.0
+                  ? 'bg-yellow-100 dark:bg-yellow-900 text-yellow-700 dark:text-yellow-300 border-2 border-yellow-500'
+                  : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300'
+              }`}
+            >
+              4.0+ Rating
+            </button>
+            <button
+              onClick={() => setSortBy(sortBy === 'rating' ? 'name' : 'rating')}
+              className={`px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${
+                sortBy === 'rating'
+                  ? 'bg-primary-100 dark:bg-primary-900 text-primary-700 dark:text-primary-300 border-2 border-primary-500'
+                  : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300'
+              }`}
+            >
+              Top Rated
+            </button>
+            <button
+              onClick={() => setSortBy(sortBy === 'internships' ? 'name' : 'internships')}
+              className={`px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${
+                sortBy === 'internships'
+                  ? 'bg-primary-100 dark:bg-primary-900 text-primary-700 dark:text-primary-300 border-2 border-primary-500'
+                  : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300'
+              }`}
+            >
+              Most Internships
+            </button>
+            {(searchQuery || selectedSector || hiringOnly || minRating > 0 || sortBy !== 'name') && (
+              <button
+                onClick={clearFilters}
+                className="px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-300"
+              >
+                Clear All
+              </button>
+            )}
+          </div>
+        </div>
+
         {/* Filters */}
         <div className="card mb-6">
           <div className="flex items-center gap-2 mb-4">
@@ -243,20 +297,16 @@ const CompaniesPage = () => {
                 className="input-field rounded-lg"
               >
                 <option value="">All Sectors</option>
-                {sectors && sectors.length > 0 ? (
-                  sectors.map((sector, index) => {
-                    // Handle both string and object formats
-                    const sectorName = typeof sector === 'string' ? sector : (sector.sector || sector.name || 'Unknown');
-                    const sectorCount = typeof sector === 'object' ? sector.count : '';
-                    return (
-                      <option key={index} value={sectorName}>
-                        {sectorName}{sectorCount ? ` (${sectorCount})` : ''}
-                      </option>
-                    );
-                  })
-                ) : (
-                  <option disabled>Loading sectors...</option>
-                )}
+                {sectors.map((sector, index) => {
+                  // Handle both string and object formats
+                  const sectorName = typeof sector === 'string' ? sector : (sector.sector || sector.name || 'Unknown');
+                  const sectorCount = typeof sector === 'object' ? sector.count : '';
+                  return (
+                    <option key={index} value={sectorName}>
+                      {sectorName}{sectorCount ? ` (${sectorCount})` : ''}
+                    </option>
+                  );
+                })}
               </select>
             </div>
 
