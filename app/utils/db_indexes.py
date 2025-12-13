@@ -123,6 +123,39 @@ def create_company_reputation_indexes():
         }
 
 
+def create_bookmarks_indexes():
+    """Create indexes for bookmarks collection."""
+    try:
+        db_manager = DatabaseManager()
+        db = db_manager.get_db()
+        collection = db.bookmarks
+
+        collection.create_index(
+            [("candidate_id", 1), ("internship_id", 1)],
+            unique=True,
+            name="idx_candidate_internship",
+        )
+        app_logger.info("Created bookmarks index: candidate_id + internship_id")
+
+        collection.create_index(
+            [("candidate_id", 1), ("created_at", -1)],
+            name="idx_candidate_created_at",
+        )
+        app_logger.info("Created bookmarks index: candidate_id + created_at")
+
+        return {
+            'success': True,
+            'message': 'All indexes created successfully'
+        }
+
+    except Exception as e:
+        app_logger.error(f"Error creating bookmarks indexes: {e}")
+        return {
+            'success': False,
+            'error': str(e)
+        }
+
+
 def create_all_indexes():
     """
     Create all necessary database indexes
@@ -145,6 +178,12 @@ def create_all_indexes():
     result = create_company_reputation_indexes()
     results.append({
         'collection': 'company_reputation',
+        'result': result
+    })
+
+    result = create_bookmarks_indexes()
+    results.append({
+        'collection': 'bookmarks',
         'result': result
     })
     

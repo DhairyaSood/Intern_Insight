@@ -1,7 +1,9 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useInternshipStore } from '../store/internshipStore';
 import { useAuthStore } from '../store/authStore';
+import { useMatchStore } from '../store/matchStore';
+import { profileService } from '../services/profile';
 import InternshipCard from '../components/Internship/InternshipCard';
 import LoadingSpinner from '../components/Common/LoadingSpinner';
 import ErrorMessage from '../components/Common/ErrorMessage';
@@ -19,11 +21,59 @@ const Home = () => {
     clearFilters 
   } = useInternshipStore();
   
-  const { isAuthenticated } = useAuthStore();
+  const { isAuthenticated, user } = useAuthStore();
+  const refreshInternshipMatches = useMatchStore((s) => s.refreshInternshipMatches);
+  const lastPrefetchKeyRef = useRef('');
 
   useEffect(() => {
     fetchInternships();
   }, [fetchInternships]);
+
+  useEffect(() => {
+    // If user is logged in and has a profile, prefetch match scores for visible cards.
+    // This avoids showing 0% until the first interaction.
+    let cancelled = false;
+
+    const looksInvalidCandidateId = (value) => {
+      const s = String(value ?? '').trim();
+      if (!s) return true;
+      if (s === 'undefined' || s === 'null') return true;
+      if (s.startsWith('CAND_')) return true;
+      return false;
+    };
+
+    const run = async () => {
+      if (!isAuthenticated || isLoading) return;
+      if (!user?.username) return;
+
+      const visible = (filteredInternships || []).slice(0, 12);
+      const ids = visible.map((i) => i?.internship_id || i?._id).filter(Boolean);
+      if (ids.length === 0) return;
+
+      let cid = user?.candidate_id;
+      if (looksInvalidCandidateId(cid)) {
+        try {
+          const profile = await profileService.getByUsername(user.username);
+          cid = profile?.candidate_id ?? null;
+        } catch {
+          return;
+        }
+      }
+
+      if (!cid || cancelled) return;
+
+      const key = `${String(cid)}:${ids.join(',')}`;
+      if (lastPrefetchKeyRef.current === key) return;
+      lastPrefetchKeyRef.current = key;
+
+      refreshInternshipMatches(String(cid), ids);
+    };
+
+    run();
+    return () => {
+      cancelled = true;
+    };
+  }, [isAuthenticated, user?.username, user?.candidate_id, isLoading, filteredInternships, refreshInternshipMatches]);
 
   const handleSearchChange = (e) => {
     updateFilters({ search: e.target.value });

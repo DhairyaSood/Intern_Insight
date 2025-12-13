@@ -1,16 +1,52 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { MapPin, Sparkles, Bookmark, CheckCircle } from 'lucide-react';
 import LikeDislikeButton from '../Company/LikeDislikeButton';
 import { useMatchStore } from '../../store/matchStore';
+import { useAuthStore } from '../../store/authStore';
+import { useIdentityStore } from '../../store/identityStore';
 
 const InternshipCard = ({ internship, onShowSimilar, showMatchScore = false, preferStoreMatch = true, isBookmarked = false, onToggleBookmark, hasApplied = false }) => {
   const navigate = useNavigate();
   const internshipId = internship.internship_id || internship._id;
+
+  const { user, isAuthenticated } = useAuthStore();
+  const candidateId = useIdentityStore((s) => s.candidateId);
+  const ensureResolved = useIdentityStore((s) => s.ensureResolved);
+  const refreshInternshipMatch = useMatchStore((s) => s.refreshInternshipMatch);
+
   const liveMatchScore = useMatchStore((s) => s.internshipMatchById[String(internshipId)]);
-  const displayMatchScore = preferStoreMatch
-    ? (liveMatchScore ?? (internship.match_score ?? internship.matchScore ?? 0))
-    : (internship.match_score ?? internship.matchScore ?? 0);
+
+  useEffect(() => {
+    if (!showMatchScore) return;
+    if (!preferStoreMatch) return;
+    if (!isAuthenticated) return;
+    if (!internshipId) return;
+
+    // Resolve candidate id once per user (store-deduped).
+    ensureResolved(user);
+
+    // If score already present (including 0), don't refetch.
+    if (liveMatchScore !== undefined) return;
+
+    if (candidateId) {
+      refreshInternshipMatch(candidateId, internshipId);
+    }
+  }, [showMatchScore, preferStoreMatch, isAuthenticated, internshipId, user, ensureResolved, candidateId, liveMatchScore, refreshInternshipMatch]);
+
+  const getDisplayMatch = () => {
+    if (preferStoreMatch) {
+      if (liveMatchScore !== undefined) return Number(liveMatchScore);
+      const inline = internship.match_score ?? internship.matchScore;
+      if (inline !== undefined && inline !== null) return Number(inline);
+      return null; // unknown yet
+    }
+    const inline = internship.match_score ?? internship.matchScore;
+    if (inline !== undefined && inline !== null) return Number(inline);
+    return null;
+  };
+
+  const displayMatchScore = getDisplayMatch();
 
   const handleViewDetails = () => {
     navigate(`/internship/${internshipId}`);
@@ -64,7 +100,7 @@ const InternshipCard = ({ internship, onShowSimilar, showMatchScore = false, pre
         <div className="flex items-center justify-end gap-2 mb-2">
           {showMatchScore && (
             <div className="bg-green-500 text-white px-2 py-1 rounded-full text-xs font-semibold shadow-lg">
-              {Math.round(displayMatchScore || 0)}% Match
+              {displayMatchScore === null ? '…' : `${Math.round(displayMatchScore || 0)}% Match`}
             </div>
           )}
           {hasApplied && (
@@ -155,7 +191,7 @@ const InternshipCard = ({ internship, onShowSimilar, showMatchScore = false, pre
             <div className="flex flex-wrap gap-1.5 mb-2">
               {showMatchScore && (
                 <span className="bg-green-500 text-white px-2 py-0.5 rounded-full text-xs font-semibold">
-                  {Math.round(displayMatchScore || 0)}%
+                  {displayMatchScore === null ? '…' : `${Math.round(displayMatchScore || 0)}%`}
                 </span>
               )}
               {hasApplied && (

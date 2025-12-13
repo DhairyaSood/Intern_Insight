@@ -31,6 +31,9 @@ from app.api.reviews import (
     get_company_reviews, get_internship_reviews,
     mark_review_helpful, delete_review
 )
+from app.api.bookmarks import (
+    list_bookmarks, add_bookmark, remove_bookmark
+)
 from app.api.user_interactions import (
     get_user_interactions as fetch_user_interactions,
     get_user_reviews as fetch_user_reviews
@@ -103,6 +106,22 @@ def login_status_endpoint():
 def create_profile_endpoint():
     """Create or update user profile"""
     return create_or_update_profile()
+
+# Bookmarks (server-backed per-user)
+@api_bp.route('/bookmarks', methods=['GET'])
+def list_bookmarks_endpoint():
+    """List current user's bookmarked internships"""
+    return list_bookmarks()
+
+@api_bp.route('/bookmarks/<internship_id>', methods=['POST'])
+def add_bookmark_endpoint(internship_id):
+    """Bookmark an internship for current user"""
+    return add_bookmark(internship_id)
+
+@api_bp.route('/bookmarks/<internship_id>', methods=['DELETE'])
+def remove_bookmark_endpoint(internship_id):
+    """Remove a bookmark for current user"""
+    return remove_bookmark(internship_id)
 
 @api_bp.route('/profiles/by_username/<username>', methods=['GET'])
 def get_profile_by_username_endpoint(username):

@@ -6,6 +6,7 @@ import { reviewService } from '../services/reviews';
 import { useAuthStore } from '../store/authStore';
 import { useMatchStore } from '../store/matchStore';
 import { useReviewStore } from '../store/reviewStore';
+import { useIdentityStore } from '../store/identityStore';
 import LoadingSpinner from '../components/Common/LoadingSpinner';
 import ErrorMessage from '../components/Common/ErrorMessage';
 import LikeDislikeButton from '../components/Company/LikeDislikeButton';
@@ -37,9 +38,12 @@ import {
 
 const InternshipDetailPage = () => {
   const similarScrollRef = useRef(null);
+  const lastMatchRefreshKeyRef = useRef('');
   const { id } = useParams();
   const navigate = useNavigate();
   const { user } = useAuthStore();
+  const candidateId = useIdentityStore((s) => s.candidateId);
+  const ensureResolved = useIdentityStore((s) => s.ensureResolved);
   const refreshInternshipMatch = useMatchStore((s) => s.refreshInternshipMatch);
   const refreshInternshipMatches = useMatchStore((s) => s.refreshInternshipMatches);
   const primeInternshipMatches = useMatchStore((s) => s.primeInternshipMatches);
@@ -47,14 +51,16 @@ const InternshipDetailPage = () => {
   const markHelpful = useReviewStore((s) => s.markHelpful);
   const deleteReview = useReviewStore((s) => s.deleteReview);
 
-  const InlineInternshipMatch = ({ internshipId, fallback = 0, className = '' }) => {
+  const InlineInternshipMatch = ({ internshipId, fallback = null, className = '' }) => {
     const score = useMatchStore((s) => s.internshipMatchById[String(internshipId)]);
-    const display = score ?? fallback ?? 0;
-    return <span className={className}>{Math.round(display)}% Match</span>;
+    const raw = score ?? fallback;
+    if (raw === undefined || raw === null) {
+      return <span className={className}>…</span>;
+    }
+    return <span className={className}>{Math.round(raw)}% Match</span>;
   };
   const [internship, setInternship] = useState(null);
   const [similarInternships, setSimilarInternships] = useState([]);
-  const [candidateIdForMatches, setCandidateIdForMatches] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isBookmarked, setIsBookmarked] = useState(false);
@@ -73,6 +79,25 @@ const InternshipDetailPage = () => {
   useEffect(() => {
     fetchInternshipDetails();
   }, [id]);
+
+  useEffect(() => {
+    // Resolve candidate_id once per user (store dedupes network).
+    if (user?.username) ensureResolved(user);
+  }, [user, ensureResolved]);
+
+  useEffect(() => {
+    // Once we have both candidate_id and internships, refresh match scores.
+    const currentId = internship?.internship_id || internship?._id;
+    if (!candidateId || !currentId) return;
+
+    const simIds = (similarInternships || []).map((s) => s?.internship_id || s?._id).filter(Boolean);
+    const key = `${candidateId}:${String(currentId)}:${simIds.length}`;
+    if (lastMatchRefreshKeyRef.current === key) return;
+    lastMatchRefreshKeyRef.current = key;
+
+    refreshInternshipMatch(candidateId, currentId);
+    if (simIds.length) refreshInternshipMatches(candidateId, simIds);
+  }, [candidateId, internship, similarInternships, refreshInternshipMatch, refreshInternshipMatches]);
 
   useEffect(() => {
     // Check if internship is bookmarked when internship data loads
@@ -169,25 +194,13 @@ const InternshipDetailPage = () => {
       const data = await internshipService.getById(id);
       let internshipData = data.internship;
       const currentId = internshipData?.internship_id || internshipData?._id;
-      
-      // Fetch match score from backend recommendations if user is logged in
-      let resolvedCandidateId = null;
-      if (user?.username) {
-        try {
-          // Prefer authenticated candidate_id (faster); fall back to profile lookup
-          const candidateId = user?.candidate_id || (await profileService.getByUsername(user.username))?.candidate_id;
-          resolvedCandidateId = candidateId || null;
-        } catch (err) {
-          console.warn('Could not resolve candidate_id for match score:', err);
-        }
-      }
 
-      setCandidateIdForMatches(resolvedCandidateId);
-
-      // Prime any match_score that might already exist on the payload, then refresh live.
+      // Prime any match_score that might already exist on the payload.
+      // Live refresh is handled by the auth-aware effect above.
       primeInternshipMatches([internshipData]);
-      if (resolvedCandidateId && currentId) {
-        refreshInternshipMatch(resolvedCandidateId, currentId);
+      if (user?.username) {
+        // Trigger candidate id resolution (deduped) so match refresh can fire.
+        ensureResolved(user);
       }
       
       setInternship(internshipData);
@@ -197,12 +210,9 @@ const InternshipDetailPage = () => {
         const similarData = await internshipService.getSimilar(id);
         let similar = similarData.recommendations || [];
 
-        // Prime and refresh match scores for visible similar cards.
+        // Prime match scores for visible similar cards.
+        // Live refresh is handled by the auth-aware effect above.
         primeInternshipMatches(similar);
-        if (resolvedCandidateId && Array.isArray(similar) && similar.length) {
-          const simIds = similar.map((s) => s?.internship_id || s?._id).filter(Boolean);
-          refreshInternshipMatches(resolvedCandidateId, simIds);
-        }
 
         setSimilarInternships(similar);
         
@@ -234,7 +244,7 @@ const InternshipDetailPage = () => {
     // internship and the visible similar list (no full page reload needed).
     const handler = (e) => {
       const detail = e?.detail || {};
-      const cid = candidateIdForMatches || detail?.candidate_id;
+      const cid = candidateId || detail?.candidate_id;
       if (!cid) return;
 
       const currentId = internship?.internship_id || internship?._id;
@@ -246,7 +256,7 @@ const InternshipDetailPage = () => {
 
     window.addEventListener('internship-interaction-changed', handler);
     return () => window.removeEventListener('internship-interaction-changed', handler);
-  }, [candidateIdForMatches, internship, similarInternships, refreshInternshipMatches]);
+  }, [candidateId, internship, similarInternships, refreshInternshipMatches]);
 
   const handleBack = () => {
     navigate(-1);

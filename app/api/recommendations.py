@@ -507,7 +507,22 @@ def load_candidate_by_id(candidate_id):
         db = db_manager.get_db()
         if db is not None:
             try:
+                # Candidate ids are usually stored as strings, but some legacy data may have
+                # `candidate_id` stored as an ObjectId. Support both.
                 candidate = db.profiles.find_one({"candidate_id": candidate_id})
+                if not candidate and ObjectId is not None:
+                    try:
+                        if ObjectId.is_valid(str(candidate_id)):
+                            candidate = db.profiles.find_one({"candidate_id": ObjectId(str(candidate_id))})
+                    except Exception:
+                        pass
+                # As an additional fallback, accept MongoDB _id directly.
+                if not candidate and ObjectId is not None:
+                    try:
+                        if ObjectId.is_valid(str(candidate_id)):
+                            candidate = db.profiles.find_one({"_id": ObjectId(str(candidate_id))})
+                    except Exception:
+                        pass
                 if candidate:
                     if '_id' in candidate:
                         candidate['_id'] = str(candidate['_id'])

@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../store/authStore';
+import { useBookmarkStore } from '../../store/bookmarkStore';
 import ThemeToggle from './ThemeToggle';
 import { Menu, X, User, LogOut, Home, Briefcase, FileText, Building2 } from 'lucide-react';
 
@@ -8,6 +9,12 @@ const Navbar = () => {
   const { isAuthenticated, user, logout } = useAuthStore();
   const navigate = useNavigate();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
+
+  const ensureBookmarksLoaded = useBookmarkStore((s) => s.ensureLoaded);
+
+  useEffect(() => {
+    ensureBookmarksLoaded(user?.username, !!isAuthenticated);
+  }, [user?.username, isAuthenticated, ensureBookmarksLoaded]);
 
   const handleLogout = async () => {
     await logout();
