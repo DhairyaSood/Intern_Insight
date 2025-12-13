@@ -9,6 +9,7 @@ from app.utils.logger import app_logger
 from app.utils.response_helpers import success_response, error_response
 from app.utils.error_handler import handle_errors
 from app.utils.jwt_auth import token_required, get_current_user
+from app.utils.company_match_scorer import CompanyMatchScorer
 from bson import ObjectId
 from datetime import datetime
 
@@ -22,12 +23,18 @@ def like_company(company_id):
     """
     Like a company
     Stores user's positive interaction with a company
+    Accepts optional reason_tags (list) and reason_text (string)
     """
     try:
         current_user = get_current_user()
         candidate_id = current_user.get('candidate_id')
         if not candidate_id:
             return error_response("Candidate ID not found in token", 400)
+        
+        # Get reason data from request body
+        data = request.get_json() or {}
+        reason_tags = data.get('reason_tags', [])
+        reason_text = data.get('reason_text', '')
         
         database = db.get_db()
         interactions_collection = database['company_interactions']
@@ -42,7 +49,9 @@ def like_company(company_id):
             'candidate_id': candidate_id,
             'company_id': company_id,
             'interaction_type': 'like',
-            'timestamp': datetime.utcnow()
+            'timestamp': datetime.utcnow(),
+            'reason_tags': reason_tags if reason_tags else [],
+            'reason_text': reason_text if reason_text else ''
         }
         
         if existing:
@@ -57,7 +66,17 @@ def like_company(company_id):
             interactions_collection.insert_one(interaction_data)
             message = "Company liked successfully"
         
-        app_logger.info(f"User {candidate_id} liked company {company_id}")
+        # Recalculate match score for this user-company pair
+        try:
+            score_data = CompanyMatchScorer.calculate_user_company_score(candidate_id, company_id)
+            CompanyMatchScorer.save_company_match_score(candidate_id, company_id, score_data)
+            
+            # Apply global impact to other users' scores
+            CompanyMatchScorer.apply_global_impact(company_id, 'like')
+        except Exception as score_err:
+            app_logger.warning(f"Error updating match scores: {score_err}")
+        
+        app_logger.info(f"User {candidate_id} liked company {company_id} with reasons: {reason_tags}")
         return success_response(
             data={'interaction_type': 'like', 'company_id': company_id},
             message=message
@@ -75,12 +94,18 @@ def dislike_company(company_id):
     """
     Dislike a company
     Stores user's negative interaction with a company
+    Accepts optional reason_tags (list) and reason_text (string)
     """
     try:
         current_user = get_current_user()
         candidate_id = current_user.get('candidate_id')
         if not candidate_id:
             return error_response("Candidate ID not found in token", 400)
+        
+        # Get reason data from request body
+        data = request.get_json() or {}
+        reason_tags = data.get('reason_tags', [])
+        reason_text = data.get('reason_text', '')
         
         database = db.get_db()
         interactions_collection = database['company_interactions']
@@ -95,7 +120,9 @@ def dislike_company(company_id):
             'candidate_id': candidate_id,
             'company_id': company_id,
             'interaction_type': 'dislike',
-            'timestamp': datetime.utcnow()
+            'timestamp': datetime.utcnow(),
+            'reason_tags': reason_tags if reason_tags else [],
+            'reason_text': reason_text if reason_text else ''
         }
         
         if existing:
@@ -110,7 +137,17 @@ def dislike_company(company_id):
             interactions_collection.insert_one(interaction_data)
             message = "Company disliked successfully"
         
-        app_logger.info(f"User {candidate_id} disliked company {company_id}")
+        # Recalculate match score for this user-company pair
+        try:
+            score_data = CompanyMatchScorer.calculate_user_company_score(candidate_id, company_id)
+            CompanyMatchScorer.save_company_match_score(candidate_id, company_id, score_data)
+            
+            # Apply global impact to other users' scores
+            CompanyMatchScorer.apply_global_impact(company_id, 'dislike')
+        except Exception as score_err:
+            app_logger.warning(f"Error updating match scores: {score_err}")
+        
+        app_logger.info(f"User {candidate_id} disliked company {company_id} with reasons: {reason_tags}")
         return success_response(
             data={'interaction_type': 'dislike', 'company_id': company_id},
             message=message
@@ -143,8 +180,23 @@ def remove_company_interaction(company_id):
         })
         
         if result.deleted_count > 0:
+            # Recalculate match score for this user-company pair now that interaction is removed
+            updated_match_score = None
+            try:
+                score_data = CompanyMatchScorer.calculate_user_company_score(candidate_id, company_id)
+                CompanyMatchScorer.save_company_match_score(candidate_id, company_id, score_data)
+                updated_match_score = score_data.get('match_score')
+            except Exception as score_err:
+                app_logger.warning(f"Error updating match score after removing interaction: {score_err}")
+
             app_logger.info(f"User {candidate_id} removed interaction with company {company_id}")
-            return success_response(message="Interaction removed successfully")
+            return success_response(
+                data={
+                    'company_id': company_id,
+                    'match_score': updated_match_score
+                },
+                message="Interaction removed successfully"
+            )
         else:
             return error_response("No interaction found to remove", 404)
         
@@ -176,13 +228,16 @@ def get_company_interaction(company_id):
         })
         
         if interaction:
-            return success_response(data={
+            # Convert ObjectId to string for JSON serialization
+            interaction_data = {
                 'interaction_type': interaction['interaction_type'],
                 'company_id': company_id,
                 'timestamp': interaction['timestamp'].isoformat()
-            })
+            }
+            # Return in nested format to match internship API structure
+            return success_response(data={'interaction': interaction_data})
         else:
-            return success_response(data={'interaction_type': None, 'company_id': company_id})
+            return success_response(data={'interaction': None, 'company_id': company_id})
         
     except Exception as e:
         app_logger.error(f"Error getting company interaction: {e}")

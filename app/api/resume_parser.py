@@ -13,13 +13,13 @@ import json
 # OCR.space Free API Configuration
 OCR_SPACE_API_KEY = os.getenv('OCR_SPACE_API_KEY')
 if not OCR_SPACE_API_KEY:
-    app_logger.error("⚠️ OCR_SPACE_API_KEY not found in environment variables")
+    app_logger.error("WARNING: OCR_SPACE_API_KEY not found in environment variables")
     OCR_AVAILABLE = False
     OCR_BACKEND = None
 else:
     OCR_AVAILABLE = True
     OCR_BACKEND = 'ocrspace'
-    app_logger.info("✅ Using OCR.space cloud API")
+    app_logger.info("[OK] Using OCR.space cloud API")
 
 try:
     import requests
@@ -32,10 +32,10 @@ except ImportError:
 try:
     from PyPDF2 import PdfReader
     PDF_AVAILABLE = True
-    app_logger.info("✅ PDF support enabled (PyPDF2)")
+    app_logger.info("[OK] PDF support enabled (PyPDF2)")
 except ImportError:
     PDF_AVAILABLE = False
-    app_logger.warning("⚠️ PyPDF2 not available. PDF support disabled.")
+    app_logger.warning("WARNING: PyPDF2 not available. PDF support disabled.")
 
 # OpenRouter Configuration (Optional - using regex fallback if not configured)
 OPENROUTER_API_KEY = os.getenv('OPENROUTER_API_KEY', None)
@@ -147,7 +147,7 @@ def extract_text_from_pdf(pdf_path):
                 app_logger.warning(f"Failed to extract text from page {page_num + 1}: {e}")
         
         text = '\n'.join(text_parts)
-        app_logger.info(f"✅ PDF extracted {len(text)} characters from {len(reader.pages)} pages")
+        app_logger.info(f"[OK] PDF extracted {len(text)} characters from {len(reader.pages)} pages")
         return text
         
     except Exception as e:
@@ -189,7 +189,7 @@ def extract_text_from_image(image_path):
             
             if result.get('ParsedResults'):
                 text = result['ParsedResults'][0]['ParsedText']
-                app_logger.info(f"✅ OCR.space extracted {len(text)} characters")
+                app_logger.info(f"[OK] OCR.space extracted {len(text)} characters")
                 return text
             else:
                 app_logger.warning("No parsed results from OCR.space")

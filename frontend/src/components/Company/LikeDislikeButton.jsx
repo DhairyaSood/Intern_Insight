@@ -1,139 +1,286 @@
-import React, { useState, useEffect } from 'react';
-import { Heart, ThumbsUp, ThumbsDown } from 'lucide-react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { ThumbsUp, ThumbsDown } from 'lucide-react';
 import { companyInteractionService } from '../../services/interactions';
+import { internshipInteractionService } from '../../services/internshipInteractions';
 import { useAuthStore } from '../../store/authStore';
+import InteractionReasonModal from '../Common/InteractionReasonModal';
 
-const LikeDislikeButton = ({ companyId, variant = 'icons', onInteractionChange }) => {
+const LikeDislikeButton = ({ 
+  companyId, 
+  internshipId,
+  entityName,
+  variant = 'icons', 
+  onInteractionChange 
+}) => {
   const { user } = useAuthStore();
-  const [interaction, setInteraction] = useState(null); // null, 'like', 'dislike'
+  const entityType = companyId ? 'company' : 'internship';
+  const entityId = companyId || internshipId;
+  const interactionService = companyId ? companyInteractionService : internshipInteractionService;
+  
+  // Initialize from localStorage cache
+  const getStorageKey = useCallback(() => {
+    if (!user?.username || !entityId) return null;
+    return `${entityType}Interaction_${user.username}_${entityId}`;
+  }, [user, entityId, entityType]);
+  
+  const [interaction, setInteraction] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [showReasonModal, setShowReasonModal] = useState(false);
+  const [pendingAction, setPendingAction] = useState(null); // 'like' or 'dislike'
+
+  const dispatchInteractionChanged = useCallback((interactionType) => {
+    if (!user?.candidate_id) return;
+    if (entityType === 'internship') {
+      window.dispatchEvent(new CustomEvent('internship-interaction-changed', {
+        detail: { candidate_id: user.candidate_id, internship_id: entityId, interaction_type: interactionType }
+      }));
+    } else if (entityType === 'company') {
+      window.dispatchEvent(new CustomEvent('company-interaction-changed', {
+        detail: { candidate_id: user.candidate_id, company_id: entityId, interaction_type: interactionType }
+      }));
+    }
+  }, [user, entityType, entityId]);
+
+  const loadInteraction = useCallback(async () => {
+    if (!user || !entityId) return;
+    
+    try {
+      // NOTE: interactionService.get() returns the *response body* (response.data),
+      // not the full Axios response.
+      const body = await interactionService.get(entityId);
+
+      // Expected shapes (depending on endpoint and existence):
+      // - { interaction: { interaction_type: 'like'|'dislike' } }
+      // - { interaction: null, ... }
+      // - { interaction_type: 'like'|'dislike' } (legacy)
+      const interactionObj = body?.interaction ?? body;
+      const interactionType = interactionObj?.interaction_type ?? body?.interaction_type ?? null;
+      
+      setInteraction(interactionType);
+      
+      // Sync with localStorage cache for faster future loads
+      const storageKey = getStorageKey();
+      if (storageKey) {
+        if (interactionType) {
+          localStorage.setItem(storageKey, interactionType);
+        } else {
+          localStorage.removeItem(storageKey);
+        }
+      }
+    } catch (err) {
+      console.error(`[LikeDislikeButton] Failed to load ${entityType} interaction:`, err);
+      // On error, try to load from localStorage as fallback
+      const storageKey = getStorageKey();
+      if (storageKey) {
+        const cached = localStorage.getItem(storageKey);
+        if (cached) {
+          setInteraction(cached);
+        }
+      }
+    }
+  }, [user, entityType, entityId, interactionService, getStorageKey]);
 
   useEffect(() => {
-    if (user && companyId) {
+    if (user && entityId) {
       loadInteraction();
     }
-  }, [user, companyId]);
-
-  const loadInteraction = async () => {
-    try {
-      const response = await companyInteractionService.get(companyId);
-      setInteraction(response.data?.interaction_type || null);
-    } catch (err) {
-      console.error('Failed to load interaction:', err);
-    }
-  };
+  }, [user, entityId, loadInteraction]);
 
   const handleLike = async (e) => {
     e.stopPropagation();
     if (!user) {
-      alert('Please login to like companies!');
+      alert(`Please login to like ${entityType}s!`);
       return;
     }
 
-    setIsLoading(true);
-    try {
-      if (interaction === 'like') {
-        // Unlike
-        await companyInteractionService.remove(companyId);
+    if (interaction === 'like') {
+      // Unlike - remove directly without modal
+      setIsLoading(true);
+      try {
+        await interactionService.remove(entityId);
         setInteraction(null);
-      } else {
-        // Like
-        await companyInteractionService.like(companyId);
-        setInteraction('like');
+        dispatchInteractionChanged(null);
+        // Remove from localStorage cache
+        const storageKey = getStorageKey();
+        if (storageKey) localStorage.removeItem(storageKey);
+        if (onInteractionChange) {
+          onInteractionChange(null);
+        }
+      } catch (err) {
+        console.error('Failed to remove like:', err);
+        alert('Failed to update interaction. Please try again.');
+      } finally {
+        setIsLoading(false);
       }
-      if (onInteractionChange) {
-        onInteractionChange(interaction === 'like' ? null : 'like');
-      }
-    } catch (err) {
-      console.error('Failed to update like:', err);
-      alert('Failed to update interaction. Please try again.');
-    } finally {
-      setIsLoading(false);
+    } else {
+      // Like - show reason modal
+      setPendingAction('like');
+      setShowReasonModal(true);
     }
   };
 
   const handleDislike = async (e) => {
     e.stopPropagation();
     if (!user) {
-      alert('Please login to dislike companies!');
+      alert(`Please login to dislike ${entityType}s!`);
       return;
     }
 
+    if (interaction === 'dislike') {
+      // Remove dislike - remove directly without modal
+      setIsLoading(true);
+      try {
+        await interactionService.remove(entityId);
+        setInteraction(null);
+        dispatchInteractionChanged(null);
+        // Remove from localStorage cache
+        const storageKey = getStorageKey();
+        if (storageKey) localStorage.removeItem(storageKey);
+        if (onInteractionChange) {
+          onInteractionChange(null);
+        }
+      } catch (err) {
+        console.error('Failed to remove dislike:', err);
+        alert('Failed to update interaction. Please try again.');
+      } finally {
+        setIsLoading(false);
+      }
+    } else {
+      // Dislike - show reason modal
+      setPendingAction('dislike');
+      setShowReasonModal(true);
+    }
+  };
+
+  const handleReasonSubmit = async (reasonData) => {
+    if (!pendingAction) return;
+
     setIsLoading(true);
     try {
-      if (interaction === 'dislike') {
-        // Remove dislike
-        await companyInteractionService.remove(companyId);
-        setInteraction(null);
+      if (pendingAction === 'like') {
+        await interactionService.like(entityId, reasonData);
       } else {
-        // Dislike
-        await companyInteractionService.dislike(companyId);
-        setInteraction('dislike');
+        await interactionService.dislike(entityId, reasonData);
+      }
+      
+      setInteraction(pendingAction);
+      dispatchInteractionChanged(pendingAction);
+      // Cache in localStorage immediately
+      const storageKey = getStorageKey();
+      if (storageKey) {
+        localStorage.setItem(storageKey, pendingAction);
       }
       if (onInteractionChange) {
-        onInteractionChange(interaction === 'dislike' ? null : 'dislike');
+        onInteractionChange(pendingAction);
       }
-    } catch (err) {
-      console.error('Failed to update dislike:', err);
-      alert('Failed to update interaction. Please try again.');
+    } catch (error) {
+      console.error(`Failed to ${pendingAction}:`, error);
+      alert(`Failed to ${pendingAction}. Please try again.`);
     } finally {
       setIsLoading(false);
+      setShowReasonModal(false);
+      setPendingAction(null);
     }
   };
 
   if (variant === 'heart') {
-    // Heart variant - just like/unlike
+    // Compact variant (historically used a heart icon)
     return (
-      <button
-        onClick={handleLike}
-        disabled={isLoading}
-        className={`p-2 rounded-full transition-all ${
-          interaction === 'like'
-            ? 'text-red-500 hover:text-red-600 bg-red-50 dark:bg-red-900/20'
-            : 'text-gray-400 hover:text-red-500 hover:bg-gray-100 dark:hover:bg-gray-800'
-        } ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
-        title={interaction === 'like' ? 'Unlike' : 'Like'}
-      >
-        <Heart
-          className={`h-5 w-5 ${interaction === 'like' ? 'fill-current' : ''}`}
+      <>
+        <div className="flex items-center gap-1">
+          <button
+            onClick={handleLike}
+            disabled={isLoading}
+            className={`p-2 rounded-full transition-all ${
+              interaction === 'like'
+                ? 'text-green-600 hover:text-green-700 bg-green-50 dark:bg-green-900/20'
+                : 'text-gray-400 hover:text-green-600 hover:bg-gray-100 dark:hover:bg-gray-800'
+            } ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
+            title={interaction === 'like' ? 'Unlike' : 'Like'}
+          >
+            <ThumbsUp
+              className={`h-5 w-5 ${interaction === 'like' ? 'fill-current' : ''}`}
+            />
+          </button>
+
+          <button
+            onClick={handleDislike}
+            disabled={isLoading}
+            className={`p-2 rounded-full transition-all ${
+              interaction === 'dislike'
+                ? 'text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-gray-700'
+                : 'text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
+            } ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
+            title={interaction === 'dislike' ? 'Remove dislike' : 'Not interested'}
+          >
+            <ThumbsDown
+              className={`h-5 w-5 ${interaction === 'dislike' ? 'fill-current' : ''}`}
+            />
+          </button>
+        </div>
+
+        <InteractionReasonModal
+          isOpen={showReasonModal}
+          onClose={() => {
+            setShowReasonModal(false);
+            setPendingAction(null);
+          }}
+          interactionType={pendingAction}
+          entityType={entityType}
+          entityName={entityName}
+          onSubmit={handleReasonSubmit}
         />
-      </button>
+      </>
     );
   }
 
   // Icons variant - like and dislike buttons
   return (
-    <div className="flex items-center gap-2">
-      <button
-        onClick={handleLike}
-        disabled={isLoading}
-        className={`p-2 rounded-lg transition-all ${
-          interaction === 'like'
-            ? 'text-green-600 bg-green-50 dark:bg-green-900/20'
-            : 'text-gray-400 hover:text-green-600 hover:bg-gray-100 dark:hover:bg-gray-800'
-        } ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
-        title={interaction === 'like' ? 'Remove like' : 'Like company'}
-      >
-        <ThumbsUp
-          className={`h-5 w-5 ${interaction === 'like' ? 'fill-current' : ''}`}
-        />
-      </button>
+    <>
+      <div className="flex items-center gap-2">
+        <button
+          onClick={handleLike}
+          disabled={isLoading}
+          className={`p-2 rounded-lg transition-all ${
+            interaction === 'like'
+              ? 'text-green-600 bg-green-50 dark:bg-green-900/20'
+              : 'text-gray-400 hover:text-green-600 hover:bg-gray-100 dark:hover:bg-gray-800'
+          } ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
+          title={interaction === 'like' ? 'Remove like' : `Like ${entityType}`}
+        >
+          <ThumbsUp
+            className={`h-5 w-5 ${interaction === 'like' ? 'fill-current' : ''}`}
+          />
+        </button>
 
-      <button
-        onClick={handleDislike}
-        disabled={isLoading}
-        className={`p-2 rounded-lg transition-all ${
-          interaction === 'dislike'
-            ? 'text-red-600 bg-red-50 dark:bg-red-900/20'
-            : 'text-gray-400 hover:text-red-600 hover:bg-gray-100 dark:hover:bg-gray-800'
-        } ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
-        title={interaction === 'dislike' ? 'Remove dislike' : 'Dislike company'}
-      >
-        <ThumbsDown
-          className={`h-5 w-5 ${interaction === 'dislike' ? 'fill-current' : ''}`}
-        />
-      </button>
-    </div>
+        <button
+          onClick={handleDislike}
+          disabled={isLoading}
+          className={`p-2 rounded-lg transition-all ${
+            interaction === 'dislike'
+              ? 'text-red-600 bg-red-50 dark:bg-red-900/20'
+              : 'text-gray-400 hover:text-red-600 hover:bg-gray-100 dark:hover:bg-gray-800'
+          } ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
+          title={interaction === 'dislike' ? 'Remove dislike' : `Dislike ${entityType}`}
+        >
+          <ThumbsDown
+            className={`h-5 w-5 ${interaction === 'dislike' ? 'fill-current' : ''}`}
+          />
+        </button>
+      </div>
+
+      <InteractionReasonModal
+        isOpen={showReasonModal}
+        onClose={() => {
+          setShowReasonModal(false);
+          setPendingAction(null);
+        }}
+        interactionType={pendingAction}
+        entityType={entityType}
+        entityName={entityName}
+        onSubmit={handleReasonSubmit}
+      />
+    </>
   );
 };
 

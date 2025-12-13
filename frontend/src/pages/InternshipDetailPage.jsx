@@ -2,9 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { internshipService } from '../services/internships';
 import { profileService } from '../services/profile';
+import { reviewService } from '../services/reviews';
 import { useAuthStore } from '../store/authStore';
 import LoadingSpinner from '../components/Common/LoadingSpinner';
 import ErrorMessage from '../components/Common/ErrorMessage';
+import LikeDislikeButton from '../components/Company/LikeDislikeButton';
+import ReviewForm from '../components/Review/ReviewForm';
+import ReviewList from '../components/Review/ReviewList';
+import ReviewStats from '../components/Review/ReviewStats.jsx';
 import { 
   ArrowLeft, 
   MapPin, 
@@ -24,7 +29,8 @@ import {
   Share2,
   Sparkles,
   TrendingUp,
-  Medal
+  Medal,
+  MessageSquare
 } from 'lucide-react';
 
 const InternshipDetailPage = () => {
@@ -40,6 +46,9 @@ const InternshipDetailPage = () => {
   const [isLoadingRanking, setIsLoadingRanking] = useState(false);
   const [hasApplied, setHasApplied] = useState(false);
   const [similarBookmarks, setSimilarBookmarks] = useState({});
+  const [reviews, setReviews] = useState([]);
+  const [reviewsLoading, setReviewsLoading] = useState(false);
+  const [showReviewForm, setShowReviewForm] = useState(false);
 
   useEffect(() => {
     fetchInternshipDetails();
@@ -67,6 +76,9 @@ const InternshipDetailPage = () => {
       if (user?.username) {
         fetchRanking(internshipId);
       }
+
+      // Fetch reviews
+      fetchReviews(internshipId);
     }
   }, [internship, user]);
 
@@ -83,6 +95,67 @@ const InternshipDetailPage = () => {
     }
   };
 
+  const fetchReviews = async (internshipId) => {
+    try {
+      setReviewsLoading(true);
+      const response = await reviewService.internship.getAll(internshipId);
+      setReviews(response.reviews || []);
+    } catch (err) {
+      console.error('Error fetching reviews:', err);
+    } finally {
+      setReviewsLoading(false);
+    }
+  };
+
+  const handleReviewSubmit = async (reviewData) => {
+    try {
+      const internshipId = internship.internship_id || internship._id;
+      await reviewService.internship.create(internshipId, reviewData);
+      setShowReviewForm(false);
+      await fetchReviews(internshipId);
+    } catch (err) {
+      console.error('Error submitting review:', err);
+      throw err;
+    }
+  };
+
+  const [existingReview, setExistingReview] = useState(null);
+
+  useEffect(() => {
+    // Check if user has an existing review
+    if (user && reviews.length > 0) {
+      const userReview = reviews.find(r => r.candidate_id === user.candidate_id);
+      setExistingReview(userReview || null);
+    } else {
+      setExistingReview(null);
+    }
+  }, [user, reviews]);
+
+  const handleWriteReview = () => {
+    setShowReviewForm(true);
+  };
+
+  const handleMarkHelpful = async (reviewId) => {
+    try {
+      await reviewService.markHelpful(reviewId);
+      const internshipId = internship.internship_id || internship._id;
+      await fetchReviews(internshipId);
+    } catch (err) {
+      console.error('Error marking review helpful:', err);
+    }
+  };
+
+  const handleDeleteReview = async (reviewId) => {
+    if (!window.confirm('Are you sure you want to delete this review?')) return;
+    try {
+      await reviewService.delete(reviewId);
+      const internshipId = internship.internship_id || internship._id;
+      await fetchReviews(internshipId);
+    } catch (err) {
+      console.error('Error deleting review:', err);
+    }
+  };
+
   const fetchInternshipDetails = async () => {
     try {
       setIsLoading(true);
@@ -95,31 +168,21 @@ const InternshipDetailPage = () => {
       // Fetch match score from backend recommendations if user is logged in
       if (user?.username) {
         try {
-          // Fetch profile to get correct candidate_id
-          const profile = await profileService.getByUsername(user.username);
-          if (profile?.candidate_id) {
-            const recommendations = await internshipService.getRecommendations(profile.candidate_id);
-            const recWithScores = recommendations.recommendations || [];
-            
-            // Find this internship in recommendations
-            const matchedRec = recWithScores.find(rec => 
-              (rec.internship_id || rec._id) === (internshipData.internship_id || internshipData._id)
-            );
-            
-            if (matchedRec) {
-              internshipData = {
-                ...internshipData,
-                match_score: matchedRec.match_score || matchedRec.matchScore || 0
-              };
-            } else {
-              internshipData = { ...internshipData, match_score: 0 };
-            }
+          // Prefer authenticated candidate_id (faster); fall back to profile lookup
+          const candidateId = user?.candidate_id || (await profileService.getByUsername(user.username))?.candidate_id;
+          if (candidateId) {
+            const currentId = internshipData.internship_id || internshipData._id;
+            const match = await internshipService.getInternshipMatch(candidateId, currentId);
+            internshipData = {
+              ...internshipData,
+              match_score: match?.match_score ?? internshipData.match_score ?? 0,
+            };
           } else {
-            internshipData = { ...internshipData, match_score: 0 };
+            internshipData = { ...internshipData, match_score: internshipData.match_score ?? 0 };
           }
         } catch (err) {
           console.warn('Could not fetch match score:', err);
-          internshipData = { ...internshipData, match_score: 0 };
+          internshipData = { ...internshipData, match_score: internshipData.match_score ?? 0 };
         }
       } else {
         internshipData = { ...internshipData, match_score: 0 };
@@ -155,6 +218,8 @@ const InternshipDetailPage = () => {
       setIsLoading(false);
     }
   };
+
+  // NOTE: Interaction updates now trigger a full page reload (see App.jsx).
 
   const handleBack = () => {
     navigate(-1);
@@ -327,6 +392,7 @@ const InternshipDetailPage = () => {
                       </span>
                     </div>
                   )}
+                  
                   <button
                     onClick={handleBookmark}
                     className={`p-2.5 rounded-lg transition-all ${
@@ -346,6 +412,15 @@ const InternshipDetailPage = () => {
                     <Share2 className="h-5 w-5" />
                   </button>
                 </div>
+              </div>
+
+              {/* Like/Dislike (easy access near actions) */}
+              <div className="flex justify-end mb-4">
+                <LikeDislikeButton
+                  internshipId={internship.internship_id || internship._id}
+                  entityName={internship.title}
+                  variant="icons"
+                />
               </div>
 
               {/* Key Info Grid */}
@@ -511,10 +586,39 @@ const InternshipDetailPage = () => {
               </div>
             )}
 
+            {/* Reviews Section */}
+            <div className="card">
+              {/* Review List - 2 column grid with scrollable container */}
+              <div className="max-h-[600px] overflow-y-auto">
+                <ReviewList
+                  reviews={reviews}
+                  entityType="internship"
+                  onMarkHelpful={handleMarkHelpful}
+                  onDelete={handleDeleteReview}
+                  loading={reviewsLoading}
+                  emptyMessage="No reviews yet. Be the first to share your experience!"
+                  gridView={true}
+                  columns={2}
+                  showHeader={true}
+                  headerTitle="Internship Reviews"
+                  headerActions={
+                    <>
+                      <button
+                        onClick={handleWriteReview}
+                        className="btn-primary text-sm px-4 py-2"
+                      >
+                        {existingReview ? 'Edit Review' : 'Write Review'}
+                      </button>
+                    </>
+                  }
+                />
+              </div>
+            </div>
+
           </div>
 
           {/* Right Column - Sidebar */}
-          <div className="space-y-6">
+          <div className="lg:col-span-1 space-y-6">
             {/* Candidate Ranking Card */}
             {user && ranking && (
               <div className="card bg-gradient-to-br from-purple-50 to-indigo-50 dark:from-purple-900/20 dark:to-indigo-900/20 border-purple-200 dark:border-purple-800">
@@ -562,14 +666,6 @@ const InternshipDetailPage = () => {
                         style={{ width: `${ranking.percentile}%` }}
                       />
                     </div>
-                  </div>
-
-                  {/* Score */}
-                  <div className="pt-3 border-t border-purple-200 dark:border-purple-800">
-                    <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">Match Score</p>
-                    <p className="text-2xl font-bold text-purple-600 dark:text-purple-400">
-                      {internship.match_score || 0}%
-                    </p>
                   </div>
 
                   {/* Info */}
@@ -626,7 +722,6 @@ const InternshipDetailPage = () => {
                 </div>
               </div>
             )}
-
             {/* Similar Internships Card */}
             {similarInternships.length > 0 && (
               <div className="card">
@@ -634,7 +729,7 @@ const InternshipDetailPage = () => {
                   <Sparkles className="h-5 w-5 text-primary-600 dark:text-primary-400" />
                   Similar Opportunities
                 </h3>
-                <div className="space-y-3 max-h-[480px] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-gray-400 dark:scrollbar-thumb-gray-600 scrollbar-track-gray-200 dark:scrollbar-track-gray-800">
+                <div className="space-y-3 max-h-[663px] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-gray-400 dark:scrollbar-thumb-gray-600 scrollbar-track-gray-200 dark:scrollbar-track-gray-800">
                   {similarInternships.map((similar, idx) => {
                     const similarId = similar.internship_id || similar._id;
                     const isSimilarBookmarked = similarBookmarks[similarId] || false;
@@ -644,23 +739,30 @@ const InternshipDetailPage = () => {
                       key={idx}
                       className="relative p-3 bg-gray-50 dark:bg-gray-800 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors border border-gray-200 dark:border-gray-700"
                     >
-                      {/* Bookmark button for similar internship */}
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          toggleSimilarBookmark(similarId);
-                        }}
-                        className={`absolute top-2 right-2 p-1.5 rounded-lg transition-all z-10 ${
-                          isSimilarBookmarked
-                            ? 'bg-primary-500 text-white hover:bg-primary-600'
-                            : 'bg-white dark:bg-gray-700 text-gray-400 hover:text-primary-500 border border-gray-200 dark:border-gray-600'
-                        }`}
-                        title={isSimilarBookmarked ? 'Remove bookmark' : 'Bookmark'}
-                      >
-                        <Bookmark className={`h-3 w-3 ${isSimilarBookmarked ? 'fill-current' : ''}`} />
-                      </button>
+                      {/* Action Buttons */}
+                      <div className="absolute top-2 right-2 flex items-center gap-1 z-10">
+                        <LikeDislikeButton 
+                          internshipId={similarId}
+                          entityName={similar.title}
+                          variant="heart"
+                        />
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            toggleSimilarBookmark(similarId);
+                          }}
+                          className={`p-1.5 rounded-lg transition-all ${
+                            isSimilarBookmarked
+                              ? 'bg-primary-500 text-white hover:bg-primary-600'
+                              : 'bg-white dark:bg-gray-700 text-gray-400 hover:text-primary-500 border border-gray-200 dark:border-gray-600'
+                          }`}
+                          title={isSimilarBookmarked ? 'Remove bookmark' : 'Bookmark'}
+                        >
+                          <Bookmark className={`h-3 w-3 ${isSimilarBookmarked ? 'fill-current' : ''}`} />
+                        </button>
+                      </div>
                       <div onClick={() => handleViewSimilar(similar)} className="cursor-pointer">
-                        <h4 className="font-semibold text-gray-900 dark:text-white text-sm mb-1 pr-8">
+                        <h4 className="font-semibold text-gray-900 dark:text-white text-sm mb-1 pr-16 line-clamp-2 break-words">
                           {similar.title}
                         </h4>
                         <p className="text-xs text-gray-600 dark:text-gray-400 mb-2">
@@ -679,13 +781,33 @@ const InternshipDetailPage = () => {
                         </div>
                       </div>
                     </div>
-                  )})}
+                  );
+                  })}
                 </div>
               </div>
             )}
+
+            {/* Review Summary Stats Card */}
+            <div className="card">
+              <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+                <MessageSquare className="h-5 w-5 text-primary-600 dark:text-primary-400" />
+                Review Summary
+              </h3>
+              <ReviewStats reviews={reviews} showDistribution={false} />
+            </div>
           </div>
         </div>
       </div>
+
+      {/* Review Form Modal */}
+      <ReviewForm
+        isOpen={showReviewForm}
+        onClose={() => setShowReviewForm(false)}
+        onSubmit={handleReviewSubmit}
+        entityType="internship"
+        entityName={internship?.title}
+        existingReview={existingReview}
+      />
     </div>
   );
 };

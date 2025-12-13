@@ -48,5 +48,17 @@ export const reviewService = {
   delete: async (reviewId) => {
     const response = await api.delete(`/reviews/${reviewId}`);
     return response.data;
+  },
+
+  // Get all reviews by a specific user
+  getUserReviews: async (candidateId) => {
+    try {
+      const response = await api.get(`/reviews/user/${candidateId}`);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching user reviews:', error);
+      // Return empty array as fallback
+      return { reviews: [] };
+    }
   }
 };

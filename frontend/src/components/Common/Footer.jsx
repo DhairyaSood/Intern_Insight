@@ -1,5 +1,5 @@
 import React from 'react';
-import { Heart } from 'lucide-react';
+import { ThumbsUp } from 'lucide-react';
 
 const Footer = () => {
   return (
@@ -7,7 +7,7 @@ const Footer = () => {
       <div className="container-custom py-8">
         <div className="text-center text-sm text-gray-600 dark:text-gray-400">
           <p className="flex items-center justify-center">
-            Made with <Heart className="h-4 w-4 mx-1 text-red-500" /> by Intern Insight Team
+            Made with <ThumbsUp className="h-4 w-4 mx-1 text-red-500" /> by Intern Insight Team
           </p>
           <p className="mt-2">© {new Date().getFullYear()} Intern Insight. All rights reserved.</p>
         </div>

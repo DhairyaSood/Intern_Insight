@@ -1,12 +1,14 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { MapPin, Sparkles, Bookmark, CheckCircle } from 'lucide-react';
+import LikeDislikeButton from '../Company/LikeDislikeButton';
 
 const InternshipCard = ({ internship, onShowSimilar, showMatchScore = false, isBookmarked = false, onToggleBookmark, hasApplied = false }) => {
   const navigate = useNavigate();
+  const internshipId = internship.internship_id || internship._id;
 
   const handleViewDetails = () => {
-    navigate(`/internship/${internship.internship_id || internship._id}`);
+    navigate(`/internship/${internshipId}`);
   };
 
   const handleCompanyClick = (e) => {
@@ -20,40 +22,53 @@ const InternshipCard = ({ internship, onShowSimilar, showMatchScore = false, isB
   const handleBookmarkClick = (e) => {
     e.stopPropagation();
     if (onToggleBookmark) {
-      onToggleBookmark(internship.internship_id || internship._id);
+      onToggleBookmark(internshipId);
     }
   };
 
   return (
-    <div className="card-compact md:hover:scale-105 transition-transform relative h-full flex flex-col">
+    <div
+      id={`internship-card-${internshipId}`}
+      data-scroll-anchor="internship"
+      className="card-compact md:hover:scale-105 transition-transform relative h-full flex flex-col"
+    >
       {/* Desktop Layout - Keep existing */}
       <div className="hidden md:flex md:flex-col h-full">
-        {/* Bookmark Button - Top Right Corner */}
-        {onToggleBookmark && (
-          <button
-            onClick={handleBookmarkClick}
-            className={`absolute top-4 right-4 p-2 rounded-lg transition-all z-10 ${isBookmarked ? 'bg-primary-500 text-white hover:bg-primary-600' : 'bg-white dark:bg-gray-700 text-gray-400 hover:text-primary-500 border border-gray-200 dark:border-gray-600'}`}
-            title={isBookmarked ? 'Remove bookmark' : 'Bookmark'}
-          >
-            <Bookmark className={`h-4 w-4 ${isBookmarked ? 'fill-current' : ''}`} />
-          </button>
-        )}
-        {/* Match Score Badge - Below Bookmark */}
-        {showMatchScore && (
-          <div className="absolute top-14 right-4 bg-green-500 text-white px-2 py-1 rounded-full text-xs font-semibold shadow-lg z-10">
-            {Math.round(internship.match_score || internship.matchScore || 0)}% Match
+        <div className="flex items-start justify-between gap-3 mb-2">
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white line-clamp-2 leading-tight break-words overflow-hidden flex-1 min-w-0">
+            {internship.title}
+          </h3>
+          <div className="flex items-center gap-2 flex-shrink-0">
+            <LikeDislikeButton 
+              internshipId={internshipId}
+              entityName={internship.title}
+              variant="heart"
+            />
+            {onToggleBookmark && (
+              <button
+                onClick={handleBookmarkClick}
+                className={`p-2 rounded-lg transition-all ${isBookmarked ? 'bg-primary-500 text-white hover:bg-primary-600' : 'bg-white dark:bg-gray-700 text-gray-400 hover:text-primary-500 border border-gray-200 dark:border-gray-600'}`}
+                title={isBookmarked ? 'Remove bookmark' : 'Bookmark'}
+              >
+                <Bookmark className={`h-4 w-4 ${isBookmarked ? 'fill-current' : ''}`} />
+              </button>
+            )}
           </div>
-        )}
-        {/* Applied Badge - Below Match Score */}
-        {hasApplied && (
-          <div className={`absolute ${showMatchScore ? 'top-24' : 'top-14'} right-4 bg-blue-500 text-white px-2 py-1 rounded-full text-xs font-semibold shadow-lg flex items-center gap-1 z-10`}>
-            <CheckCircle className="h-3 w-3" />
-            Applied
-          </div>
-        )}
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2 pr-12 line-clamp-2 min-h-[3.5rem]">
-          {internship.title}
-        </h3>
+        </div>
+
+        <div className="flex items-center justify-end gap-2 mb-2">
+          {showMatchScore && (
+            <div className="bg-green-500 text-white px-2 py-1 rounded-full text-xs font-semibold shadow-lg">
+              {Math.round(internship.match_score || internship.matchScore || 0)}% Match
+            </div>
+          )}
+          {hasApplied && (
+            <div className="bg-blue-500 text-white px-2 py-1 rounded-full text-xs font-semibold shadow-lg flex items-center gap-1">
+              <CheckCircle className="h-3 w-3" />
+              Applied
+            </div>
+          )}
+        </div>
         <button
           onClick={handleCompanyClick}
           className="text-gray-600 dark:text-gray-400 hover:text-primary-600 dark:hover:text-primary-400 transition-colors mb-2 text-left font-medium"
@@ -102,17 +117,24 @@ const InternshipCard = ({ internship, onShowSimilar, showMatchScore = false, isB
           {/* Left: Content */}
           <div className="flex-1 min-w-0">
             <div className="flex items-start justify-between gap-2 mb-1">
-              <h3 className="text-base font-semibold text-gray-900 dark:text-white line-clamp-2 flex-1">
+              <h3 className="text-base font-semibold text-gray-900 dark:text-white line-clamp-2 flex-1 min-w-0 leading-tight break-words">
                 {internship.title}
               </h3>
-              {onToggleBookmark && (
-                <button
-                  onClick={handleBookmarkClick}
-                  className={`flex-shrink-0 p-1.5 rounded-lg transition-all ${isBookmarked ? 'bg-primary-500 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-400'}`}
-                >
-                  <Bookmark className={`h-4 w-4 ${isBookmarked ? 'fill-current' : ''}`} />
-                </button>
-              )}
+              <div className="flex items-center gap-1 flex-shrink-0 ml-2">
+                <LikeDislikeButton 
+                  internshipId={internshipId}
+                  entityName={internship.title}
+                  variant="heart"
+                />
+                {onToggleBookmark && (
+                  <button
+                    onClick={handleBookmarkClick}
+                    className={`p-1.5 rounded-lg transition-all ${isBookmarked ? 'bg-primary-500 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-400'}`}
+                  >
+                    <Bookmark className={`h-4 w-4 ${isBookmarked ? 'fill-current' : ''}`} />
+                  </button>
+                )}
+              </div>
             </div>
             <button
               onClick={handleCompanyClick}

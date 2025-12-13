@@ -8,7 +8,7 @@ import SectorInterestsInput from '../components/Profile/SectorInterestsInput';
 import CountryCodeSelector, { detectCountryFromPhone } from '../components/Profile/CountryCodeSelector';
 import LoadingSpinner from '../components/Common/LoadingSpinner';
 import ErrorMessage from '../components/Common/ErrorMessage';
-import { User, Mail, MapPin, Briefcase, GraduationCap, Save, Upload as UploadIcon, CheckCircle2, Award, Target } from 'lucide-react';
+import { User, Mail, MapPin, Briefcase, GraduationCap, Save, Upload as UploadIcon, CheckCircle2, Award, Target, ThumbsUp, MessageSquare } from 'lucide-react';
 
 const ProfilePage = () => {
   const navigate = useNavigate();
@@ -322,15 +322,25 @@ const ProfilePage = () => {
               Complete your profile to get personalized internship recommendations
             </p>
           </div>
-          {!showResumeUpload && (
+          <div className="flex gap-3">
             <button
               type="button"
-              onClick={() => setShowResumeUpload(true)}
-              className="btn-primary whitespace-nowrap"
+              onClick={() => navigate('/my-interactions')}
+              className="btn-secondary whitespace-nowrap flex items-center gap-2"
             >
-              Upload Resume
+              <ThumbsUp className="h-4 w-4" />
+              My Interactions
             </button>
-          )}
+            {!showResumeUpload && (
+              <button
+                type="button"
+                onClick={() => setShowResumeUpload(true)}
+                className="btn-primary whitespace-nowrap"
+              >
+                Upload Resume
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Resume Upload Modal - Compact in corner */}

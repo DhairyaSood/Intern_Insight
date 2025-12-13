@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 import { useInternshipStore } from '../store/internshipStore';
@@ -6,10 +6,28 @@ import { profileService } from '../services/profile';
 import LoadingSpinner from '../components/Common/LoadingSpinner';
 import ErrorMessage from '../components/Common/ErrorMessage';
 import InternshipCard from '../components/Internship/InternshipCard';
+import LikeDislikeButton from '../components/Company/LikeDislikeButton';
 import { Search, MapPin, X, Sparkles, Grid3x3, ChevronRight, ChevronDown, Bookmark } from 'lucide-react';
 
 const ITEMS_PER_PAGE = 24; // Show 24 items initially (8x3 grid)
 const LOAD_MORE_COUNT = 12; // Load 12 more items when clicking "Load More"
+const LAST_INTERACTION_KEY = '__last_interaction__';
+const SCROLL_RESTORE_KEY = '__scroll_restore__';
+const INTERNSHIP_ANCHOR_PREFIX = 'internship-card-';
+const INTERNSHIPS_STATE_KEY = '__internships_state__';
+
+const getInitialInternshipsState = () => {
+  try {
+    // Only restore state when the page is being reloaded due to an interaction.
+    if (!sessionStorage.getItem(SCROLL_RESTORE_KEY)) return null;
+    const raw = sessionStorage.getItem(INTERNSHIPS_STATE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    return parsed && typeof parsed === 'object' ? parsed : null;
+  } catch {
+    return null;
+  }
+};
 
 const InternshipsPage = () => {
   const navigate = useNavigate();
@@ -25,15 +43,21 @@ const InternshipsPage = () => {
     clearFilters 
   } = useInternshipStore();
 
-  const [viewMode, setViewMode] = useState('general'); // 'general', 'recommended', or 'bookmarks'
   const [recommendations, setRecommendations] = useState([]);
   const [isLoadingRecommendations, setIsLoadingRecommendations] = useState(false);
   const [userProfile, setUserProfile] = useState(null);
   const [selectedInternship, setSelectedInternship] = useState(null);
   const [similarInternships, setSimilarInternships] = useState([]);
   const [showSidebar, setShowSidebar] = useState(false);
-  const [recommendedFilters, setRecommendedFilters] = useState({ search: '', location: '' });
-  const [displayCount, setDisplayCount] = useState(ITEMS_PER_PAGE);
+  const initialPageState = useMemo(() => getInitialInternshipsState(), []);
+  const [viewMode, setViewMode] = useState(() => initialPageState?.viewMode || 'general'); // 'general', 'recommended', or 'bookmarks'
+  const [recommendedFilters, setRecommendedFilters] = useState(() => initialPageState?.recommendedFilters || ({ search: '', location: '' }));
+  const [displayCount, setDisplayCount] = useState(() => {
+    const restored = initialPageState?.displayCount;
+    return typeof restored === 'number' && restored > 0 ? restored : ITEMS_PER_PAGE;
+  });
+  const pendingScrollRestoreRef = useRef(null);
+  const [scrollRestoreHandled, setScrollRestoreHandled] = useState(true);
   const [bookmarkedIds, setBookmarkedIds] = useState(() => {
     if (!user?.username) return [];
     const bookmarkKey = `bookmarkedInternships_${user.username}`;
@@ -62,6 +86,52 @@ const InternshipsPage = () => {
   }, [fetchInternships]);
 
   useEffect(() => {
+    // Persist state so like/dislike-triggered reload can restore the same tab and paging.
+    try {
+      sessionStorage.setItem(
+        INTERNSHIPS_STATE_KEY,
+        JSON.stringify({
+          viewMode,
+          recommendedFilters,
+          displayCount,
+          filters,
+          ts: Date.now(),
+        })
+      );
+    } catch {
+      // ignore
+    }
+  }, [viewMode, recommendedFilters, displayCount, filters]);
+
+  useEffect(() => {
+    // Capture pending restore data once on mount.
+    try {
+      const raw = sessionStorage.getItem(SCROLL_RESTORE_KEY);
+      if (!raw) return;
+      const data = JSON.parse(raw);
+      if (data?.path && data.path !== window.location.pathname) return;
+      if (typeof data?.ts === 'number' && Date.now() - data.ts > 10_000) return;
+      pendingScrollRestoreRef.current = data;
+      setScrollRestoreHandled(false);
+
+      // Restore filters for this reload so we don't end up in General with the old scroll.
+      try {
+        const rawState = sessionStorage.getItem(INTERNSHIPS_STATE_KEY);
+        if (rawState) {
+          const st = JSON.parse(rawState);
+          if (st?.filters && typeof st.filters === 'object') {
+            updateFilters(st.filters);
+          }
+        }
+      } catch {
+        // ignore
+      }
+    } catch {
+      // ignore
+    }
+  }, []);
+
+  useEffect(() => {
     // Save bookmarks to localStorage whenever they change
     if (user?.username) {
       const bookmarkKey = `bookmarkedInternships_${user.username}`;
@@ -73,12 +143,17 @@ const InternshipsPage = () => {
     if (viewMode === 'recommended' && user?.username) {
       loadRecommendations();
     }
-    setDisplayCount(ITEMS_PER_PAGE); // Reset pagination when switching modes
+    // Reset pagination when switching modes (unless we're restoring scroll after reload)
+    if (scrollRestoreHandled) {
+      setDisplayCount(ITEMS_PER_PAGE);
+    }
   }, [viewMode, user, internships]);
 
   // Reset pagination when filters change
   useEffect(() => {
-    setDisplayCount(ITEMS_PER_PAGE);
+    if (scrollRestoreHandled) {
+      setDisplayCount(ITEMS_PER_PAGE);
+    }
   }, [filters.search, filters.location, recommendedFilters.search, recommendedFilters.location]);
 
   const loadRecommendations = async () => {
@@ -90,8 +165,13 @@ const InternshipsPage = () => {
       if (profile && profile.candidate_id) {
         // Use backend recommendations API
         const { internshipService } = await import('../services/internships');
-        const recData = await internshipService.getRecommendations(profile.candidate_id);
-        const backendRecs = recData.recommendations || [];
+        // Show ALL recommendations with match_score > 0, sorted desc.
+        const recData = await internshipService.getRecommendations(profile.candidate_id, {
+          limit: 0,
+          min_score: 0,
+          dedupe_org: false,
+        });
+        const backendRecs = (recData.recommendations || []).filter(r => (r?.match_score ?? r?.matchScore ?? 0) > 0);
         setRecommendations(backendRecs);
       } else {
         setRecommendations([]);
@@ -118,6 +198,34 @@ const InternshipsPage = () => {
               const { internshipService } = await import('../services/internships');
               const recData = await internshipService.getRecommendations(profile.candidate_id);
               setBackendRecommendations(recData.recommendations || []);
+
+              // After a full-page reload triggered by like/dislike, ensure the interacted internship
+              // gets a match score even if it isn't in the top-10 recommendations.
+              try {
+                const raw = sessionStorage.getItem(LAST_INTERACTION_KEY);
+                if (!raw) return;
+
+                const last = JSON.parse(raw);
+                const lastType = last?.type;
+                const internshipId = last?.detail?.internship_id;
+                if (lastType !== 'internship-interaction-changed' || !internshipId) return;
+
+                const match = await internshipService.getInternshipMatch(profile.candidate_id, internshipId);
+                const matchScore = match?.match_score ?? 0;
+                setBackendRecommendations((prev) => {
+                  const existingIdx = prev.findIndex(r => (r?.internship_id || r?._id) === internshipId);
+                  if (existingIdx >= 0) {
+                    const next = [...prev];
+                    next[existingIdx] = { ...next[existingIdx], match_score: matchScore };
+                    return next;
+                  }
+                  return [...prev, { internship_id: internshipId, match_score: matchScore }];
+                });
+              } catch {
+                // Ignore if sessionStorage is missing/malformed or match fetch fails.
+              } finally {
+                try { sessionStorage.removeItem(LAST_INTERACTION_KEY); } catch {}
+              }
             } catch (err) {
               console.warn('Could not fetch backend recommendations:', err);
               setBackendRecommendations([]);
@@ -127,6 +235,8 @@ const InternshipsPage = () => {
         .catch(err => console.error('Failed to load profile:', err));
     }
   }, [user, viewMode]);
+
+  // NOTE: Interaction updates now trigger a full page reload (see App.jsx).
 
   const findSimilarInternships = (internship) => {
     const baseSkills = (internship.skills_required || []).map(s => s.toLowerCase());
@@ -284,6 +394,79 @@ const InternshipsPage = () => {
   const displayedInternships = allDisplayedInternships.slice(0, displayCount);
   const hasMore = displayCount < allDisplayedInternships.length;
   const isLoadingData = viewMode === 'recommended' ? isLoadingRecommendations : isLoading;
+
+  useEffect(() => {
+    // Deterministic scroll restore for the internships list after a full reload.
+    if (scrollRestoreHandled) return;
+    if (isLoadingData) return;
+
+    const restore = pendingScrollRestoreRef.current;
+    if (!restore) {
+      setScrollRestoreHandled(true);
+      return;
+    }
+
+    const targetInternshipId =
+      (typeof restore?.targetInternshipId === 'string' && restore.targetInternshipId) ||
+      (typeof restore?.anchorId === 'string' && restore.anchorId.startsWith(INTERNSHIP_ANCHOR_PREFIX)
+        ? restore.anchorId.slice(INTERNSHIP_ANCHOR_PREFIX.length)
+        : null);
+
+    // If we know which card was in view, ensure it's actually rendered (pagination).
+    if (targetInternshipId) {
+      const idx = allDisplayedInternships.findIndex((i) => {
+        const id = i?.internship_id || i?._id;
+        return String(id) === String(targetInternshipId);
+      });
+
+      if (idx >= 0 && displayCount < idx + 1) {
+        setDisplayCount(idx + 1);
+        return;
+      }
+    }
+
+    const anchorId =
+      targetInternshipId ? `${INTERNSHIP_ANCHOR_PREFIX}${targetInternshipId}` : restore?.anchorId;
+    const anchorOffset = typeof restore?.anchorOffset === 'number' ? restore.anchorOffset : null;
+    const y = typeof restore?.y === 'number' ? restore.y : null;
+
+    const tryRestore = () => {
+      // Prefer anchor-based restore.
+      if (anchorId && anchorOffset !== null) {
+        const el = document.getElementById(anchorId);
+        if (el) {
+          const rect = el.getBoundingClientRect();
+          const currentTop = rect.top + window.scrollY;
+          const target = Math.max(0, currentTop - anchorOffset);
+          window.scrollTo({ top: target, behavior: 'auto' });
+          return true;
+        }
+      }
+
+      if (y !== null) {
+        window.scrollTo({ top: y, behavior: 'auto' });
+        return true;
+      }
+
+      return false;
+    };
+
+    requestAnimationFrame(() => {
+      tryRestore();
+      requestAnimationFrame(tryRestore);
+      setTimeout(tryRestore, 50);
+      setTimeout(() => {
+        tryRestore();
+        try {
+          sessionStorage.removeItem(SCROLL_RESTORE_KEY);
+        } catch {
+          // ignore
+        }
+        pendingScrollRestoreRef.current = null;
+        setScrollRestoreHandled(true);
+      }, 350);
+    });
+  }, [scrollRestoreHandled, isLoadingData, allDisplayedInternships, displayCount]);
 
   const handleLoadMore = () => {
     setDisplayCount(prev => prev + LOAD_MORE_COUNT);
@@ -549,24 +732,31 @@ const InternshipsPage = () => {
                       key={internshipId}
                       className="card-compact relative"
                     >
-                      {/* Bookmark button */}
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          toggleBookmark(internshipId);
-                        }}
-                        className={`absolute top-3 right-3 p-1.5 rounded-lg transition-all z-10 ${
-                          isBookmarked
-                            ? 'bg-primary-500 text-white hover:bg-primary-600'
-                            : 'bg-white dark:bg-gray-700 text-gray-400 hover:text-primary-500 border border-gray-200 dark:border-gray-600'
-                        }`}
-                        title={isBookmarked ? 'Remove bookmark' : 'Bookmark'}
-                      >
-                        <Bookmark className={`h-3.5 w-3.5 ${isBookmarked ? 'fill-current' : ''}`} />
-                      </button>
+                      {/* Action Buttons */}
+                      <div className="absolute top-3 right-3 flex items-center gap-1.5 z-10">
+                        <LikeDislikeButton 
+                          internshipId={internshipId}
+                          entityName={internship.title}
+                          variant="heart"
+                        />
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            toggleBookmark(internshipId);
+                          }}
+                          className={`p-1.5 rounded-lg transition-all ${
+                            isBookmarked
+                              ? 'bg-primary-500 text-white hover:bg-primary-600'
+                              : 'bg-white dark:bg-gray-700 text-gray-400 hover:text-primary-500 border border-gray-200 dark:border-gray-600'
+                          }`}
+                          title={isBookmarked ? 'Remove bookmark' : 'Bookmark'}
+                        >
+                          <Bookmark className={`h-3.5 w-3.5 ${isBookmarked ? 'fill-current' : ''}`} />
+                        </button>
+                      </div>
 
-                      <div className="mb-3 pr-8">
-                        <h4 className="font-semibold text-gray-900 dark:text-white text-sm mb-1">
+                      <div className="mb-3 pr-16">
+                        <h4 className="font-semibold text-gray-900 dark:text-white text-sm mb-1 line-clamp-2 break-words">
                           {internship.title}
                         </h4>
                         <p className="text-xs text-gray-600 dark:text-gray-400 mb-2">

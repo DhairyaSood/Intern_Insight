@@ -4,13 +4,16 @@ export const authService = {
   // User signup
   signup: async (username, password) => {
     const response = await api.post('/auth/signup', { username, password });
-    return response.data;
+    // Handle both response formats: direct data or wrapped in 'data' field
+    return response.data.data || response.data;
   },
 
   // User login - returns JWT token
   login: async (username, password) => {
     const response = await api.post('/auth/login', { username, password });
-    const { token, username: user, candidate_id } = response.data;
+    // Handle both response formats: direct data or wrapped in 'data' field
+    const responseData = response.data.data || response.data;
+    const { token, username: user, candidate_id } = responseData;
     
     // Store JWT token
     if (token) {
@@ -19,7 +22,7 @@ export const authService = {
       localStorage.setItem('candidate_id', candidate_id);
     }
     
-    return response.data;
+    return responseData;
   },
 
   // User logout
@@ -42,13 +45,15 @@ export const authService = {
     }
     
     const response = await api.get('/auth/status');
-    return response.data;
+    // Handle both response formats: direct data or wrapped in 'data' field
+    return response.data.data || response.data;
   },
 
   // Verify token
   verifyToken: async () => {
     const response = await api.get('/auth/verify');
-    return response.data;
+    // Handle both response formats: direct data or wrapped in 'data' field
+    return response.data.data || response.data;
   },
 
   // Get current JWT token

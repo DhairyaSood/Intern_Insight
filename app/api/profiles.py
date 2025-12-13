@@ -25,6 +25,7 @@ def create_or_update_profile():
         # Get authenticated user from JWT
         user = get_current_user()
         username = user.get('username')
+        auth_candidate_id = user.get('candidate_id')
         
         if not username:
             return error_response("Username not found in token", 401)
@@ -51,21 +52,23 @@ def create_or_update_profile():
         
         # Check if profile already exists
         existing_profile = None
-        candidate_id = None
+        candidate_id = auth_candidate_id or None
         
         db = db_manager.get_db()
         if db is not None:
             try:
                 existing_profile = db.profiles.find_one({"username": username})
                 if existing_profile:
-                    candidate_id = existing_profile.get('candidate_id')
+                    # Prefer the authenticated user id for consistency across the system.
+                    # If it's missing (shouldn't happen), fall back to whatever the profile has.
+                    candidate_id = auth_candidate_id or existing_profile.get('candidate_id')
             except Exception as e:
                 app_logger.warning(f"MongoDB profile check failed: {e}")
         
         # Strict Atlas mode: do not read JSON files
         profile_index = None
         
-        # Generate candidate_id if creating new profile
+        # Generate candidate_id only if we truly have no stable identifier
         if not candidate_id:
             candidate_id = generate_candidate_id()
         
@@ -122,6 +125,22 @@ def get_profile_by_username(username):
                 profile = db.profiles.find_one({"username": username})
                 if profile and '_id' in profile:
                     profile['_id'] = str(profile['_id'])  # Convert ObjectId to string
+
+                # Migrate legacy CAND_* candidate_ids to the authenticated user id (login_info _id)
+                if profile:
+                    current_candidate_id = profile.get('candidate_id')
+                    if not current_candidate_id or (isinstance(current_candidate_id, str) and current_candidate_id.startswith('CAND_')):
+                        user = db.login_info.find_one({"username": username})
+                        if user and user.get('_id'):
+                            migrated_candidate_id = str(user['_id'])
+                            profile['candidate_id'] = migrated_candidate_id
+                            try:
+                                db.profiles.update_one(
+                                    {"username": username},
+                                    {"$set": {"candidate_id": migrated_candidate_id}}
+                                )
+                            except Exception as e:
+                                app_logger.warning(f"Failed to persist candidate_id migration for {username}: {e}")
             except Exception as e:
                 app_logger.warning(f"MongoDB profile retrieval failed: {e}")
         

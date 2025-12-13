@@ -13,9 +13,13 @@ const api = axios.create({
 // Request interceptor - Add JWT token to requests
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('jwt_token');
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
+    // Only add token to API requests, not static files like favicon
+    // Check if the URL is actually an API endpoint
+    if (config.url && !config.url.includes('favicon') && !config.url.includes('.ico')) {
+      const token = localStorage.getItem('jwt_token');
+      if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
+      }
     }
     return config;
   },

@@ -4,10 +4,14 @@ Recommendations API endpoints
 Direct implementation to replace legacy imports
 """
 
-from flask import jsonify
+from flask import jsonify, request
 from app.core.database import db_manager
 from app.utils.logger import app_logger
 from app.utils.response_helpers import success_response, error_response
+try:
+    from bson import ObjectId
+except Exception:  # pragma: no cover
+    ObjectId = None
 try:
     # Prefer the improved ML logic
     from app.core.ml_model import get_recommendations as ml_get_recommendations
@@ -18,6 +22,16 @@ except Exception as _e:
 def get_candidate_recommendations(candidate_id):
     """Get recommendations for a specific candidate"""
     try:
+        # Query params
+        limit = request.args.get('limit', default=10, type=int)
+        # min_score is in percentage units (0..100)
+        min_score = request.args.get('min_score', default=0.0, type=float)
+        dedupe_org = request.args.get('dedupe_org', default='1')
+        dedupe_org = str(dedupe_org).lower() not in ('0', 'false', 'no')
+
+        # limit<=0 means "no cap" (return all)
+        top_n = None if (limit is None or int(limit) <= 0) else int(limit)
+
         # Load candidate profile
         candidate = load_candidate_by_id(candidate_id)
         if not candidate:
@@ -28,9 +42,11 @@ def get_candidate_recommendations(candidate_id):
         if not internships:
             return error_response("No internships available", 404)
         
-        # Load company interactions for this candidate
+        # Load company interactions for this candidate + global stats
         company_interactions = {}
         company_ratings = {}
+        internship_interactions = {}
+        company_interaction_stats = {}
         try:
             db = db_manager.get_db()
             
@@ -40,8 +56,25 @@ def get_candidate_recommendations(candidate_id):
             for interaction in user_interactions:
                 company_id = interaction.get('company_id')
                 interaction_type = interaction.get('interaction_type')
+                reason_tags = interaction.get('reason_tags', [])
                 if company_id and interaction_type:
-                    company_interactions[company_id] = interaction_type
+                    company_interactions[company_id] = {
+                        'type': interaction_type,
+                        'reason_tags': reason_tags
+                    }
+            
+            # Get user's internship interactions (like/dislike) - personal preferences
+            internship_interactions_collection = db['internship_interactions']
+            user_internship_interactions = list(internship_interactions_collection.find({'candidate_id': candidate_id}))
+            for interaction in user_internship_interactions:
+                internship_id = interaction.get('internship_id')
+                interaction_type = interaction.get('interaction_type')
+                reason_tags = interaction.get('reason_tags', [])
+                if internship_id and interaction_type:
+                    internship_interactions[internship_id] = {
+                        'type': interaction_type,
+                        'reason_tags': reason_tags
+                    }
             
             # Get company average ratings
             reviews_collection = db['company_reviews']
@@ -57,9 +90,48 @@ def get_candidate_recommendations(candidate_id):
                 avg_rating = result.get('average_rating')
                 if company_id and avg_rating:
                     company_ratings[company_id] = round(avg_rating, 2)
+
+            # Global company like/dislike stats (affects all users)
+            try:
+                stats = list(db['company_interactions'].aggregate([
+                    {'$group': {
+                        '_id': {
+                            'company_id': '$company_id',
+                            'interaction_type': '$interaction_type'
+                        },
+                        'count': {'$sum': 1}
+                    }}
+                ]))
+                tmp = {}
+                for row in stats:
+                    key = row.get('_id') or {}
+                    cid = key.get('company_id')
+                    it = key.get('interaction_type')
+                    if not cid or not it:
+                        continue
+                    tmp.setdefault(cid, {'like': 0, 'dislike': 0})
+                    if it == 'like':
+                        tmp[cid]['like'] += int(row.get('count') or 0)
+                    elif it == 'dislike':
+                        tmp[cid]['dislike'] += int(row.get('count') or 0)
+
+                # Also expose stats by company name (normalized) to support internships that
+                # only have organization/company strings.
+                company_interaction_stats = dict(tmp)
+                try:
+                    companies = list(db['companies'].find({}, {'company_id': 1, 'name': 1}))
+                    for c in companies:
+                        cid = c.get('company_id')
+                        name = (c.get('name') or '').strip().lower()
+                        if cid in tmp and name:
+                            company_interaction_stats[name] = tmp[cid]
+                except Exception:
+                    pass
+            except Exception as e:
+                app_logger.warning(f"Could not compute global company interaction stats: {e}")
                     
         except Exception as e:
-            app_logger.warning(f"Could not load company interactions/ratings: {e}")
+            app_logger.warning(f"Could not load company/internship interactions/ratings: {e}")
         
         # Generate recommendations using improved ML logic
         recommendations = []
@@ -67,9 +139,14 @@ def get_candidate_recommendations(candidate_id):
             ml_recs = ml_get_recommendations(
                 candidate, 
                 internships, 
-                top_n=10,
+                top_n=top_n,
                 company_interactions=company_interactions,
-                company_ratings=company_ratings
+                company_ratings=company_ratings,
+                internship_interactions=internship_interactions,
+                company_interaction_stats=company_interaction_stats,
+                dedupe_org=dedupe_org,
+                # min_score is percent; ML expects percent threshold too.
+                min_score=min_score,
             )
             # Enrich with skills/description for UI compatibility
             by_id = {i.get("internship_id"): i for i in internships}
@@ -94,6 +171,99 @@ def get_candidate_recommendations(candidate_id):
     except Exception as e:
         app_logger.error(f"Error generating recommendations for {candidate_id}: {e}")
         return error_response("Failed to generate recommendations", 500)
+
+
+def get_candidate_internship_match(candidate_id, internship_id):
+    """Get match score for a specific internship for a candidate (not top-N limited)."""
+    try:
+        candidate = load_candidate_by_id(candidate_id)
+        if not candidate:
+            return error_response("Candidate not found", 404)
+
+        internship = load_internship_by_any_id(internship_id)
+        if not internship:
+            return error_response("Internship not found", 404)
+
+        company_interactions, company_ratings, internship_interactions = load_candidate_context(candidate_id)
+
+        # Global company stats to keep scores consistent with list endpoint
+        company_interaction_stats = {}
+        try:
+            db = db_manager.get_db()
+            if db is not None:
+                stats = list(db['company_interactions'].aggregate([
+                    {'$group': {
+                        '_id': {
+                            'company_id': '$company_id',
+                            'interaction_type': '$interaction_type'
+                        },
+                        'count': {'$sum': 1}
+                    }}
+                ]))
+                tmp = {}
+                for row in stats:
+                    key = row.get('_id') or {}
+                    cid = key.get('company_id')
+                    it = key.get('interaction_type')
+                    if not cid or not it:
+                        continue
+                    tmp.setdefault(cid, {'like': 0, 'dislike': 0})
+                    if it == 'like':
+                        tmp[cid]['like'] += int(row.get('count') or 0)
+                    elif it == 'dislike':
+                        tmp[cid]['dislike'] += int(row.get('count') or 0)
+                company_interaction_stats = dict(tmp)
+                try:
+                    companies = list(db['companies'].find({}, {'company_id': 1, 'name': 1}))
+                    for c in companies:
+                        cid = c.get('company_id')
+                        name = (c.get('name') or '').strip().lower()
+                        if cid in tmp and name:
+                            company_interaction_stats[name] = tmp[cid]
+                except Exception:
+                    pass
+        except Exception:
+            pass
+
+        match_score = 0
+        recommendation = None
+
+        if ml_get_recommendations is not None:
+            ml_recs = ml_get_recommendations(
+                candidate,
+                [internship],
+                top_n=1,
+                company_interactions=company_interactions,
+                company_ratings=company_ratings,
+                internship_interactions=internship_interactions,
+                company_interaction_stats=company_interaction_stats,
+                dedupe_org=False,
+                min_score=0.0,
+            )
+            if ml_recs:
+                r = ml_recs[0]
+                match_score = r.get("match_score", r.get("matchScore", 0)) or 0
+                recommendation = {
+                    **r,
+                    "skills_required": internship.get("skills_required", r.get("skills_required", [])),
+                    "description": internship.get("description", r.get("description", "")),
+                }
+        else:
+            # Fallback: simple overlap
+            candidate_skills = set([s.strip().lower() for s in candidate.get("skills_possessed", []) if isinstance(s, str)])
+            internship_skills = set([s.strip().lower() for s in internship.get("skills_required", []) if isinstance(s, str)])
+            if internship_skills:
+                match_score = (len(candidate_skills & internship_skills) / len(internship_skills)) * 100
+
+        return success_response({
+            "candidate_id": candidate_id,
+            "internship_id": internship.get("internship_id") or str(internship.get("_id")),
+            "match_score": round(float(match_score), 2) if match_score is not None else 0,
+            "recommendation": recommendation,
+        })
+    except Exception as e:
+        app_logger.error(f"Error generating internship match for {candidate_id}/{internship_id}: {e}")
+        return error_response("Failed to generate match score", 500)
 
 
 def get_internship_recommendations(internship_id):
@@ -194,6 +364,71 @@ def load_all_internships():
     except Exception as e:
         app_logger.error(f"Error loading internships: {e}")
         return []
+
+
+def load_internship_by_any_id(internship_id):
+    """Load an internship by either internship_id or Mongo _id string."""
+    try:
+        db = db_manager.get_db()
+        if db is None:
+            return None
+
+        query = {"$or": [{"internship_id": internship_id}]}
+        if ObjectId is not None:
+            try:
+                if ObjectId.is_valid(internship_id):
+                    query["$or"].append({"_id": ObjectId(internship_id)})
+            except Exception:
+                pass
+
+        internship = db.internships.find_one(query)
+        if internship and '_id' in internship:
+            internship['_id'] = str(internship['_id'])
+        return internship
+    except Exception as e:
+        app_logger.error(f"Error loading internship {internship_id}: {e}")
+        return None
+
+
+def load_candidate_context(candidate_id):
+    """Load interaction/rating context used by the ML model."""
+    company_interactions = {}
+    company_ratings = {}
+    internship_interactions = {}
+    try:
+        db = db_manager.get_db()
+        if db is None:
+            return company_interactions, company_ratings, internship_interactions
+
+        interactions_collection = db['company_interactions']
+        user_interactions = list(interactions_collection.find({'candidate_id': candidate_id}))
+        for interaction in user_interactions:
+            company_id = interaction.get('company_id')
+            interaction_type = interaction.get('interaction_type')
+            reason_tags = interaction.get('reason_tags', [])
+            if company_id and interaction_type:
+                company_interactions[company_id] = {'type': interaction_type, 'reason_tags': reason_tags}
+
+        internship_interactions_collection = db['internship_interactions']
+        user_internship_interactions = list(internship_interactions_collection.find({'candidate_id': candidate_id}))
+        for interaction in user_internship_interactions:
+            iid = interaction.get('internship_id')
+            interaction_type = interaction.get('interaction_type')
+            reason_tags = interaction.get('reason_tags', [])
+            if iid and interaction_type:
+                internship_interactions[iid] = {'type': interaction_type, 'reason_tags': reason_tags}
+
+        reviews_collection = db['company_reviews']
+        pipeline = [{'$group': {'_id': '$company_id', 'average_rating': {'$avg': '$rating'}}}]
+        for result in list(reviews_collection.aggregate(pipeline)):
+            cid = result.get('_id')
+            avg_rating = result.get('average_rating')
+            if cid and avg_rating:
+                company_ratings[cid] = round(avg_rating, 2)
+    except Exception as e:
+        app_logger.warning(f"Could not load candidate context: {e}")
+
+    return company_interactions, company_ratings, internship_interactions
 
 
 def generate_recommendations(candidate, internships):

@@ -125,6 +125,14 @@ const RecommendationsPage = () => {
   const handleShowSimilar = (internship) => {
     const similar = findSimilarInternships(internship);
     setRecommendations(similar);
+    // Don't fight scroll restore after like/dislike-triggered reload.
+    try {
+      if (sessionStorage.getItem('__scroll_restore__')) {
+        return;
+      }
+    } catch {
+      // ignore
+    }
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 

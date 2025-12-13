@@ -1,7 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Building2, MapPin, Users, Briefcase, Star, ExternalLink } from 'lucide-react';
-import LikeDislikeButton from './LikeDislikeButton';
 
 const CompanyCard = ({ company }) => {
   const navigate = useNavigate();
@@ -106,7 +105,6 @@ const CompanyCard = ({ company }) => {
             <Building2 className="h-4 w-4" />
             View Company
           </button>
-          <LikeDislikeButton companyId={company.company_id} variant="heart" />
           {company.website && (
             <a
               href={company.website}

@@ -49,6 +49,60 @@
   .input-error {
     @apply border-red-500 focus:ring-red-500;
   }
+
+  /* Fix autofill styling for all input fields */
+  input:-webkit-autofill,
+  input:-webkit-autofill:hover,
+  input:-webkit-autofill:focus,
+  input:-webkit-autofill:active {
+    -webkit-text-fill-color: rgb(255 255 255) !important;
+    color: rgb(255 255 255) !important;
+    -webkit-box-shadow: 0 0 0 1000px rgb(55 65 81) inset !important;
+    box-shadow: 0 0 0 1000px rgb(55 65 81) inset !important;
+    transition: background-color 5000s ease-in-out 0s, color 5000s ease-in-out 0s !important;
+    caret-color: rgb(255 255 255) !important;
+  }
+
+  textarea:-webkit-autofill,
+  textarea:-webkit-autofill:hover,
+  textarea:-webkit-autofill:focus,
+  textarea:-webkit-autofill:active,
+  select:-webkit-autofill,
+  select:-webkit-autofill:hover,
+  select:-webkit-autofill:focus,
+  select:-webkit-autofill:active {
+    -webkit-text-fill-color: rgb(255 255 255) !important;
+    color: rgb(255 255 255) !important;
+    -webkit-box-shadow: 0 0 0 1000px rgb(55 65 81) inset !important;
+    box-shadow: 0 0 0 1000px rgb(55 65 81) inset !important;
+    transition: background-color 5000s ease-in-out 0s, color 5000s ease-in-out 0s !important;
+  }
+
+  /* Dark mode autofill fix */
+  .dark input:-webkit-autofill,
+  .dark input:-webkit-autofill:hover,
+  .dark input:-webkit-autofill:focus,
+  .dark input:-webkit-autofill:active {
+    -webkit-text-fill-color: rgb(243 244 246) !important;
+    color: rgb(243 244 246) !important;
+    -webkit-box-shadow: 0 0 0 1000px rgb(55 65 81) inset !important;
+    box-shadow: 0 0 0 1000px rgb(55 65 81) inset !important;
+    caret-color: rgb(243 244 246) !important;
+  }
+
+  .dark textarea:-webkit-autofill,
+  .dark textarea:-webkit-autofill:hover,
+  .dark textarea:-webkit-autofill:focus,
+  .dark textarea:-webkit-autofill:active,
+  .dark select:-webkit-autofill,
+  .dark select:-webkit-autofill:hover,
+  .dark select:-webkit-autofill:focus,
+  .dark select:-webkit-autofill:active {
+    -webkit-text-fill-color: rgb(243 244 246) !important;
+    color: rgb(243 244 246) !important;
+    -webkit-box-shadow: 0 0 0 1000px rgb(55 65 81) inset !important;
+    box-shadow: 0 0 0 1000px rgb(55 65 81) inset !important;
+  }
   
   /* Badge Styles */
   .badge {

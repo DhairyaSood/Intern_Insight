@@ -14,6 +14,7 @@ const MyApplicationsPage = () => {
   const { internships, fetchInternships } = useInternshipStore();
   const [appliedInternships, setAppliedInternships] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [fetchComplete, setFetchComplete] = useState(false);
   const [bookmarkedIds, setBookmarkedIds] = useState(() => {
     if (!user?.username) return [];
     const bookmarkKey = `bookmarkedInternships_${user.username}`;
@@ -42,6 +43,7 @@ const MyApplicationsPage = () => {
 
     const loadApplications = async () => {
       setIsLoading(true);
+      setFetchComplete(false);
       
       try {
         // Fetch all internships
@@ -49,7 +51,7 @@ const MyApplicationsPage = () => {
       } catch (err) {
         console.error('Error loading internships:', err);
       } finally {
-        setIsLoading(false);
+        setFetchComplete(true);
       }
     };
 
@@ -58,67 +60,72 @@ const MyApplicationsPage = () => {
 
   // Separate effect to process internships when they load
   useEffect(() => {
-    if (!user || internships.length === 0) return;
+    if (!user || !fetchComplete) return;
 
     const processApplications = async () => {
-      // Get applied internship IDs from user-specific localStorage
-      const storageKey = `appliedInternships_${user.username}`;
-      const appliedIds = JSON.parse(localStorage.getItem(storageKey) || '[]');
-      
-      // Filter internships that user has applied to
-      let applied = internships.filter(internship => 
-        appliedIds.includes(internship.internship_id || internship._id)
-      );
-      
-      // Fetch recommendations to get match scores ONLY if we have username
-      if (user.username && applied.length > 0) {
-        try {
-          // Fetch profile to get correct candidate_id
-          const profile = await profileService.getByUsername(user.username);
-          if (profile?.candidate_id) {
-            const recommendations = await internshipService.getRecommendations(profile.candidate_id);
-            const recWithScores = recommendations.recommendations || [];
-            
-            // Create a map of internship_id to match_score
-            const scoreMap = {};
-            recWithScores.forEach(rec => {
-              const id = rec.internship_id || rec._id;
-              scoreMap[id] = rec.match_score || rec.matchScore;
-            });
-            
-            // Add match scores to applied internships
-            const appliedWithScores = applied.map(internship => ({
-              ...internship,
-              match_score: scoreMap[internship.internship_id || internship._id] || 0
-            }));
-            
-            setAppliedInternships(appliedWithScores);
-          } else {
-            // No candidate_id in profile, set match scores to 0
+      setIsLoading(true);
+      try {
+        // Get applied internship IDs from user-specific localStorage
+        const storageKey = `appliedInternships_${user.username}`;
+        const appliedIds = JSON.parse(localStorage.getItem(storageKey) || '[]');
+        
+        // Filter internships that user has applied to
+        let applied = internships.filter(internship => 
+          appliedIds.includes(internship.internship_id || internship._id)
+        );
+        
+        // Fetch recommendations to get match scores ONLY if we have username
+        if (user.username && applied.length > 0) {
+          try {
+            // Fetch profile to get correct candidate_id
+            const profile = await profileService.getByUsername(user.username);
+            if (profile?.candidate_id) {
+              const recommendations = await internshipService.getRecommendations(profile.candidate_id);
+              const recWithScores = recommendations.recommendations || [];
+              
+              // Create a map of internship_id to match_score
+              const scoreMap = {};
+              recWithScores.forEach(rec => {
+                const id = rec.internship_id || rec._id;
+                scoreMap[id] = rec.match_score || rec.matchScore;
+              });
+              
+              // Add match scores to applied internships
+              const appliedWithScores = applied.map(internship => ({
+                ...internship,
+                match_score: scoreMap[internship.internship_id || internship._id] || 0
+              }));
+              
+              setAppliedInternships(appliedWithScores);
+            } else {
+              // No candidate_id in profile, set match scores to 0
+              setAppliedInternships(applied.map(internship => ({
+                ...internship,
+                match_score: 0
+              })));
+            }
+          } catch (err) {
+            console.warn('Could not fetch match scores:', err);
+            // Set 0 for match scores if fetch fails
             setAppliedInternships(applied.map(internship => ({
               ...internship,
               match_score: 0
             })));
           }
-        } catch (err) {
-          console.warn('Could not fetch match scores:', err);
-          // Set 0 for match scores if fetch fails
+        } else {
+          // No username or no applications, set match scores to 0
           setAppliedInternships(applied.map(internship => ({
             ...internship,
             match_score: 0
           })));
         }
-      } else {
-        // No username, set match scores to 0
-        setAppliedInternships(applied.map(internship => ({
-          ...internship,
-          match_score: 0
-        })));
+      } finally {
+        setIsLoading(false);
       }
     };
 
     processApplications();
-  }, [user, internships]);
+  }, [user, internships, fetchComplete]);
 
   if (isLoading) {
     return <LoadingSpinner message="Loading your applications..." />;

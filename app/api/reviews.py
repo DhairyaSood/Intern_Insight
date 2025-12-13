@@ -9,6 +9,7 @@ from app.utils.logger import app_logger
 from app.utils.response_helpers import success_response, error_response
 from app.utils.error_handler import handle_errors
 from app.utils.jwt_auth import token_required, get_current_user
+from app.utils.company_match_scorer import CompanyMatchScorer
 from bson import ObjectId
 from datetime import datetime
 
@@ -78,6 +79,16 @@ def create_company_review(company_id):
         
         # Update company average rating
         _update_company_rating(company_id)
+        
+        # Recalculate match score for this user-company pair
+        try:
+            score_data = CompanyMatchScorer.calculate_user_company_score(candidate_id, company_id)
+            CompanyMatchScorer.save_company_match_score(candidate_id, company_id, score_data)
+            
+            # Apply global impact to other users' scores based on review rating
+            CompanyMatchScorer.apply_global_impact(company_id, 'review', rating=rating)
+        except Exception as score_err:
+            app_logger.warning(f"Error updating match scores: {score_err}")
         
         app_logger.info(f"User {candidate_id} reviewed company {company_id}")
         return success_response(
@@ -150,6 +161,18 @@ def create_internship_review(internship_id):
             result = reviews_collection.insert_one(review_data)
             message = "Review created successfully"
             review_id = str(result.inserted_id)
+        
+        # Recalculate company match score (internship feedback affects company score)
+        try:
+            # Get internship to find company_id
+            database_conn = db.get_db()
+            internship = database_conn.internships.find_one({'_id': ObjectId(internship_id)})
+            if internship and 'company_id' in internship:
+                company_id = internship['company_id']
+                score_data = CompanyMatchScorer.calculate_user_company_score(candidate_id, company_id)
+                CompanyMatchScorer.save_company_match_score(candidate_id, company_id, score_data)
+        except Exception as score_err:
+            app_logger.warning(f"Error updating company match score from internship review: {score_err}")
         
         app_logger.info(f"User {candidate_id} reviewed internship {internship_id}")
         return success_response(
@@ -387,7 +410,7 @@ def _update_company_rating(company_id):
         
         companies_collection.update_one(
             {'_id': company_id} if isinstance(company_id, ObjectId) else {'company_id': company_id},
-            {'$set': {'average_rating': avg_rating}}
+            {'$set': {'rating': avg_rating, 'average_rating': avg_rating}}  # Update both fields
         )
         
     except Exception as e:

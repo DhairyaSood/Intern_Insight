@@ -30,6 +30,18 @@ export const profileService = {
     const response = await api.get(`/profile/${candidateId}`);
     return response.data?.data || response.data;
   },
+
+  // Get user interactions (likes/dislikes)
+  getInteractions: async (candidateId) => {
+    try {
+      const response = await api.get(`/interactions/${candidateId}`);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching interactions:', error);
+      // Return empty array as fallback
+      return { interactions: [] };
+    }
+  },
 };
 
 export default profileService;

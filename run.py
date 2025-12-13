@@ -12,6 +12,7 @@ Usage:
 import sys
 import os
 import argparse
+import platform
 
 # Add project root to Python path
 project_root = os.path.dirname(os.path.abspath(__file__))
@@ -48,11 +49,20 @@ def main():
         print(f"📁 Data folder: {config.DATA_DIR}")
         print(f"🌍 Environment: {args.env}")
         print(f"🔗 Running on: http://{args.host}:{args.port}")
+
+        # On Windows, Werkzeug's auto-reloader can intermittently crash with:
+        # OSError: [WinError 10038] ... not a socket
+        # Disable reloader to keep debug tracebacks without noisy restarts.
+        is_windows = platform.system().lower().startswith('win')
+        run_kwargs = {}
+        if is_windows:
+            run_kwargs['use_reloader'] = False
         
         app.run(
             host=args.host,
             port=args.port,
-            debug=args.debug or config.FLASK_DEBUG
+            debug=args.debug or config.FLASK_DEBUG,
+            **run_kwargs,
         )
         
     except KeyboardInterrupt:

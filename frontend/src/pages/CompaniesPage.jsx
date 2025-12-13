@@ -1,17 +1,21 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Building2, Search, Filter, TrendingUp, Award, Users, ChevronDown } from 'lucide-react';
 import { getCompanies, getSectors, getCompanyStats } from '../services/companies';
 import CompanyCard from '../components/Company/CompanyCard';
 import LoadingSpinner from '../components/Common/LoadingSpinner';
 import ErrorMessage from '../components/Common/ErrorMessage';
 
+const PAGE_SIZE = 24;
+
 const CompaniesPage = () => {
   const [companies, setCompanies] = useState([]);
-  const [filteredCompanies, setFilteredCompanies] = useState([]);
   const [sectors, setSectors] = useState([]);
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState('');
+  const [total, setTotal] = useState(0);
+  const [offset, setOffset] = useState(0);
   
   // Filter states
   const [searchQuery, setSearchQuery] = useState('');
@@ -28,6 +32,7 @@ const CompaniesPage = () => {
   const sectorRef = useRef(null);
   const ratingRef = useRef(null);
   const sortRef = useRef(null);
+  const didInitRef = useRef(false);
 
   useEffect(() => {
     fetchData();
@@ -49,95 +54,81 @@ const CompaniesPage = () => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  useEffect(() => {
-    // Run filter whenever companies or filter values change
-    if (!companies || companies.length === 0) {
-      setFilteredCompanies([]);
-      return;
-    }
+  const buildQueryParams = useCallback((nextOffset) => {
+    const sortField = sortBy === 'internships' ? 'total_internships' : sortBy;
+    const order = sortBy === 'name' ? 'asc' : 'desc';
 
-    let filtered = [...companies];
+    return {
+      search: searchQuery?.trim() ? searchQuery.trim() : undefined,
+      sector: selectedSector?.trim() ? selectedSector.trim() : undefined,
+      is_hiring: hiringOnly ? 'true' : undefined,
+      min_rating: minRating > 0 ? minRating : undefined,
+      sort_by: sortField,
+      order,
+      limit: PAGE_SIZE,
+      offset: nextOffset,
+    };
+  }, [searchQuery, selectedSector, hiringOnly, minRating, sortBy]);
 
-    // Apply search filter
-    if (searchQuery && searchQuery.trim()) {
-      const query = searchQuery.toLowerCase();
-      filtered = filtered.filter(company =>
-        (company.name && company.name.toLowerCase().includes(query)) ||
-        (company.description && company.description.toLowerCase().includes(query))
-      );
-    }
-
-    // Apply sector filter
-    if (selectedSector && selectedSector.trim()) {
-      const trimmedSector = selectedSector.trim();
-      filtered = filtered.filter(company => 
-        company.sector && company.sector.trim() === trimmedSector
-      );
-    }
-
-    // Apply hiring filter
-    if (hiringOnly) {
-      filtered = filtered.filter(company => company.is_hiring === true);
-    }
-
-    // Apply rating filter
-    if (minRating > 0) {
-      filtered = filtered.filter(company => (company.rating || 0) >= minRating);
-    }
-
-    // Apply sorting
-    filtered.sort((a, b) => {
-      switch (sortBy) {
-        case 'name':
-          return a.name.localeCompare(b.name);
-        case 'rating':
-          return (b.rating || 0) - (a.rating || 0);
-        case 'internships':
-          return (b.total_internships || 0) - (a.total_internships || 0);
-        default:
-          return 0;
+  const fetchCompaniesPage = useCallback(async ({ reset }) => {
+    const nextOffset = reset ? 0 : offset;
+    try {
+      if (reset) {
+        setLoading(true);
+        setError('');
+      } else {
+        setLoadingMore(true);
       }
-    });
 
-    setFilteredCompanies(filtered);
-  }, [companies, searchQuery, selectedSector, hiringOnly, minRating, sortBy]);
+      const res = await getCompanies(buildQueryParams(nextOffset));
+      const payload = res.data?.data ?? res.data ?? {};
+      const pageCompanies = payload.companies || [];
+      const pageTotal = payload.total ?? 0;
+
+      setTotal(pageTotal);
+      setCompanies(prev => (reset ? pageCompanies : [...prev, ...pageCompanies]));
+      setOffset(nextOffset + pageCompanies.length);
+    } catch (err) {
+      console.error('Error fetching companies:', err);
+      setError(err.response?.data?.message || 'Failed to load companies');
+    } finally {
+      setLoading(false);
+      setLoadingMore(false);
+    }
+  }, [buildQueryParams, offset]);
 
   const fetchData = async () => {
     try {
       setLoading(true);
       setError('');
 
-      const [companiesRes, sectorsRes, statsRes] = await Promise.all([
-        getCompanies(),
+      const [sectorsRes, statsRes] = await Promise.all([
         getSectors(),
         getCompanyStats()
       ]);
 
-      console.log('Companies API Response:', companiesRes);
-      console.log('Sectors API Response:', sectorsRes);
-      console.log('Stats API Response:', statsRes);
-
-      // Handle different response structures
-      const companiesData = companiesRes.data?.data?.companies || companiesRes.data?.companies || companiesRes.data || [];
-      // Backend returns sectors in data.data (wrapped response)
       const sectorsData = sectorsRes.data?.data || sectorsRes.data?.sectors || sectorsRes.data || [];
       const statsData = statsRes.data?.data || statsRes.data || null;
-
-      console.log('Raw sectors response:', sectorsRes.data);
-      console.log('Parsed companies:', companiesData);
-      console.log('Parsed sectors:', sectorsData);
-      console.log('Sectors count:', sectorsData.length);
-      
-      setCompanies(companiesData);
       setSectors(sectorsData);
       setStats(statsData);
+
+      setOffset(0);
+      await fetchCompaniesPage({ reset: true });
     } catch (err) {
       console.error('Error fetching companies:', err);
       setError(err.response?.data?.message || 'Failed to load companies');
     } finally {
+      didInitRef.current = true;
       setLoading(false);
     }
   };
+
+  // Refetch from page 1 whenever filters change (backend does filtering/sorting)
+  useEffect(() => {
+    if (!didInitRef.current) return;
+    setOffset(0);
+    fetchCompaniesPage({ reset: true });
+  }, [searchQuery, selectedSector, hiringOnly, minRating, sortBy]);
 
   const clearFilters = () => {
     setSearchQuery('');
@@ -185,7 +176,7 @@ const CompaniesPage = () => {
             </h1>
           </div>
           <p className="text-gray-600 dark:text-gray-400">
-            Explore {stats?.total_companies || companies.length} companies offering internship opportunities
+            Explore {stats?.total_companies || total || companies.length} companies offering internship opportunities
           </p>
         </div>
 
@@ -428,13 +419,13 @@ const CompaniesPage = () => {
             )}
 
             <span className="text-sm text-gray-500 dark:text-gray-400 ml-auto">
-              {filteredCompanies.length} {filteredCompanies.length === 1 ? 'company' : 'companies'} found
+              {total} {total === 1 ? 'company' : 'companies'} found
             </span>
           </div>
         </div>
 
         {/* Companies Grid */}
-        {filteredCompanies.length === 0 ? (
+        {companies.length === 0 ? (
           <div className="text-center py-12">
             <Building2 className="h-16 w-16 text-gray-400 mx-auto mb-4" />
             <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
@@ -445,11 +436,25 @@ const CompaniesPage = () => {
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredCompanies.map((company, index) => (
-              <CompanyCard key={company.company_id || company._id || index} company={company} />
-            ))}
-          </div>
+          <>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {companies.map((company, index) => (
+                <CompanyCard key={company.company_id || company._id || index} company={company} />
+              ))}
+            </div>
+
+            {companies.length < total && (
+              <div className="flex justify-center mt-8">
+                <button
+                  onClick={() => fetchCompaniesPage({ reset: false })}
+                  disabled={loadingMore}
+                  className="btn-primary inline-flex items-center gap-2"
+                >
+                  {loadingMore ? 'Loading...' : 'Load More'}
+                </button>
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>

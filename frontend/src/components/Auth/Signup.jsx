@@ -115,7 +115,6 @@ const Signup = () => {
                     name="username"
                     type="text"
                     autoComplete="username"
-                    required
                     value={formData.username}
                     onChange={handleChange}
                     className="input-field pl-10"
@@ -141,7 +140,6 @@ const Signup = () => {
                     name="password"
                     type="password"
                     autoComplete="new-password"
-                    required
                     value={formData.password}
                     onChange={handleChange}
                     className="input-field pl-10"
@@ -167,7 +165,6 @@ const Signup = () => {
                     name="confirmPassword"
                     type="password"
                     autoComplete="new-password"
-                    required
                     value={formData.confirmPassword}
                     onChange={handleChange}
                     className="input-field pl-10"

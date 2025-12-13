@@ -32,8 +32,15 @@ def create_app(config_name=None):
     config = get_config()
     app.config.from_object(config)
     
-    # Setup CORS with credentials support for sessions
-    CORS(app, origins=config.CORS_ORIGINS, supports_credentials=True)
+    # Setup CORS - Allow all origins in development for simplicity
+    CORS(app, 
+         resources={r"/*": {
+             "origins": "*",
+             "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+             "allow_headers": ["Content-Type", "Authorization"],
+             "supports_credentials": False
+         }}
+    )
     
     # Setup logging
     logger = setup_logger(level=config.LOG_LEVEL)
@@ -159,15 +166,22 @@ def register_legacy_routes(app):
 
 def run_app():
     """Run the application"""
+    import platform
     config = get_config()
     app = create_app()
     
     app_logger.info(f"Data folder in use: {config.DATA_DIR}")
     
+    is_windows = platform.system().lower().startswith('win')
+    run_kwargs = {}
+    if is_windows:
+        run_kwargs['use_reloader'] = False
+
     app.run(
         host='127.0.0.1',
         port=config.API_PORT,
-        debug=config.FLASK_DEBUG
+        debug=config.FLASK_DEBUG,
+        **run_kwargs,
     )
 
 if __name__ == '__main__':

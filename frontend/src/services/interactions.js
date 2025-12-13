@@ -2,15 +2,15 @@
 import api from './api';
 
 export const companyInteractionService = {
-  // Like a company
-  like: async (companyId) => {
-    const response = await api.post(`/companies/${companyId}/like`);
+  // Like a company with optional reason data
+  like: async (companyId, reasonData = {}) => {
+    const response = await api.post(`/companies/${companyId}/like`, reasonData);
     return response.data;
   },
 
-  // Dislike a company
-  dislike: async (companyId) => {
-    const response = await api.post(`/companies/${companyId}/dislike`);
+  // Dislike a company with optional reason data
+  dislike: async (companyId, reasonData = {}) => {
+    const response = await api.post(`/companies/${companyId}/dislike`, reasonData);
     return response.data;
   },
 

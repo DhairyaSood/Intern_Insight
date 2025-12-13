@@ -18,8 +18,21 @@ export const internshipService = {
   },
 
   // Get recommendations for candidate
-  getRecommendations: async (candidateId) => {
-    const response = await api.get(`/recommendations/${candidateId}`);
+  getRecommendations: async (candidateId, options = {}) => {
+    const params = new URLSearchParams();
+    if (options && typeof options === 'object') {
+      if (options.limit !== undefined && options.limit !== null) params.set('limit', String(options.limit));
+      if (options.min_score !== undefined && options.min_score !== null) params.set('min_score', String(options.min_score));
+      if (options.dedupe_org !== undefined && options.dedupe_org !== null) params.set('dedupe_org', options.dedupe_org ? '1' : '0');
+    }
+    const qs = params.toString();
+    const response = await api.get(`/recommendations/${candidateId}${qs ? `?${qs}` : ''}`);
+    return response.data;
+  },
+
+  // Get match score for a specific internship (not top-N limited)
+  getInternshipMatch: async (candidateId, internshipId) => {
+    const response = await api.get(`/recommendations/${candidateId}/match/${internshipId}`);
     return response.data;
   },
 

@@ -4,7 +4,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../store/authStore';
 import ErrorMessage from '../Common/ErrorMessage';
 import LoadingSpinner from '../Common/LoadingSpinner';
-import { LogIn, Mail, Lock } from 'lucide-react';
+import { LogIn, Mail, Lock, CheckCircle } from 'lucide-react';
 
 const Login = () => {
   const [formData, setFormData] = useState({
@@ -12,6 +12,7 @@ const Login = () => {
     password: '',
   });
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState(false);
   
   const { login, isLoading } = useAuthStore();
   const navigate = useNavigate();
@@ -34,11 +35,44 @@ const Login = () => {
 
     try {
       await login(formData.username, formData.password);
-      navigate('/');
+      setSuccess(true);
+      setTimeout(() => {
+        navigate('/');
+      }, 900);
     } catch (err) {
       setError(err.response?.data?.message || 'Login failed. Please check your credentials.');
     }
   };
+
+  if (success) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 py-12 px-4 sm:px-6 lg:px-8">
+        <motion.div
+          className="max-w-md w-full"
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.35, ease: 'easeOut' }}
+        >
+          <div className="card text-center">
+            <motion.div
+              initial={{ scale: 0.85 }}
+              animate={{ scale: 1 }}
+              transition={{ duration: 0.35, ease: 'easeOut' }}
+              className="inline-block"
+            >
+              <CheckCircle className="h-16 w-16 text-green-500 mx-auto mb-4" />
+            </motion.div>
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+              Login successful!
+            </h2>
+            <p className="text-gray-600 dark:text-gray-400">
+              Redirecting...
+            </p>
+          </div>
+        </motion.div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center relative overflow-hidden bg-gray-50 dark:bg-gray-900 py-12 px-4 sm:px-6 lg:px-8">
@@ -97,7 +131,6 @@ const Login = () => {
                     name="username"
                     type="text"
                     autoComplete="username"
-                    required
                     value={formData.username}
                     onChange={handleChange}
                     className="input-field pl-10"
@@ -119,7 +152,6 @@ const Login = () => {
                     name="password"
                     type="password"
                     autoComplete="current-password"
-                    required
                     value={formData.password}
                     onChange={handleChange}
                     className="input-field pl-10"

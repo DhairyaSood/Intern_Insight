@@ -2,14 +2,19 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   Building2, MapPin, Users, Calendar, ExternalLink, Star, Briefcase,
-  Award, TrendingUp, ArrowLeft, Globe, Heart
+  Award, TrendingUp, ArrowLeft, Globe, ThumbsUp, MessageSquare
 } from 'lucide-react';
 import { getCompanyById, getCompanyByName } from '../services/companies';
 import { profileService } from '../services/profile';
+import { reviewService } from '../services/reviews';
 import { useAuthStore } from '../store/authStore';
 import InternshipCard from '../components/Internship/InternshipCard';
 import LoadingSpinner from '../components/Common/LoadingSpinner';
 import ErrorMessage from '../components/Common/ErrorMessage';
+import LikeDislikeButton from '../components/Company/LikeDislikeButton';
+import ReviewForm from '../components/Review/ReviewForm';
+import ReviewList from '../components/Review/ReviewList';
+import ReviewStats from '../components/Review/ReviewStats.jsx';
 
 const CompanyDetailPage = () => {
   const { companyId } = useParams();
@@ -21,7 +26,9 @@ const CompanyDetailPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [userProfile, setUserProfile] = useState(null);
-  const [backendRecommendations, setBackendRecommendations] = useState([]);
+  const [reviews, setReviews] = useState([]);
+  const [reviewsLoading, setReviewsLoading] = useState(false);
+  const [showReviewForm, setShowReviewForm] = useState(false);
   const [bookmarkedIds, setBookmarkedIds] = useState(() => {
     if (!user?.username) return [];
     const bookmarkKey = `bookmarkedInternships_${user.username}`;
@@ -50,43 +57,18 @@ const CompanyDetailPage = () => {
   }, [companyId]);
 
   useEffect(() => {
+    if (company?.company_id) {
+      fetchReviews();
+    }
+  }, [company]);
+
+  useEffect(() => {
     if (user?.username) {
       profileService.getByUsername(user.username)
-        .then(async (profile) => {
-          setUserProfile(profile);
-          // Fetch backend recommendations for match scores
-          if (profile?.candidate_id) {
-            try {
-              const { internshipService } = await import('../services/internships');
-              const recData = await internshipService.getRecommendations(profile.candidate_id);
-              setBackendRecommendations(recData.recommendations || []);
-            } catch (err) {
-              console.warn('Could not fetch backend recommendations:', err);
-              setBackendRecommendations([]);
-            }
-          }
-        })
+        .then(profile => setUserProfile(profile))
         .catch(err => console.error('Failed to load profile:', err));
     }
   }, [user]);
-
-  // Recalculate match scores when backend recommendations load
-  useEffect(() => {
-    if (backendRecommendations.length > 0 && internships.length > 0) {
-      // Create score map from backend recommendations
-      const scoreMap = {};
-      backendRecommendations.forEach(rec => {
-        const id = rec.internship_id || rec._id;
-        scoreMap[id] = rec.match_score || rec.matchScore || 0;
-      });
-      
-      const internshipsWithScores = internships.map(internship => ({
-        ...internship,
-        match_score: scoreMap[internship.internship_id || internship._id] || 0
-      }));
-      setInternships(internshipsWithScores);
-    }
-  }, [backendRecommendations]);
 
   const fetchCompanyDetails = async () => {
     try {
@@ -106,28 +88,142 @@ const CompanyDetailPage = () => {
       console.log('Full API Response:', response);
       console.log('Response data:', response.data);
       console.log('Company object:', response.data);
+      console.log('Match Score from API:', response.data?.match_score);
+      console.log('Match Score type:', typeof response.data?.match_score);
+      console.log('Match Score value check:', {
+        isNull: response.data?.match_score === null,
+        isUndefined: response.data?.match_score === undefined,
+        value: response.data?.match_score,
+        shouldShow: response.data?.match_score !== null && response.data?.match_score !== undefined
+      });
       console.log('Internship IDs from company:', response.data?.internship_ids);
       console.log('Internships array:', response.data?.internships);
       console.log('Internships length:', response.data?.internships?.length || 0);
       if (response.data?.internships?.length > 0) {
         console.log('First internship:', response.data.internships[0]);
+        console.log('First internship match_score:', response.data.internships[0]?.match_score);
       }
       console.log('=== END DEBUG ===');
       
       setCompany(response.data);
       const internshipsData = response.data?.internships || [];
-      // Match scores will be added when backend recommendations load
-      const internshipsWithScores = internshipsData.map(internship => ({
-        ...internship,
-        match_score: 0 // Will be updated by backend recommendations
-      }));
+      
+      // Preserve existing match scores if they exist, otherwise use scores from API or keep existing
+      const internshipsWithScores = internshipsData.map(internship => {
+        const internshipId = internship.internship_id || internship._id;
+        // Find existing internship with match score
+        const existing = internships.find(i => (i.internship_id || i._id) === internshipId);
+        
+        // Preserve match scores in this order: new API score > existing score > 0
+        const newScore = internship.match_score;
+        const existingScore = existing?.match_score;
+        
+        return {
+          ...internship,
+          match_score: (newScore !== undefined && newScore !== null && newScore !== 0) 
+            ? newScore 
+            : (existingScore !== undefined && existingScore !== null && existingScore !== 0)
+              ? existingScore
+              : newScore ?? existingScore ?? 0
+        };
+      });
       console.log('Setting internships state to:', internshipsWithScores);
       setInternships(internshipsWithScores);
+
+      // Fix: compute accurate match % for this company's open internships.
+      // The old top-10 recommendations list doesn't include all internships.
+      if (user?.username && internshipsWithScores.length > 0) {
+        try {
+          const { internshipService } = await import('../services/internships');
+          const candidateId = user?.candidate_id || (await profileService.getByUsername(user.username))?.candidate_id;
+          if (candidateId) {
+            const ids = internshipsWithScores.map(i => i.internship_id || i._id).filter(Boolean);
+            const results = await Promise.allSettled(
+              ids.map(iid => internshipService.getInternshipMatch(candidateId, iid))
+            );
+            const scoreMap = {};
+            results.forEach((res, idx) => {
+              if (res.status === 'fulfilled') {
+                scoreMap[ids[idx]] = res.value?.match_score ?? 0;
+              }
+            });
+
+            setInternships(prev => prev.map(i => {
+              const iid = i.internship_id || i._id;
+              if (!iid) return i;
+              if (!(iid in scoreMap)) return i;
+              return { ...i, match_score: scoreMap[iid] };
+            }));
+          }
+        } catch (e) {
+          console.warn('Could not compute per-internship match scores for company internships:', e);
+        }
+      }
     } catch (err) {
       console.error('Error fetching company details:', err);
       setError(err.response?.data?.message || 'Failed to load company details');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchReviews = async () => {
+    try {
+      setReviewsLoading(true);
+      const response = await reviewService.company.getAll(company.company_id);
+      setReviews(response.reviews || []);
+    } catch (err) {
+      console.error('Error fetching reviews:', err);
+    } finally {
+      setReviewsLoading(false);
+    }
+  };
+
+  const handleReviewSubmit = async (reviewData) => {
+    try {
+      await reviewService.company.create(company.company_id, reviewData);
+      setShowReviewForm(false);
+      await fetchReviews();
+      // Refresh company data to get updated rating and match score
+      await fetchCompanyDetails();
+    } catch (err) {
+      console.error('Error submitting review:', err);
+      throw err;
+    }
+  };
+
+  const [existingReview, setExistingReview] = useState(null);
+
+  useEffect(() => {
+    // Check if user has an existing review
+    if (user && reviews.length > 0) {
+      const userReview = reviews.find(r => r.candidate_id === user.candidate_id);
+      setExistingReview(userReview || null);
+    }
+  }, [user, reviews]);
+
+  // NOTE: Interaction updates now trigger a full page reload (see App.jsx).
+
+  const handleWriteReview = () => {
+    setShowReviewForm(true);
+  };
+
+  const handleMarkHelpful = async (reviewId) => {
+    try {
+      await reviewService.markHelpful(reviewId);
+      await fetchReviews();
+    } catch (err) {
+      console.error('Error marking review helpful:', err);
+    }
+  };
+
+  const handleDeleteReview = async (reviewId) => {
+    if (!window.confirm('Are you sure you want to delete this review?')) return;
+    try {
+      await reviewService.delete(reviewId);
+      await fetchReviews();
+    } catch (err) {
+      console.error('Error deleting review:', err);
     }
   };
 
@@ -200,6 +296,18 @@ const CompanyDetailPage = () => {
                       </span>
                       <span className="text-gray-500 dark:text-gray-400">/5.0</span>
                     </div>
+                    {user && (
+                      <div className="px-3 py-1 rounded-lg bg-gradient-to-r from-green-100 to-blue-100 dark:from-green-900 dark:to-blue-900 border border-green-300 dark:border-green-700">
+                        <div className="flex items-center gap-1.5">
+                          <TrendingUp className="h-4 w-4 text-green-600 dark:text-green-400" />
+                          <span className="text-sm font-bold text-green-700 dark:text-green-300">
+                            {company.match_score !== null && company.match_score !== undefined
+                              ? `${Math.round(company.match_score)}% Match`
+                              : 'Calculating match...'}
+                          </span>
+                        </div>
+                      </div>
+                    )}
                     {company.is_hiring && (
                       <span className="px-3 py-1 rounded-full text-sm font-semibold bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300">
                         ✓ Actively Hiring
@@ -207,6 +315,11 @@ const CompanyDetailPage = () => {
                     )}
                   </div>
                 </div>
+                <LikeDislikeButton
+                  companyId={company.company_id}
+                  entityName={company.name}
+                  variant="icons"
+                />
               </div>
 
               <p className="text-gray-700 dark:text-gray-300 mb-4 text-lg leading-relaxed">
@@ -267,7 +380,7 @@ const CompanyDetailPage = () => {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Left Column - Company Details */}
+          {/* Left Column - Company Details & Review Stats */}
           <div className="lg:col-span-1 space-y-6">
             {/* Locations */}
             {company.locations && company.locations.length > 0 && (
@@ -314,7 +427,7 @@ const CompanyDetailPage = () => {
             {company.culture && company.culture.length > 0 && (
               <div className="card">
                 <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-                  <Heart className="h-5 w-5 text-primary-600" />
+                  <ThumbsUp className="h-5 w-5 text-primary-600" />
                   Company Culture
                 </h2>
                 <div className="flex flex-wrap gap-2">
@@ -350,10 +463,28 @@ const CompanyDetailPage = () => {
                 </div>
               </div>
             )}
+
+            {/* Review Stats Card */}
+            <div className="card">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                  <MessageSquare className="h-5 w-5 text-primary-600" />
+                  Reviews Summary
+                </h2>
+                <button
+                  onClick={handleWriteReview}
+                  className="btn-primary text-xs px-3 py-1.5"
+                >
+                  {existingReview ? 'Edit Review' : 'Write Review'}
+                </button>
+              </div>
+              <ReviewStats reviews={reviews} showDistribution={true} />
+            </div>
           </div>
 
-          {/* Right Column - Internships */}
-          <div className="lg:col-span-2">
+          {/* Right Column - Internships & Reviews */}
+          <div className="lg:col-span-2 space-y-8">
+            {/* Open Internships */}
             <div className="card">
               <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6 flex items-center gap-2">
                 <Briefcase className="h-6 w-6 text-primary-600" />
@@ -378,7 +509,7 @@ const CompanyDetailPage = () => {
                   </p>
                 </div>
               ) : (
-                <div className="max-h-[800px] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-gray-400 dark:scrollbar-thumb-gray-600 scrollbar-track-gray-200 dark:scrollbar-track-gray-800">
+                <div className="min-h-[450px] max-h-[450px] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-gray-400 dark:scrollbar-thumb-gray-600 scrollbar-track-gray-200 dark:scrollbar-track-gray-800">
                   <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
                     {internships.map((internship) => {
                       const internshipId = internship.internship_id || internship._id;
@@ -403,9 +534,37 @@ const CompanyDetailPage = () => {
                 </div>
               )}
             </div>
+
+            {/* Company Reviews */}
+            <div className="card">
+              {/* Review Grid - 2x2, scrollable */}
+              <div className="max-h-[800px] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-gray-400 dark:scrollbar-thumb-gray-600 scrollbar-track-gray-200 dark:scrollbar-track-gray-800">
+                <ReviewList
+                  reviews={reviews}
+                  entityType="company"
+                  onMarkHelpful={handleMarkHelpful}
+                  onDelete={handleDeleteReview}
+                  loading={reviewsLoading}
+                  emptyMessage="No reviews yet. Be the first to review this company!"
+                  gridView={true}
+                  columns={2}
+                  showHeader={true}
+                />
+              </div>
+            </div>
           </div>
         </div>
       </div>
+
+      {/* Review Form Modal */}
+      <ReviewForm
+        isOpen={showReviewForm}
+        onClose={() => setShowReviewForm(false)}
+        onSubmit={handleReviewSubmit}
+        entityType="company"
+        entityName={company?.name}
+        existingReview={existingReview}
+      />
     </div>
   );
 };

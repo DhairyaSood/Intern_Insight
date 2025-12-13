@@ -8,6 +8,8 @@ from app.core.database import DatabaseManager, load_data
 from app.utils.logger import app_logger
 from app.utils.response_helpers import success_response, error_response
 from app.utils.error_handler import handle_errors
+from app.utils.company_match_scorer import CompanyMatchScorer
+from app.utils.jwt_auth import get_current_user
 
 companies_bp = Blueprint('companies', __name__)
 db = DatabaseManager()
@@ -53,47 +55,85 @@ def get_companies():
         if search:
             filter_query['name'] = {'$regex': search, '$options': 'i'}
         
-        # Get companies from database
-        companies = load_data('companies', use_cache=False) or []
-        
-        # Apply filters manually
-        if filter_query:
-            filtered = []
-            for company in companies:
-                match = True
-                for key, value in filter_query.items():
-                    if isinstance(value, dict) and '$gte' in value:
-                        if company.get(key, 0) < value['$gte']:
+        # Prefer MongoDB-side filtering/sorting/pagination to reduce network load.
+        companies = []
+        total = 0
+        try:
+            db_conn = db.get_db()
+            if db_conn is not None:
+                collection = db_conn['companies']
+
+                mongo_filter = {}
+                if sector:
+                    mongo_filter['sector'] = sector
+                if is_hiring is not None:
+                    mongo_filter['is_hiring'] = is_hiring.lower() == 'true'
+                if min_rating is not None:
+                    mongo_filter['rating'] = {'$gte': min_rating}
+                if search:
+                    mongo_filter['name'] = {'$regex': search, '$options': 'i'}
+
+                total = collection.count_documents(mongo_filter)
+
+                sort_order = 1 if order == 'asc' else -1
+                sort_field = sort_by
+                if sort_field not in ('name', 'rating', 'total_internships'):
+                    sort_field = 'name'
+
+                cursor = collection.find(mongo_filter).sort(sort_field, sort_order).skip(offset)
+                if limit:
+                    cursor = cursor.limit(limit)
+                companies = list(cursor)
+
+                # Convert ObjectId for JSON
+                for c in companies:
+                    if '_id' in c:
+                        c['_id'] = str(c['_id'])
+        except Exception as e:
+            app_logger.warning(f"[API] Mongo pagination failed, falling back to in-memory: {e}")
+
+        # Fallback to in-memory filtering/paging if needed
+        if not companies and total == 0:
+            companies = load_data('companies', use_cache=False) or []
+
+            # Apply filters manually
+            if filter_query:
+                filtered = []
+                for company in companies:
+                    match = True
+                    for key, value in filter_query.items():
+                        if isinstance(value, dict) and '$gte' in value:
+                            if company.get(key, 0) < value['$gte']:
+                                match = False
+                                break
+                        elif isinstance(value, dict) and '$regex' in value:
+                            import re
+                            pattern = re.compile(value['$regex'], re.IGNORECASE if value.get('$options') == 'i' else 0)
+                            if not pattern.search(str(company.get(key, ''))):
+                                match = False
+                                break
+                        elif company.get(key) != value:
                             match = False
                             break
-                    elif isinstance(value, dict) and '$regex' in value:
-                        import re
-                        pattern = re.compile(value['$regex'], re.IGNORECASE if value.get('$options') == 'i' else 0)
-                        if not pattern.search(str(company.get(key, ''))):
-                            match = False
-                            break
-                    elif company.get(key) != value:
-                        match = False
-                        break
-                if match:
-                    filtered.append(company)
-            companies = filtered
-        
-        # Sort companies
-        sort_order = 1 if order == 'asc' else -1
-        if sort_by == 'name':
-            companies.sort(key=lambda x: x.get('name', '').lower(), reverse=(sort_order == -1))
-        elif sort_by == 'rating':
-            companies.sort(key=lambda x: x.get('rating', 0), reverse=(sort_order == -1))
-        elif sort_by == 'total_internships':
-            companies.sort(key=lambda x: x.get('total_internships', 0), reverse=(sort_order == -1))
-        
-        # Apply pagination
-        total = len(companies)
-        if limit:
-            companies = companies[offset:offset+limit]
-        else:
-            companies = companies[offset:]
+                    if match:
+                        filtered.append(company)
+                companies = filtered
+
+            # Sort companies
+            sort_order = 1 if order == 'asc' else -1
+            if sort_by == 'name':
+                companies.sort(key=lambda x: x.get('name', '').lower(), reverse=(sort_order == -1))
+            elif sort_by == 'rating':
+                companies.sort(key=lambda x: x.get('rating', 0), reverse=(sort_order == -1))
+            elif sort_by == 'total_internships':
+                companies.sort(key=lambda x: x.get('total_internships', 0), reverse=(sort_order == -1))
+
+            # Apply pagination
+            total = len(companies)
+            if limit:
+                companies = companies[offset:offset+limit]
+            else:
+                companies = companies[offset:]
         
         app_logger.info(f"[API] Retrieved {len(companies)} companies (total: {total}, filters: {filter_query})")
         
@@ -140,7 +180,46 @@ def get_company(company_id):
         # Add internships to company data
         company['internships'] = internships
         
-        app_logger.info(f"[API] Retrieved company: {company.get('name')} with {len(internships)} internships")
+        # Calculate match score if user is authenticated
+        from app.utils.company_match_scorer import CompanyMatchScorer
+        from flask import request
+        import jwt
+        from app.config import Config
+        
+        match_score = None
+        try:
+            # Manually decode token since this endpoint doesn't require authentication
+            auth_header = request.headers.get('Authorization', '')
+            app_logger.info(f"[MATCH SCORE DEBUG] Auth header present: {bool(auth_header)}")
+            
+            if auth_header and auth_header.startswith('Bearer '):
+                token = auth_header.split(' ')[1]
+                app_logger.info(f"[MATCH SCORE DEBUG] Token extracted: {token[:20]}...")
+                
+                try:
+                    payload = jwt.decode(token, Config.JWT_SECRET_KEY, algorithms=['HS256'])
+                    app_logger.info(f"[MATCH SCORE DEBUG] Token payload: {payload}")
+                    
+                    candidate_id = payload.get('candidate_id')
+                    if candidate_id:
+                        app_logger.info(f"[MATCH SCORE DEBUG] Calculating score for candidate {candidate_id} and company {company_id}")
+                        match_score = CompanyMatchScorer.get_company_match_score(candidate_id, company_id)
+                        app_logger.info(f"[MATCH SCORE DEBUG] Calculated score: {match_score}")
+                    else:
+                        app_logger.info("[MATCH SCORE DEBUG] No candidate_id in token payload")
+                except jwt.ExpiredSignatureError:
+                    app_logger.info("[MATCH SCORE DEBUG] Token expired")
+                except jwt.InvalidTokenError as e:
+                    app_logger.info(f"[MATCH SCORE DEBUG] Invalid token: {e}")
+            else:
+                app_logger.info("[MATCH SCORE DEBUG] No Bearer token in Authorization header")
+                
+        except Exception as score_err:
+            app_logger.error(f"[MATCH SCORE DEBUG] Error calculating match score: {score_err}", exc_info=True)
+        
+        company['match_score'] = match_score
+        app_logger.info(f"[API] Retrieved company: {company.get('name')} with {len(internships)} internships and match_score={match_score}")
+        app_logger.info(f"[API] Returning company data with keys: {list(company.keys())}")
         
         return success_response(
             data=company,
@@ -180,7 +259,46 @@ def get_company_by_name(company_name):
         # Add internships to company data
         company['internships'] = internships
         
-        app_logger.info(f"[API] Retrieved company by name: {company.get('name')} with {len(internships)} internships")
+        # Add match score if user is authenticated
+        from app.utils.company_match_scorer import CompanyMatchScorer
+        from flask import request
+        import jwt
+        from app.config import Config
+        
+        match_score = None
+        try:
+            # Manually decode token since this endpoint doesn't require authentication
+            auth_header = request.headers.get('Authorization', '')
+            app_logger.info(f"[MATCH SCORE DEBUG by-name] Auth header present: {bool(auth_header)}")
+            
+            if auth_header and auth_header.startswith('Bearer '):
+                token = auth_header.split(' ')[1]
+                app_logger.info(f"[MATCH SCORE DEBUG by-name] Token extracted")
+                
+                try:
+                    payload = jwt.decode(token, Config.JWT_SECRET_KEY, algorithms=['HS256'])
+                    app_logger.info(f"[MATCH SCORE DEBUG by-name] Token payload: {payload}")
+                    
+                    candidate_id = payload.get('candidate_id')
+                    company_id = company.get('company_id')
+                    if candidate_id and company_id:
+                        app_logger.info(f"[MATCH SCORE DEBUG by-name] Calculating for candidate: {candidate_id}, company: {company_id}")
+                        match_score = CompanyMatchScorer.get_company_match_score(candidate_id, company_id)
+                        app_logger.info(f"[MATCH SCORE DEBUG by-name] Calculated score: {match_score}")
+                    else:
+                        app_logger.info(f"[MATCH SCORE DEBUG by-name] Missing IDs - candidate: {candidate_id}, company: {company_id}")
+                except jwt.ExpiredSignatureError:
+                    app_logger.info("[MATCH SCORE DEBUG by-name] Token expired")
+                except jwt.InvalidTokenError as e:
+                    app_logger.info(f"[MATCH SCORE DEBUG by-name] Invalid token: {e}")
+            else:
+                app_logger.info("[MATCH SCORE DEBUG by-name] No Bearer token")
+                
+        except Exception as score_err:
+            app_logger.error(f"[MATCH SCORE DEBUG by-name] Error: {score_err}", exc_info=True)
+        
+        company['match_score'] = match_score
+        app_logger.info(f"[API] Retrieved company by name: {company.get('name')} with {len(internships)} internships and match_score={match_score}")
         
         return success_response(
             data=company,
