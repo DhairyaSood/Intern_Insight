@@ -27,8 +27,13 @@ def _city_only(value: str) -> str:
     s = (value or "").strip()
     if not s:
         return ""
-    # Take "City" from "City, State" or "City (Region)"
-    s = re.split(r"[,\(]", s)[0].strip()
+    # Take "City" from common compound formats:
+    # - "City, State" / "City (Region)"
+    # - "City / Remote" / "City | Remote" / "City; Remote"
+    # - "City - State" (only when clearly a separator)
+    if " - " in s:
+        s = s.split(" - ", 1)[0].strip()
+    s = re.split(r"[,\(\|/;]", s)[0].strip()
     return s
 
 def _safe_normalize_city(value: str) -> str:
@@ -254,6 +259,8 @@ def get_recommendations(candidate, internships, top_n=10,
                         internship_interactions=None,
                         company_interaction_stats=None,
                         company_reason_stats=None,
+                        preference_profile=None,
+                        company_reputation=None,
                         dedupe_org=True,
                         min_score=0.0):
     """
@@ -279,6 +286,62 @@ def get_recommendations(candidate, internships, top_n=10,
     cand_skill_set = set(cand_skills)
     sector_interests = [s.lower() for s in candidate.get("sector_interests", []) or []]
     location_pref = (candidate.get("location_preference") or "").strip().lower()
+
+    # ----------------- Dynamic weights (context-aware) -----------------
+    # The system avoids a single fixed formula by adjusting weights based on:
+    # - availability of candidate data
+    # - strength of learned preference profile
+    def _clamp01(x: float) -> float:
+        try:
+            return max(0.0, min(1.0, float(x)))
+        except Exception:
+            return 0.0
+
+    pref_strength = 0.0
+    try:
+        if isinstance(preference_profile, dict):
+            pref_strength = float(preference_profile.get('strength') or 0.0)
+    except Exception:
+        pref_strength = 0.0
+    pref_strength = _clamp01(pref_strength)
+
+    has_skills = bool(cand_skill_set)
+    has_loc = bool(location_pref)
+    has_sector = bool(sector_interests)
+
+    # Start from provided defaults, then adapt.
+    w_skill = float(skill_weight)
+    w_loc = float(loc_weight)
+    w_sector = float(sector_weight)
+    w_misc = float(misc_weight)
+
+    # If resume fields are missing, shift weight toward learned preferences.
+    if not has_skills:
+        w_skill *= 0.6
+        w_misc += 0.10 * (0.5 + 0.5 * pref_strength)
+    if not has_loc:
+        # If user provided no location_preference but they liked/disliked locations,
+        # location should still matter.
+        if pref_strength > 0:
+            w_loc = max(w_loc, 0.20)
+        else:
+            w_loc *= 0.5
+            w_misc += 0.05
+    if not has_sector:
+        w_sector *= 0.7
+        w_misc += 0.05
+
+    # If preference profile is strong, slightly emphasize preference-sensitive channels.
+    # Keep changes small to avoid destabilizing scores.
+    w_skill *= (1.0 - 0.08 * pref_strength)
+    w_loc *= (1.0 + 0.10 * pref_strength)
+    w_sector *= (1.0 + 0.06 * pref_strength)
+    w_misc *= (1.0 + 0.12 * pref_strength)
+
+    # Normalize to sum to 1.0
+    s_w = max(1e-9, w_skill + w_loc + w_sector + w_misc)
+    w_skill, w_loc, w_sector, w_misc = (w_skill / s_w, w_loc / s_w, w_sector / s_w, w_misc / s_w)
+
     field_of_study = (candidate.get("field_of_study") or "").strip().lower()
     education_level = (candidate.get("education_level") or "").strip().lower()
     is_first_gen = bool(candidate.get("first_generation") or candidate.get("no_experience"))
@@ -483,6 +546,37 @@ def get_recommendations(candidate, internships, top_n=10,
                         company_boost += impact
                     else:
                         company_penalty += abs(impact)
+        except Exception:
+            pass
+
+        # Persisted global reputation (optional): small additional nudge, confidence-weighted by counts.
+        try:
+            rep_score = None
+            if isinstance(company_reputation, dict):
+                rep_score = company_reputation.get(company_key)
+                if rep_score is None and isinstance(company_key, str):
+                    rep_score = company_reputation.get(company_key.strip().lower())
+
+            if rep_score is None and isinstance(company_reputation, dict):
+                # if keyed strictly by company_id but internship has it separately
+                cid = internship.get('company_id')
+                if cid:
+                    rep_score = company_reputation.get(str(cid))
+
+            if rep_score is not None:
+                rep = float(rep_score)
+                # Convert 0..100 -> [-1,1] around neutral 50
+                sentiment = max(-1.0, min(1.0, (rep - 50.0) / 50.0))
+                # Confidence based on available global counts if present
+                conf = 0.3
+                if isinstance(stats, dict):
+                    total = float((stats.get('like', 0) or 0) + (stats.get('dislike', 0) or 0))
+                    conf = max(0.2, min(1.0, total / 25.0))
+                impact = max(-0.06, min(0.06, sentiment * 0.06 * conf))
+                if impact >= 0:
+                    company_boost += impact
+                else:
+                    company_penalty += abs(impact)
         except Exception:
             pass
 
@@ -691,11 +785,54 @@ def get_recommendations(candidate, internships, top_n=10,
                 if 'Role doesn\'t fit' in reason_tags:
                     internship_penalty = 1.0
 
+        # Preference-profile extras (personal): work type + seniority nudges.
+        try:
+            if isinstance(preference_profile, dict) and preference_profile.get('strength', 0) and pref_strength > 0:
+                # work type
+                wt_list = preference_profile.get('work_type') or []
+                wt_map = {k: float(v) for k, v in wt_list if k}
+                intern_wt = 'unknown'
+                loc_text = (internship.get('location') or '')
+                s_loc = str(loc_text).lower()
+                if 'hybrid' in s_loc:
+                    intern_wt = 'hybrid'
+                elif 'remote' in s_loc or 'wfh' in s_loc or 'work from home' in s_loc:
+                    intern_wt = 'remote'
+                elif s_loc.strip():
+                    intern_wt = 'onsite'
+                wt_score = wt_map.get(intern_wt, 0.0)
+                if wt_score:
+                    pattern_boost += max(-0.03, min(0.03, 0.02 * wt_score * pref_strength))
+
+                # seniority
+                sen_list = preference_profile.get('seniority') or []
+                sen_map = {k: float(v) for k, v in sen_list if k}
+                title_text = str(internship.get('title') or '').lower()
+                intern_sen = 'mid'
+                if any(k in title_text for k in ('senior', 'lead', 'principal', 'staff')):
+                    intern_sen = 'senior'
+                elif any(k in title_text for k in ('junior', 'entry', 'fresher')):
+                    intern_sen = 'junior'
+                sen_score = sen_map.get(intern_sen, 0.0)
+                if sen_score:
+                    pattern_boost += max(-0.03, min(0.03, 0.02 * sen_score * pref_strength))
+
+                # stipend minimum preference (slight)
+                try:
+                    pref_min = (preference_profile.get('stipend') or {}).get('min_preferred')
+                    if pref_min and isinstance(current_stipend, (int, float)):
+                        if float(current_stipend) >= float(pref_min):
+                            pattern_boost += 0.02 * pref_strength
+                except Exception:
+                    pass
+        except Exception:
+            pass
+
         base_score = (
-            skill_weight * skill_sim +
-            loc_weight * loc_sim +
-            sector_weight * sector_sim +
-            misc_weight * (0.5 * field_sim + 0.5 * edu_sim)
+            w_skill * skill_sim +
+            w_loc * loc_sim +
+            w_sector * sector_sim +
+            w_misc * (0.5 * field_sim + 0.5 * edu_sim)
         )
         # Apply all factors (company global + internship personal + learned patterns)
         score = base_score + fg_boost + company_boost + rating_boost + internship_boost + pattern_boost - company_penalty - internship_penalty - pattern_penalty

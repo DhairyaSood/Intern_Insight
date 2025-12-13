@@ -15,20 +15,36 @@ import LikeDislikeButton from '../components/Company/LikeDislikeButton';
 import ReviewForm from '../components/Review/ReviewForm';
 import ReviewList from '../components/Review/ReviewList';
 import ReviewStats from '../components/Review/ReviewStats.jsx';
+import { useMatchStore } from '../store/matchStore';
+import { useReviewStore } from '../store/reviewStore';
 
 const CompanyDetailPage = () => {
   const { companyId } = useParams();
   const navigate = useNavigate();
   const { user } = useAuthStore();
+  const primeInternshipMatches = useMatchStore((s) => s.primeInternshipMatches);
+  const refreshInternshipMatches = useMatchStore((s) => s.refreshInternshipMatches);
+  const refreshCompanyMatch = useMatchStore((s) => s.refreshCompanyMatch);
+  const setCompanyMatch = useMatchStore((s) => s.setCompanyMatch);
+  const ensureCompanyReviews = useReviewStore((s) => s.ensureCompanyReviews);
+  const markHelpful = useReviewStore((s) => s.markHelpful);
+  const deleteReview = useReviewStore((s) => s.deleteReview);
   
   const [company, setCompany] = useState(null);
   const [internships, setInternships] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [userProfile, setUserProfile] = useState(null);
-  const [reviews, setReviews] = useState([]);
-  const [reviewsLoading, setReviewsLoading] = useState(false);
   const [showReviewForm, setShowReviewForm] = useState(false);
+  const liveCompanyMatch = useMatchStore((s) => (
+    company?.company_id ? s.companyMatchById[String(company.company_id)] : undefined
+  ));
+  const reviews = useReviewStore((s) => (
+    company?.company_id ? (s.companyById[String(company.company_id)]?.reviews || []) : []
+  ));
+  const reviewsLoading = useReviewStore((s) => (
+    company?.company_id ? !!s.companyById[String(company.company_id)]?.loading : false
+  ));
   const [bookmarkedIds, setBookmarkedIds] = useState(() => {
     if (!user?.username) return [];
     const bookmarkKey = `bookmarkedInternships_${user.username}`;
@@ -57,10 +73,43 @@ const CompanyDetailPage = () => {
   }, [companyId]);
 
   useEffect(() => {
+    // Keep match % fresh in-place after likes/dislikes.
+    const handler = (e) => {
+      const detail = e?.detail || {};
+      const cid = userProfile?.candidate_id || user?.candidate_id || detail?.candidate_id;
+      if (!cid) return;
+      const ids = (internships || []).map((i) => i?.internship_id || i?._id).filter(Boolean);
+      if (ids.length === 0) return;
+      refreshInternshipMatches(cid, ids);
+    };
+
+    const companyHandler = (e) => {
+      const detail = e?.detail || {};
+      const target = detail?.company_id;
+      if (!target || !company?.company_id) return;
+      if (String(target) !== String(company.company_id)) return;
+      // Refresh company match score + internship matches in place.
+      refreshCompanyMatch(company.company_id);
+      const cid = userProfile?.candidate_id || user?.candidate_id || detail?.candidate_id;
+      if (cid) {
+        const ids = (internships || []).map((i) => i?.internship_id || i?._id).filter(Boolean);
+        if (ids.length) refreshInternshipMatches(cid, ids);
+      }
+    };
+
+    window.addEventListener('internship-interaction-changed', handler);
+    window.addEventListener('company-interaction-changed', companyHandler);
+    return () => {
+      window.removeEventListener('internship-interaction-changed', handler);
+      window.removeEventListener('company-interaction-changed', companyHandler);
+    };
+  }, [userProfile, user, internships, company, refreshCompanyMatch, refreshInternshipMatches]);
+
+  useEffect(() => {
     if (company?.company_id) {
-      fetchReviews();
+      ensureCompanyReviews(company.company_id);
     }
-  }, [company]);
+  }, [company, ensureCompanyReviews]);
 
   useEffect(() => {
     if (user?.username) {
@@ -84,28 +133,11 @@ const CompanyDetailPage = () => {
         response = await getCompanyByName(decodeURIComponent(companyId));
       }
       
-      console.log('=== COMPANY DETAIL DEBUG ===');
-      console.log('Full API Response:', response);
-      console.log('Response data:', response.data);
-      console.log('Company object:', response.data);
-      console.log('Match Score from API:', response.data?.match_score);
-      console.log('Match Score type:', typeof response.data?.match_score);
-      console.log('Match Score value check:', {
-        isNull: response.data?.match_score === null,
-        isUndefined: response.data?.match_score === undefined,
-        value: response.data?.match_score,
-        shouldShow: response.data?.match_score !== null && response.data?.match_score !== undefined
-      });
-      console.log('Internship IDs from company:', response.data?.internship_ids);
-      console.log('Internships array:', response.data?.internships);
-      console.log('Internships length:', response.data?.internships?.length || 0);
-      if (response.data?.internships?.length > 0) {
-        console.log('First internship:', response.data.internships[0]);
-        console.log('First internship match_score:', response.data.internships[0]?.match_score);
-      }
-      console.log('=== END DEBUG ===');
-      
       setCompany(response.data);
+      // Prime company match cache (if present on payload)
+      if (response?.data?.match_score !== undefined && response?.data?.match_score !== null) {
+        setCompanyMatch(response.data.company_id, response.data.match_score);
+      }
       const internshipsData = response.data?.internships || [];
       
       // Preserve existing match scores if they exist, otherwise use scores from API or keep existing
@@ -127,8 +159,8 @@ const CompanyDetailPage = () => {
               : newScore ?? existingScore ?? 0
         };
       });
-      console.log('Setting internships state to:', internshipsWithScores);
       setInternships(internshipsWithScores);
+      primeInternshipMatches(internshipsWithScores);
 
       // Fix: compute accurate match % for this company's open internships.
       // The old top-10 recommendations list doesn't include all internships.
@@ -154,6 +186,9 @@ const CompanyDetailPage = () => {
               if (!(iid in scoreMap)) return i;
               return { ...i, match_score: scoreMap[iid] };
             }));
+
+            // Prime the global store as well so any cards rerender correctly.
+            primeInternshipMatches(ids.map((iid) => ({ id: iid, score: scoreMap[iid] })));
           }
         } catch (e) {
           console.warn('Could not compute per-internship match scores for company internships:', e);
@@ -167,23 +202,11 @@ const CompanyDetailPage = () => {
     }
   };
 
-  const fetchReviews = async () => {
-    try {
-      setReviewsLoading(true);
-      const response = await reviewService.company.getAll(company.company_id);
-      setReviews(response.reviews || []);
-    } catch (err) {
-      console.error('Error fetching reviews:', err);
-    } finally {
-      setReviewsLoading(false);
-    }
-  };
-
   const handleReviewSubmit = async (reviewData) => {
     try {
       await reviewService.company.create(company.company_id, reviewData);
       setShowReviewForm(false);
-      await fetchReviews();
+      await ensureCompanyReviews(company.company_id, { force: true });
       // Refresh company data to get updated rating and match score
       await fetchCompanyDetails();
     } catch (err) {
@@ -202,16 +225,13 @@ const CompanyDetailPage = () => {
     }
   }, [user, reviews]);
 
-  // NOTE: Interaction updates now trigger a full page reload (see App.jsx).
-
   const handleWriteReview = () => {
     setShowReviewForm(true);
   };
 
   const handleMarkHelpful = async (reviewId) => {
     try {
-      await reviewService.markHelpful(reviewId);
-      await fetchReviews();
+      await markHelpful(reviewId);
     } catch (err) {
       console.error('Error marking review helpful:', err);
     }
@@ -220,8 +240,8 @@ const CompanyDetailPage = () => {
   const handleDeleteReview = async (reviewId) => {
     if (!window.confirm('Are you sure you want to delete this review?')) return;
     try {
-      await reviewService.delete(reviewId);
-      await fetchReviews();
+      await deleteReview(reviewId);
+      await fetchCompanyDetails();
     } catch (err) {
       console.error('Error deleting review:', err);
     }
@@ -301,8 +321,8 @@ const CompanyDetailPage = () => {
                         <div className="flex items-center gap-1.5">
                           <TrendingUp className="h-4 w-4 text-green-600 dark:text-green-400" />
                           <span className="text-sm font-bold text-green-700 dark:text-green-300">
-                            {company.match_score !== null && company.match_score !== undefined
-                              ? `${Math.round(company.match_score)}% Match`
+                            {((liveCompanyMatch ?? company.match_score) !== null && (liveCompanyMatch ?? company.match_score) !== undefined)
+                              ? `${Math.round(liveCompanyMatch ?? company.match_score)}% Match`
                               : 'Calculating match...'}
                           </span>
                         </div>
@@ -490,13 +510,6 @@ const CompanyDetailPage = () => {
                 <Briefcase className="h-6 w-6 text-primary-600" />
                 Open Internships ({internships.length})
               </h2>
-
-              {(() => {
-                console.log('=== RENDER TIME ===');
-                console.log('Internships state:', internships);
-                console.log('Internships count:', internships.length);
-                return null;
-              })()}
 
               {internships.length === 0 ? (
                 <div className="text-center py-12">

@@ -2,8 +2,10 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { ThumbsUp, ThumbsDown } from 'lucide-react';
 import { companyInteractionService } from '../../services/interactions';
 import { internshipInteractionService } from '../../services/internshipInteractions';
+import { profileService } from '../../services/profile';
 import { useAuthStore } from '../../store/authStore';
 import InteractionReasonModal from '../Common/InteractionReasonModal';
+import { useMatchStore } from '../../store/matchStore';
 
 const LikeDislikeButton = ({ 
   companyId, 
@@ -27,59 +29,98 @@ const LikeDislikeButton = ({
   const [isLoading, setIsLoading] = useState(false);
   const [showReasonModal, setShowReasonModal] = useState(false);
   const [pendingAction, setPendingAction] = useState(null); // 'like' or 'dislike'
+  const refreshInternshipMatch = useMatchStore((s) => s.refreshInternshipMatch);
+  const refreshCompanyMatch = useMatchStore((s) => s.refreshCompanyMatch);
+  const [resolvedCandidateId, setResolvedCandidateId] = useState(user?.candidate_id ?? null);
 
-  const persistInternshipDetailSidebarState = useCallback(() => {
-    try {
-      const container = document.getElementById('similar-opportunities-scroll');
-      if (!container) return;
-
-      let anchorId = null;
-      let anchorOffset = null;
-      try {
-        const containerRect = container.getBoundingClientRect();
-        const cards = container.querySelectorAll('[data-similar-id]');
-        for (const card of cards) {
-          const rect = card.getBoundingClientRect();
-          // First card that is visible (or closest to top).
-          if (rect.bottom > containerRect.top) {
-            const similarId = card.getAttribute('data-similar-id');
-            anchorId = similarId ? `similar-card-${similarId}` : (card.id || null);
-            anchorOffset = rect.top - containerRect.top;
-            break;
-          }
-        }
-      } catch {
-        // ignore
-      }
-
-      sessionStorage.setItem(
-        '__internship_detail_similar_scroll__',
-        JSON.stringify({
-          path: window.location.pathname,
-          scrollTop: container.scrollTop,
-          anchorId,
-          anchorOffset,
-          ts: Date.now(),
-        })
-      );
-    } catch {
-      // ignore
+  useEffect(() => {
+    let cancelled = false;
+    if (!user) {
+      setResolvedCandidateId(null);
+      return () => { cancelled = true; };
     }
-  }, []);
 
-  const dispatchInteractionChanged = useCallback((interactionType) => {
-    if (!user?.candidate_id) return;
-    persistInternshipDetailSidebarState();
+    if (user?.candidate_id) {
+      setResolvedCandidateId(user.candidate_id);
+      return () => { cancelled = true; };
+    }
+
+    if (!user?.username) {
+      setResolvedCandidateId(null);
+      return () => { cancelled = true; };
+    }
+
+    profileService.getByUsername(user.username)
+      .then((profile) => {
+        if (cancelled) return;
+        setResolvedCandidateId(profile?.candidate_id ?? null);
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setResolvedCandidateId(null);
+      });
+
+    return () => { cancelled = true; };
+  }, [user]);
+
+  const ensureCandidateId = useCallback(async () => {
+    if (resolvedCandidateId) return resolvedCandidateId;
+    if (user?.candidate_id) {
+      setResolvedCandidateId(user.candidate_id);
+      return user.candidate_id;
+    }
+    if (!user?.username) return null;
+    try {
+      const profile = await profileService.getByUsername(user.username);
+      const cid = profile?.candidate_id ?? null;
+      setResolvedCandidateId(cid);
+      return cid;
+    } catch {
+      return null;
+    }
+  }, [resolvedCandidateId, user]);
+
+  const dispatchInteractionChanged = useCallback((interactionType, candidateId) => {
     if (entityType === 'internship') {
       window.dispatchEvent(new CustomEvent('internship-interaction-changed', {
-        detail: { candidate_id: user.candidate_id, internship_id: entityId, interaction_type: interactionType }
+        detail: { candidate_id: candidateId, internship_id: entityId, interaction_type: interactionType }
       }));
     } else if (entityType === 'company') {
       window.dispatchEvent(new CustomEvent('company-interaction-changed', {
-        detail: { candidate_id: user.candidate_id, company_id: entityId, interaction_type: interactionType }
+        detail: { candidate_id: candidateId, company_id: entityId, interaction_type: interactionType }
       }));
     }
-  }, [user, entityType, entityId, persistInternshipDetailSidebarState]);
+
+    if (entityType === 'internship' && candidateId && entityId) {
+      refreshInternshipMatch(candidateId, entityId);
+    }
+    if (entityType === 'company' && entityId) {
+      refreshCompanyMatch(entityId);
+    }
+
+    // Backend updates can be eventually-consistent; do quick retries.
+    const retryAfterMs = [650, 1600];
+    retryAfterMs.forEach((ms, idx) => {
+      setTimeout(() => {
+        try {
+          if (entityType === 'internship' && candidateId && entityId) {
+            refreshInternshipMatch(candidateId, entityId);
+            window.dispatchEvent(new CustomEvent('internship-interaction-changed', {
+              detail: { candidate_id: candidateId, internship_id: entityId, interaction_type: interactionType, retry: idx + 1 }
+            }));
+          }
+          if (entityType === 'company' && entityId) {
+            refreshCompanyMatch(entityId);
+            window.dispatchEvent(new CustomEvent('company-interaction-changed', {
+              detail: { candidate_id: candidateId, company_id: entityId, interaction_type: interactionType, retry: idx + 1 }
+            }));
+          }
+        } catch {
+          // ignore
+        }
+      }, ms);
+    });
+  }, [entityType, entityId, refreshInternshipMatch, refreshCompanyMatch]);
 
   const loadInteraction = useCallback(async () => {
     if (!user || !entityId) return;
@@ -139,7 +180,8 @@ const LikeDislikeButton = ({
       try {
         await interactionService.remove(entityId);
         setInteraction(null);
-        dispatchInteractionChanged(null);
+        const cid = await ensureCandidateId();
+        dispatchInteractionChanged(null, cid);
         // Remove from localStorage cache
         const storageKey = getStorageKey();
         if (storageKey) localStorage.removeItem(storageKey);
@@ -172,7 +214,8 @@ const LikeDislikeButton = ({
       try {
         await interactionService.remove(entityId);
         setInteraction(null);
-        dispatchInteractionChanged(null);
+        const cid = await ensureCandidateId();
+        dispatchInteractionChanged(null, cid);
         // Remove from localStorage cache
         const storageKey = getStorageKey();
         if (storageKey) localStorage.removeItem(storageKey);
@@ -204,7 +247,8 @@ const LikeDislikeButton = ({
       }
       
       setInteraction(pendingAction);
-      dispatchInteractionChanged(pendingAction);
+      const cid = await ensureCandidateId();
+      dispatchInteractionChanged(pendingAction, cid);
       // Cache in localStorage immediately
       const storageKey = getStorageKey();
       if (storageKey) {

@@ -8,6 +8,8 @@ from flask import jsonify, request
 from app.core.database import db_manager
 from app.utils.logger import app_logger
 from app.utils.response_helpers import success_response, error_response
+from app.utils.preference_profile import load_personal_preference_profile
+from app.utils.company_reputation import load_company_reputation
 try:
     from bson import ObjectId
 except Exception:  # pragma: no cover
@@ -179,6 +181,27 @@ def get_candidate_recommendations(candidate_id):
         # Generate recommendations using improved ML logic
         recommendations = []
         if ml_get_recommendations is not None:
+            preference_profile = None
+            company_reputation_map = {}
+            try:
+                db = db_manager.get_db()
+                preference_profile = load_personal_preference_profile(db, candidate_id)
+                # For list endpoint we keep existing global stats, but also supply persisted reputation.
+                # Build a small map for companies present in the internships list.
+                if db is not None:
+                    try:
+                        company_ids = list({str(i.get('company_id') or '') for i in internships if i.get('company_id')})
+                        company_ids = [c for c in company_ids if c]
+                        for cid in company_ids:
+                            rep = load_company_reputation(db, cid)
+                            if rep and rep.get('score') is not None:
+                                company_reputation_map[cid] = float(rep.get('score'))
+                    except Exception:
+                        pass
+            except Exception:
+                preference_profile = None
+                company_reputation_map = {}
+
             ml_recs = ml_get_recommendations(
                 candidate, 
                 internships, 
@@ -188,6 +211,8 @@ def get_candidate_recommendations(candidate_id):
                 internship_interactions=internship_interactions,
                 company_interaction_stats=company_interaction_stats,
                 company_reason_stats=company_reason_stats,
+                preference_profile=preference_profile,
+                company_reputation=company_reputation_map,
                 dedupe_org=dedupe_org,
                 # min_score is percent; ML expects percent threshold too.
                 min_score=min_score,
@@ -315,6 +340,24 @@ def get_candidate_internship_match(candidate_id, internship_id):
         recommendation = None
 
         if ml_get_recommendations is not None:
+            preference_profile = None
+            company_reputation_map = {}
+            try:
+                db = db_manager.get_db()
+                preference_profile = load_personal_preference_profile(db, candidate_id)
+                # Only need reputation for the target internship company (if present)
+                try:
+                    cid = internship.get('company_id')
+                    if cid:
+                        rep = load_company_reputation(db, str(cid))
+                        if rep and rep.get('score') is not None:
+                            company_reputation_map[str(cid)] = float(rep.get('score'))
+                except Exception:
+                    pass
+            except Exception:
+                preference_profile = None
+                company_reputation_map = {}
+
             # IMPORTANT: The ML model learns "reason" preferences from prior internship interactions.
             # When scoring a single internship, we still need to include the interacted internships
             # in the input list so it can learn location/skills/etc. patterns.
@@ -362,6 +405,8 @@ def get_candidate_internship_match(candidate_id, internship_id):
                 internship_interactions=internship_interactions,
                 company_interaction_stats=company_interaction_stats,
                 company_reason_stats=company_reason_stats,
+                preference_profile=preference_profile,
+                company_reputation=company_reputation_map,
                 dedupe_org=False,
                 min_score=0.0,
             )

@@ -4,6 +4,8 @@ import { internshipService } from '../services/internships';
 import { profileService } from '../services/profile';
 import { reviewService } from '../services/reviews';
 import { useAuthStore } from '../store/authStore';
+import { useMatchStore } from '../store/matchStore';
+import { useReviewStore } from '../store/reviewStore';
 import LoadingSpinner from '../components/Common/LoadingSpinner';
 import ErrorMessage from '../components/Common/ErrorMessage';
 import LikeDislikeButton from '../components/Company/LikeDislikeButton';
@@ -35,12 +37,24 @@ import {
 
 const InternshipDetailPage = () => {
   const similarScrollRef = useRef(null);
-  const SIMILAR_SCROLL_RESTORE_KEY = '__internship_detail_similar_scroll__';
   const { id } = useParams();
   const navigate = useNavigate();
   const { user } = useAuthStore();
+  const refreshInternshipMatch = useMatchStore((s) => s.refreshInternshipMatch);
+  const refreshInternshipMatches = useMatchStore((s) => s.refreshInternshipMatches);
+  const primeInternshipMatches = useMatchStore((s) => s.primeInternshipMatches);
+  const ensureInternshipReviews = useReviewStore((s) => s.ensureInternshipReviews);
+  const markHelpful = useReviewStore((s) => s.markHelpful);
+  const deleteReview = useReviewStore((s) => s.deleteReview);
+
+  const InlineInternshipMatch = ({ internshipId, fallback = 0, className = '' }) => {
+    const score = useMatchStore((s) => s.internshipMatchById[String(internshipId)]);
+    const display = score ?? fallback ?? 0;
+    return <span className={className}>{Math.round(display)}% Match</span>;
+  };
   const [internship, setInternship] = useState(null);
   const [similarInternships, setSimilarInternships] = useState([]);
+  const [candidateIdForMatches, setCandidateIdForMatches] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isBookmarked, setIsBookmarked] = useState(false);
@@ -48,9 +62,13 @@ const InternshipDetailPage = () => {
   const [isLoadingRanking, setIsLoadingRanking] = useState(false);
   const [hasApplied, setHasApplied] = useState(false);
   const [similarBookmarks, setSimilarBookmarks] = useState({});
-  const [reviews, setReviews] = useState([]);
-  const [reviewsLoading, setReviewsLoading] = useState(false);
   const [showReviewForm, setShowReviewForm] = useState(false);
+  const reviews = useReviewStore((s) => (
+    internship ? (s.internshipById[String(internship.internship_id || internship._id)]?.reviews || []) : []
+  ));
+  const reviewsLoading = useReviewStore((s) => (
+    internship ? !!s.internshipById[String(internship.internship_id || internship._id)]?.loading : false
+  ));
 
   useEffect(() => {
     fetchInternshipDetails();
@@ -80,9 +98,9 @@ const InternshipDetailPage = () => {
       }
 
       // Fetch reviews
-      fetchReviews(internshipId);
+      ensureInternshipReviews(internshipId);
     }
-  }, [internship, user]);
+  }, [internship, user, ensureInternshipReviews]);
 
   const fetchRanking = async (internshipId) => {
     try {
@@ -97,24 +115,12 @@ const InternshipDetailPage = () => {
     }
   };
 
-  const fetchReviews = async (internshipId) => {
-    try {
-      setReviewsLoading(true);
-      const response = await reviewService.internship.getAll(internshipId);
-      setReviews(response.reviews || []);
-    } catch (err) {
-      console.error('Error fetching reviews:', err);
-    } finally {
-      setReviewsLoading(false);
-    }
-  };
-
   const handleReviewSubmit = async (reviewData) => {
     try {
       const internshipId = internship.internship_id || internship._id;
       await reviewService.internship.create(internshipId, reviewData);
       setShowReviewForm(false);
-      await fetchReviews(internshipId);
+      await ensureInternshipReviews(internshipId, { force: true });
     } catch (err) {
       console.error('Error submitting review:', err);
       throw err;
@@ -139,9 +145,7 @@ const InternshipDetailPage = () => {
 
   const handleMarkHelpful = async (reviewId) => {
     try {
-      await reviewService.markHelpful(reviewId);
-      const internshipId = internship.internship_id || internship._id;
-      await fetchReviews(internshipId);
+      await markHelpful(reviewId);
     } catch (err) {
       console.error('Error marking review helpful:', err);
     }
@@ -150,9 +154,7 @@ const InternshipDetailPage = () => {
   const handleDeleteReview = async (reviewId) => {
     if (!window.confirm('Are you sure you want to delete this review?')) return;
     try {
-      await reviewService.delete(reviewId);
-      const internshipId = internship.internship_id || internship._id;
-      await fetchReviews(internshipId);
+      await deleteReview(reviewId);
     } catch (err) {
       console.error('Error deleting review:', err);
     }
@@ -166,30 +168,26 @@ const InternshipDetailPage = () => {
       // Fetch internship details
       const data = await internshipService.getById(id);
       let internshipData = data.internship;
+      const currentId = internshipData?.internship_id || internshipData?._id;
       
       // Fetch match score from backend recommendations if user is logged in
-      let candidateIdForMatches = null;
+      let resolvedCandidateId = null;
       if (user?.username) {
         try {
           // Prefer authenticated candidate_id (faster); fall back to profile lookup
           const candidateId = user?.candidate_id || (await profileService.getByUsername(user.username))?.candidate_id;
-          candidateIdForMatches = candidateId || null;
-          if (candidateIdForMatches) {
-            const currentId = internshipData.internship_id || internshipData._id;
-            const match = await internshipService.getInternshipMatch(candidateIdForMatches, currentId);
-            internshipData = {
-              ...internshipData,
-              match_score: match?.match_score ?? internshipData.match_score ?? 0,
-            };
-          } else {
-            internshipData = { ...internshipData, match_score: internshipData.match_score ?? 0 };
-          }
+          resolvedCandidateId = candidateId || null;
         } catch (err) {
-          console.warn('Could not fetch match score:', err);
-          internshipData = { ...internshipData, match_score: internshipData.match_score ?? 0 };
+          console.warn('Could not resolve candidate_id for match score:', err);
         }
-      } else {
-        internshipData = { ...internshipData, match_score: 0 };
+      }
+
+      setCandidateIdForMatches(resolvedCandidateId);
+
+      // Prime any match_score that might already exist on the payload, then refresh live.
+      primeInternshipMatches([internshipData]);
+      if (resolvedCandidateId && currentId) {
+        refreshInternshipMatch(resolvedCandidateId, currentId);
       }
       
       setInternship(internshipData);
@@ -199,22 +197,11 @@ const InternshipDetailPage = () => {
         const similarData = await internshipService.getSimilar(id);
         let similar = similarData.recommendations || [];
 
-        // If logged in, replace similarity scores with the user's match scores so
-        // reason-based nudges apply immediately after refresh.
-        if (candidateIdForMatches && Array.isArray(similar) && similar.length) {
-          const scored = await Promise.allSettled(
-            similar.map(async (s) => {
-              const simId = s.internship_id || s._id;
-              if (!simId) return s;
-              try {
-                const match = await internshipService.getInternshipMatch(candidateIdForMatches, simId);
-                return { ...s, match_score: match?.match_score ?? s.match_score ?? 0 };
-              } catch {
-                return { ...s, match_score: s.match_score ?? 0 };
-              }
-            })
-          );
-          similar = scored.map((r, idx) => (r.status === 'fulfilled' ? r.value : (similar[idx] || {})));
+        // Prime and refresh match scores for visible similar cards.
+        primeInternshipMatches(similar);
+        if (resolvedCandidateId && Array.isArray(similar) && similar.length) {
+          const simIds = similar.map((s) => s?.internship_id || s?._id).filter(Boolean);
+          refreshInternshipMatches(resolvedCandidateId, simIds);
         }
 
         setSimilarInternships(similar);
@@ -243,65 +230,23 @@ const InternshipDetailPage = () => {
   };
 
   useEffect(() => {
-    // Restore Similar Opportunities scroll position after interaction-triggered reload.
-    if (!similarScrollRef.current) return;
-    if (!Array.isArray(similarInternships) || similarInternships.length === 0) return;
+    // When an internship interaction happens, refresh match scores for the current
+    // internship and the visible similar list (no full page reload needed).
+    const handler = (e) => {
+      const detail = e?.detail || {};
+      const cid = candidateIdForMatches || detail?.candidate_id;
+      if (!cid) return;
 
-    try {
-      const raw = sessionStorage.getItem(SIMILAR_SCROLL_RESTORE_KEY);
-      if (!raw) return;
-      const data = JSON.parse(raw);
-      if (data?.path && data.path !== window.location.pathname) {
-        sessionStorage.removeItem(SIMILAR_SCROLL_RESTORE_KEY);
-        return;
-      }
-      if (typeof data?.ts === 'number' && Date.now() - data.ts > 10_000) {
-        sessionStorage.removeItem(SIMILAR_SCROLL_RESTORE_KEY);
-        return;
-      }
-      const scrollTop = typeof data?.scrollTop === 'number' ? data.scrollTop : 0;
-      const anchorId = typeof data?.anchorId === 'string' ? data.anchorId : null;
-      const anchorOffset = typeof data?.anchorOffset === 'number' ? data.anchorOffset : null;
-      const el = similarScrollRef.current;
+      const currentId = internship?.internship_id || internship?._id;
+      const simIds = (similarInternships || []).map((s) => s?.internship_id || s?._id).filter(Boolean);
+      const ids = [currentId, ...simIds].filter(Boolean);
+      if (ids.length === 0) return;
+      refreshInternshipMatches(cid, ids);
+    };
 
-      const restore = () => {
-        try {
-          if (anchorId && anchorOffset !== null) {
-            const target = document.getElementById(anchorId);
-            if (target && el.contains(target)) {
-              // Align the anchored card to the same vertical offset within the scroll container.
-              const targetTop = target.offsetTop;
-              const next = Math.max(0, targetTop - anchorOffset);
-              el.scrollTop = next;
-              return;
-            }
-          }
-          el.scrollTop = scrollTop;
-        } catch {
-          // ignore
-        }
-      };
-
-      requestAnimationFrame(() => {
-        restore();
-        requestAnimationFrame(restore);
-        setTimeout(restore, 50);
-        setTimeout(restore, 250);
-      });
-
-      setTimeout(() => {
-        try {
-          sessionStorage.removeItem(SIMILAR_SCROLL_RESTORE_KEY);
-        } catch {
-          // ignore
-        }
-      }, 800);
-    } catch {
-      // ignore
-    }
-  }, [similarInternships]);
-
-  // NOTE: Interaction updates now trigger a full page reload (see App.jsx).
+    window.addEventListener('internship-interaction-changed', handler);
+    return () => window.removeEventListener('internship-interaction-changed', handler);
+  }, [candidateIdForMatches, internship, similarInternships, refreshInternshipMatches]);
 
   const handleBack = () => {
     navigate(-1);
@@ -470,7 +415,10 @@ const InternshipDetailPage = () => {
                     <div className="inline-flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-lg shadow-lg">
                       <Sparkles className="h-4 w-4" />
                       <span className="font-bold">
-                        {Math.round(internship.match_score || internship.matchScore || 0)}% Match
+                        <InlineInternshipMatch
+                          internshipId={internship.internship_id || internship._id}
+                          fallback={internship.match_score || internship.matchScore || 0}
+                        />
                       </span>
                     </div>
                   )}
@@ -863,7 +811,7 @@ const InternshipDetailPage = () => {
                           </span>
                           {user && (
                             <span className="text-xs font-semibold text-primary-600 dark:text-primary-400">
-                              {Math.round(similar.match_score || 0)}% match
+                              <InlineInternshipMatch internshipId={similarId} fallback={similar.match_score || 0} className="" />
                             </span>
                           )}
                         </div>

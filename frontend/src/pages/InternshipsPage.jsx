@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo, useRef } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 import { useInternshipStore } from '../store/internshipStore';
@@ -8,26 +8,10 @@ import ErrorMessage from '../components/Common/ErrorMessage';
 import InternshipCard from '../components/Internship/InternshipCard';
 import LikeDislikeButton from '../components/Company/LikeDislikeButton';
 import { Search, MapPin, X, Sparkles, Grid3x3, ChevronRight, ChevronDown, Bookmark } from 'lucide-react';
+import { useMatchStore } from '../store/matchStore';
 
 const ITEMS_PER_PAGE = 24; // Show 24 items initially (8x3 grid)
 const LOAD_MORE_COUNT = 12; // Load 12 more items when clicking "Load More"
-const LAST_INTERACTION_KEY = '__last_interaction__';
-const SCROLL_RESTORE_KEY = '__scroll_restore__';
-const INTERNSHIP_ANCHOR_PREFIX = 'internship-card-';
-const INTERNSHIPS_STATE_KEY = '__internships_state__';
-
-const getInitialInternshipsState = () => {
-  try {
-    // Only restore state when the page is being reloaded due to an interaction.
-    if (!sessionStorage.getItem(SCROLL_RESTORE_KEY)) return null;
-    const raw = sessionStorage.getItem(INTERNSHIPS_STATE_KEY);
-    if (!raw) return null;
-    const parsed = JSON.parse(raw);
-    return parsed && typeof parsed === 'object' ? parsed : null;
-  } catch {
-    return null;
-  }
-};
 
 const InternshipsPage = () => {
   const navigate = useNavigate();
@@ -49,21 +33,24 @@ const InternshipsPage = () => {
   const [selectedInternship, setSelectedInternship] = useState(null);
   const [similarInternships, setSimilarInternships] = useState([]);
   const [showSidebar, setShowSidebar] = useState(false);
-  const initialPageState = useMemo(() => getInitialInternshipsState(), []);
-  const [viewMode, setViewMode] = useState(() => initialPageState?.viewMode || 'general'); // 'general', 'recommended', or 'bookmarks'
-  const [recommendedFilters, setRecommendedFilters] = useState(() => initialPageState?.recommendedFilters || ({ search: '', location: '' }));
-  const [displayCount, setDisplayCount] = useState(() => {
-    const restored = initialPageState?.displayCount;
-    return typeof restored === 'number' && restored > 0 ? restored : ITEMS_PER_PAGE;
-  });
-  const pendingScrollRestoreRef = useRef(null);
-  const [scrollRestoreHandled, setScrollRestoreHandled] = useState(true);
+  const [viewMode, setViewMode] = useState('general'); // 'general', 'recommended', or 'bookmarks'
+  const [recommendedFilters, setRecommendedFilters] = useState({ search: '', location: '' });
+  const [displayCount, setDisplayCount] = useState(ITEMS_PER_PAGE);
   const [bookmarkedIds, setBookmarkedIds] = useState(() => {
     if (!user?.username) return [];
     const bookmarkKey = `bookmarkedInternships_${user.username}`;
     const saved = localStorage.getItem(bookmarkKey);
     return saved ? JSON.parse(saved) : [];
   });
+
+  const primeInternshipMatches = useMatchStore((s) => s.primeInternshipMatches);
+  const refreshInternshipMatches = useMatchStore((s) => s.refreshInternshipMatches);
+
+  const InlineMatchPercent = ({ internshipId, fallback = 0 }) => {
+    const score = useMatchStore((s) => s.internshipMatchById[String(internshipId)]);
+    const display = score ?? fallback ?? 0;
+    return <>{Math.round(display)}% Match</>;
+  };
 
   const toggleBookmark = (internshipId) => {
     if (!user?.username) {
@@ -86,52 +73,6 @@ const InternshipsPage = () => {
   }, [fetchInternships]);
 
   useEffect(() => {
-    // Persist state so like/dislike-triggered reload can restore the same tab and paging.
-    try {
-      sessionStorage.setItem(
-        INTERNSHIPS_STATE_KEY,
-        JSON.stringify({
-          viewMode,
-          recommendedFilters,
-          displayCount,
-          filters,
-          ts: Date.now(),
-        })
-      );
-    } catch {
-      // ignore
-    }
-  }, [viewMode, recommendedFilters, displayCount, filters]);
-
-  useEffect(() => {
-    // Capture pending restore data once on mount.
-    try {
-      const raw = sessionStorage.getItem(SCROLL_RESTORE_KEY);
-      if (!raw) return;
-      const data = JSON.parse(raw);
-      if (data?.path && data.path !== window.location.pathname) return;
-      if (typeof data?.ts === 'number' && Date.now() - data.ts > 10_000) return;
-      pendingScrollRestoreRef.current = data;
-      setScrollRestoreHandled(false);
-
-      // Restore filters for this reload so we don't end up in General with the old scroll.
-      try {
-        const rawState = sessionStorage.getItem(INTERNSHIPS_STATE_KEY);
-        if (rawState) {
-          const st = JSON.parse(rawState);
-          if (st?.filters && typeof st.filters === 'object') {
-            updateFilters(st.filters);
-          }
-        }
-      } catch {
-        // ignore
-      }
-    } catch {
-      // ignore
-    }
-  }, []);
-
-  useEffect(() => {
     // Save bookmarks to localStorage whenever they change
     if (user?.username) {
       const bookmarkKey = `bookmarkedInternships_${user.username}`;
@@ -143,17 +84,13 @@ const InternshipsPage = () => {
     if (viewMode === 'recommended' && user?.username) {
       loadRecommendations();
     }
-    // Reset pagination when switching modes (unless we're restoring scroll after reload)
-    if (scrollRestoreHandled) {
-      setDisplayCount(ITEMS_PER_PAGE);
-    }
+    // Reset pagination when switching modes
+    setDisplayCount(ITEMS_PER_PAGE);
   }, [viewMode, user, internships]);
 
   // Reset pagination when filters change
   useEffect(() => {
-    if (scrollRestoreHandled) {
-      setDisplayCount(ITEMS_PER_PAGE);
-    }
+    setDisplayCount(ITEMS_PER_PAGE);
   }, [filters.search, filters.location, recommendedFilters.search, recommendedFilters.location]);
 
   const loadRecommendations = async () => {
@@ -173,6 +110,7 @@ const InternshipsPage = () => {
         });
         const backendRecs = (recData.recommendations || []).filter(r => (r?.match_score ?? r?.matchScore ?? 0) > 0);
         setRecommendations(backendRecs);
+        primeInternshipMatches(backendRecs);
       } else {
         setRecommendations([]);
       }
@@ -184,59 +122,16 @@ const InternshipsPage = () => {
     }
   };
 
-  // Load user profile for general search too
-  const [backendRecommendations, setBackendRecommendations] = useState([]);
-  
+  // Load user profile once (needed for candidate_id for match refreshes).
   useEffect(() => {
-    if (user?.username && viewMode === 'general') {
-      profileService.getByUsername(user.username)
-        .then(async (profile) => {
-          setUserProfile(profile);
-          // Fetch backend recommendations for match scores
-          if (profile?.candidate_id) {
-            try {
-              const { internshipService } = await import('../services/internships');
-              const recData = await internshipService.getRecommendations(profile.candidate_id);
-              setBackendRecommendations(recData.recommendations || []);
-
-              // After a full-page reload triggered by like/dislike, ensure the interacted internship
-              // gets a match score even if it isn't in the top-10 recommendations.
-              try {
-                const raw = sessionStorage.getItem(LAST_INTERACTION_KEY);
-                if (!raw) return;
-
-                const last = JSON.parse(raw);
-                const lastType = last?.type;
-                const internshipId = last?.detail?.internship_id;
-                if (lastType !== 'internship-interaction-changed' || !internshipId) return;
-
-                const match = await internshipService.getInternshipMatch(profile.candidate_id, internshipId);
-                const matchScore = match?.match_score ?? 0;
-                setBackendRecommendations((prev) => {
-                  const existingIdx = prev.findIndex(r => (r?.internship_id || r?._id) === internshipId);
-                  if (existingIdx >= 0) {
-                    const next = [...prev];
-                    next[existingIdx] = { ...next[existingIdx], match_score: matchScore };
-                    return next;
-                  }
-                  return [...prev, { internship_id: internshipId, match_score: matchScore }];
-                });
-              } catch {
-                // Ignore if sessionStorage is missing/malformed or match fetch fails.
-              } finally {
-                try { sessionStorage.removeItem(LAST_INTERACTION_KEY); } catch {}
-              }
-            } catch (err) {
-              console.warn('Could not fetch backend recommendations:', err);
-              setBackendRecommendations([]);
-            }
-          }
-        })
-        .catch(err => console.error('Failed to load profile:', err));
+    if (!user?.username) {
+      setUserProfile(null);
+      return;
     }
-  }, [user, viewMode]);
-
-  // NOTE: Interaction updates now trigger a full page reload (see App.jsx).
+    profileService.getByUsername(user.username)
+      .then((profile) => setUserProfile(profile))
+      .catch((err) => console.error('Failed to load profile:', err));
+  }, [user]);
 
   const findSimilarInternships = (internship) => {
     const baseSkills = (internship.skills_required || []).map(s => s.toLowerCase());
@@ -270,14 +165,7 @@ const InternshipsPage = () => {
         const commonWords = titleWords.filter(w => candidateTitleWords.includes(w));
         score = Math.min(score + (commonWords.length * 5), 100);
         
-        // Calculate user match score from backend recommendations
-        const userMatchScore = backendRecommendations.find(rec => 
-          (rec.internship_id || rec._id) === (i.internship_id || i._id)
-        )?.match_score || backendRecommendations.find(rec => 
-          (rec.internship_id || rec._id) === (i.internship_id || i._id)
-        )?.matchScore || 0;
-        
-        return { ...i, similarityScore: Math.round(score), userMatchScore: Math.round(userMatchScore) };
+        return { ...i, similarityScore: Math.round(score) };
       })
       .filter(i => i.similarityScore > 0)
       .sort((a, b) => b.similarityScore - a.similarityScore)
@@ -291,6 +179,12 @@ const InternshipsPage = () => {
     const similar = findSimilarInternships(internship);
     setSimilarInternships(similar);
     setShowSidebar(true);
+
+    const cid = userProfile?.candidate_id || user?.candidate_id;
+    if (cid && Array.isArray(similar) && similar.length) {
+      const ids = similar.map((s) => s?.internship_id || s?._id).filter(Boolean);
+      refreshInternshipMatches(cid, ids);
+    }
   };
 
   const closeSidebar = () => {
@@ -343,52 +237,15 @@ const InternshipsPage = () => {
     });
   };
 
-  // Add match scores to general search internships - from backend API
-  const generalInternshipsWithScores = useMemo(() => {
-    if (!userProfile || backendRecommendations.length === 0) {
-      return filteredInternships.map(i => ({ ...i, matchScore: 0 }));
-    }
-    // Create score map from backend recommendations
-    const scoreMap = {};
-    backendRecommendations.forEach(rec => {
-      const id = rec.internship_id || rec._id;
-      scoreMap[id] = rec.match_score || rec.matchScore || 0;
-    });
-    
-    return filteredInternships.map(internship => ({
-      ...internship,
-      matchScore: scoreMap[internship.internship_id || internship._id] || 0
-    }));
-  }, [filteredInternships, userProfile, backendRecommendations]);
-
-  // Get bookmarked internships with backend match scores
   const bookmarkedInternships = useMemo(() => {
-    const bookmarked = internships.filter(internship => 
-      bookmarkedIds.includes(internship.internship_id || internship._id)
-    );
-    
-    if (!userProfile || backendRecommendations.length === 0) {
-      return bookmarked.map(i => ({ ...i, matchScore: 0 }));
-    }
-    
-    // Create score map from backend recommendations
-    const scoreMap = {};
-    backendRecommendations.forEach(rec => {
-      const id = rec.internship_id || rec._id;
-      scoreMap[id] = rec.match_score || rec.matchScore || 0;
-    });
-    
-    return bookmarked.map(internship => ({
-      ...internship,
-      matchScore: scoreMap[internship.internship_id || internship._id] || 0
-    }));
-  }, [internships, bookmarkedIds, userProfile, backendRecommendations]);
+    return internships.filter(internship => bookmarkedIds.includes(internship.internship_id || internship._id));
+  }, [internships, bookmarkedIds]);
 
   const allDisplayedInternships = viewMode === 'recommended' 
     ? getFilteredRecommendations() 
     : viewMode === 'bookmarks'
     ? bookmarkedInternships
-    : generalInternshipsWithScores;
+    : filteredInternships;
   
   // Paginate the results
   const displayedInternships = allDisplayedInternships.slice(0, displayCount);
@@ -396,77 +253,27 @@ const InternshipsPage = () => {
   const isLoadingData = viewMode === 'recommended' ? isLoadingRecommendations : isLoading;
 
   useEffect(() => {
-    // Deterministic scroll restore for the internships list after a full reload.
-    if (scrollRestoreHandled) return;
-    if (isLoadingData) return;
+    const handler = (e) => {
+      const detail = e?.detail || {};
+      const cid = userProfile?.candidate_id || user?.candidate_id || detail?.candidate_id;
+      if (!cid) return;
 
-    const restore = pendingScrollRestoreRef.current;
-    if (!restore) {
-      setScrollRestoreHandled(true);
-      return;
-    }
+      const visibleIds = displayedInternships
+        .map((i) => i?.internship_id || i?._id)
+        .filter(Boolean);
 
-    const targetInternshipId =
-      (typeof restore?.targetInternshipId === 'string' && restore.targetInternshipId) ||
-      (typeof restore?.anchorId === 'string' && restore.anchorId.startsWith(INTERNSHIP_ANCHOR_PREFIX)
-        ? restore.anchorId.slice(INTERNSHIP_ANCHOR_PREFIX.length)
-        : null);
+      const sidebarIds = showSidebar
+        ? (similarInternships || []).map((i) => i?.internship_id || i?._id).filter(Boolean)
+        : [];
 
-    // If we know which card was in view, ensure it's actually rendered (pagination).
-    if (targetInternshipId) {
-      const idx = allDisplayedInternships.findIndex((i) => {
-        const id = i?.internship_id || i?._id;
-        return String(id) === String(targetInternshipId);
-      });
-
-      if (idx >= 0 && displayCount < idx + 1) {
-        setDisplayCount(idx + 1);
-        return;
-      }
-    }
-
-    const anchorId =
-      targetInternshipId ? `${INTERNSHIP_ANCHOR_PREFIX}${targetInternshipId}` : restore?.anchorId;
-    const anchorOffset = typeof restore?.anchorOffset === 'number' ? restore.anchorOffset : null;
-    const y = typeof restore?.y === 'number' ? restore.y : null;
-
-    const tryRestore = () => {
-      // Prefer anchor-based restore.
-      if (anchorId && anchorOffset !== null) {
-        const el = document.getElementById(anchorId);
-        if (el) {
-          const rect = el.getBoundingClientRect();
-          const currentTop = rect.top + window.scrollY;
-          const target = Math.max(0, currentTop - anchorOffset);
-          window.scrollTo({ top: target, behavior: 'auto' });
-          return true;
-        }
-      }
-
-      if (y !== null) {
-        window.scrollTo({ top: y, behavior: 'auto' });
-        return true;
-      }
-
-      return false;
+      const ids = Array.from(new Set([...visibleIds, ...sidebarIds]));
+      if (ids.length === 0) return;
+      refreshInternshipMatches(cid, ids);
     };
 
-    requestAnimationFrame(() => {
-      tryRestore();
-      requestAnimationFrame(tryRestore);
-      setTimeout(tryRestore, 50);
-      setTimeout(() => {
-        tryRestore();
-        try {
-          sessionStorage.removeItem(SCROLL_RESTORE_KEY);
-        } catch {
-          // ignore
-        }
-        pendingScrollRestoreRef.current = null;
-        setScrollRestoreHandled(true);
-      }, 350);
-    });
-  }, [scrollRestoreHandled, isLoadingData, allDisplayedInternships, displayCount]);
+    window.addEventListener('internship-interaction-changed', handler);
+    return () => window.removeEventListener('internship-interaction-changed', handler);
+  }, [userProfile, user, displayedInternships, showSidebar, similarInternships, refreshInternshipMatches]);
 
   const handleLoadMore = () => {
     setDisplayCount(prev => prev + LOAD_MORE_COUNT);
@@ -787,7 +594,7 @@ const InternshipsPage = () => {
                         )}
                         {userProfile && (
                           <div className="inline-flex items-center text-xs text-green-600 dark:text-green-400 font-semibold bg-green-50 dark:bg-green-900/20 px-2 py-1 rounded">
-                            {internship.userMatchScore || 0}% Match
+                            <InlineMatchPercent internshipId={internship.internship_id || internship._id} />
                           </div>
                         )}
                       </div>

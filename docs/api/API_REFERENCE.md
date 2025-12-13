@@ -35,6 +35,7 @@ http://127.0.0.1:3000
 - **POST** `/api/auth/signup`
 - **POST** `/api/auth/login` (aliases also available at `/signup` and `/login` for legacy clients)
 - **POST** `/api/auth/logout` (alias also at `/logout`)
+- **GET** `/api/auth/status`
 - **Description**: User authentication
 - **Request Body**:
   ```json
@@ -44,9 +45,58 @@ http://127.0.0.1:3000
   }
   ```
 - **Response** (login/signup success):
+ - **Response** (login/signup success):
   ```json
   { "message": "Login successful", "username": "string" }
   ```
+
+### Internship Match (Single Item)
+- **GET** `/api/recommendations/{candidate_id}/match/{internship_id}`
+- **Description**: Fetch a match score for one internship for a candidate (used by the frontend cache to update match % without reloading).
+- **Response**:
+  ```json
+  { "candidate_id": "CAND_xxxx", "internship_id": "INT001", "match_score": 87.5 }
+  ```
+- **Notes**:
+  - Match score is computed dynamically based on available profile/resume data plus learned signals (see “Interactions” below).
+
+### Interactions (Like/Dislike)
+
+All interaction endpoints require authentication.
+
+**Company Interactions:**
+- **POST** `/api/companies/{company_id}/like`
+- **POST** `/api/companies/{company_id}/dislike`
+- **DELETE** `/api/companies/{company_id}/interaction`
+- **GET** `/api/companies/{company_id}/interaction`
+- **GET** `/api/companies/interactions`
+
+**Internship Interactions:**
+- **POST** `/api/internships/{internship_id}/like`
+- **POST** `/api/internships/{internship_id}/dislike`
+- **DELETE** `/api/internships/{internship_id}/interaction`
+- **GET** `/api/internships/{internship_id}/interaction`
+- **GET** `/api/internships/interactions`
+
+**Request body (optional, for like/dislike):**
+```json
+{ "reason_tags": ["Great location"], "reason_text": "Optional free-text" }
+```
+
+### Company Match Scores
+- **GET** `/api/companies/{company_id}/match-score`
+- **POST** `/api/companies/{company_id}/recalculate-score`
+- **POST** `/api/companies/{company_id}/recalculate-all`
+- **POST** `/api/companies/match-scores/batch`
+- **GET** `/api/companies/top-matches`
+
+### Reviews
+- **POST** `/api/companies/{company_id}/reviews`
+- **GET** `/api/companies/{company_id}/reviews`
+- **POST** `/api/internships/{internship_id}/reviews`
+- **GET** `/api/internships/{internship_id}/reviews`
+- **POST** `/api/reviews/{review_id}/helpful`
+- **DELETE** `/api/reviews/{review_id}`
 
 ### Profiles
 - **POST** `/api/profile`
@@ -139,3 +189,10 @@ or standardized helper format:
 - All requests and responses use JSON
 - Dates are in ISO 8601 format
 - Responses may be in a minimal shape for legacy compatibility or standardized via helpers
+
+## Scoring Notes (High Level)
+- Match % is intentionally not a single fixed formula.
+- Scoring adapts based on what data exists (resume/profile completeness) and what the system has learned from interactions.
+- Persisted signals used by scoring:
+  - Personal (per-user): `personal_preference_profiles` (rebuilt from internship interactions)
+  - Global (all users): `company_reputation` (rebuilt from company interactions; denormalized onto `companies`)

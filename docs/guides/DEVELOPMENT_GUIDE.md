@@ -17,7 +17,7 @@ Complete guide for developing and contributing to Intern Insight.
 1. **Clone the repository**
    ```bash
    git clone https://github.com/DhairyaSood/Intern-Insight.git
-   cd Intern-Insight
+   cd <repo-folder>
    ```
 
 2. **Backend Setup**

@@ -14,6 +14,11 @@ This folder contains comprehensive documentation for the Intern Insight project.
 - **[ISSUES_RESOLVED.md](guides/ISSUES_RESOLVED.md)**: Documentation of resolved issues and their solutions
 - **[SUCCESS_SUMMARY.md](guides/SUCCESS_SUMMARY.md)**: Summary of successful improvements and implementations
 - **[MOBILE_UI_IMPROVEMENTS.md](guides/MOBILE_UI_IMPROVEMENTS.md)**: Mobile-first UI enhancements and dual-layout implementation
+- **[INTERACTION_DRIVEN_MATCH_UPDATES.md](guides/INTERACTION_DRIVEN_MATCH_UPDATES.md)**: No-reload match % updates via events + Zustand, and how reason tags propagate (e.g., location boosts)
+
+### 🧩 Feature Docs
+- **[REVIEW_SYSTEM_IMPLEMENTATION.md](REVIEW_SYSTEM_IMPLEMENTATION.md)**: Interactions + reviews + reason tags, and how they feed into dynamic matching
+- **[COMPANY_MATCH_SCORE_SETUP.md](../COMPANY_MATCH_SCORE_SETUP.md)**: Company match scores (personal cache) + global company reputation
 
 ### 🔧 API Documentation (`api/`)
 - **[API_REFERENCE.md](api/API_REFERENCE.md)**: Complete API endpoint documentation with examples and error codes

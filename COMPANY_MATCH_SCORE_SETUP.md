@@ -1,7 +1,17 @@
-# Company Match Score System - Setup Instructions
+# Company Match Score & Reputation System - Setup Instructions
 
 ## Overview
-The company match score system has been fully implemented. This document explains how to set it up and use it.
+Intern Insight maintains two related (but different) company signals:
+
+1) **Company match score (personal)**
+- A per-user score stored in `company_match_scores`.
+- Used to show a “match %” badge on company-related UI.
+- Calculated/cached by `app/utils/company_match_scorer.py`.
+
+2) **Company reputation (global)**
+- A global score stored in `company_reputation` and denormalized onto `companies`.
+- Built from *all users’* company interactions (like/dislike + reason tags).
+- Used as a global signal that can nudge internship match scoring.
 
 ## Database Indexes Setup
 
@@ -9,7 +19,6 @@ To ensure optimal performance, create the necessary MongoDB indexes:
 
 ### Method 1: Run the index creation script
 ```bash
-cd "d:\College Work\github projects\Intern-Insight"
 python -m app.utils.db_indexes
 ```
 
@@ -17,7 +26,7 @@ python -m app.utils.db_indexes
 ```javascript
 use your_database_name
 
-// Create indexes for company_match_scores collection
+// Create indexes for company_match_scores collection (per-user cache)
 db.company_match_scores.createIndex(
   { "candidate_id": 1, "company_id": 1 },
   { unique: true, name: "idx_candidate_company" }
@@ -37,46 +46,67 @@ db.company_match_scores.createIndex(
   { "candidate_id": 1, "match_score": -1 },
   { name: "idx_candidate_score" }
 );
+
+// Create indexes for personal_preference_profiles (per-user)
+db.personal_preference_profiles.createIndex(
+  { "candidate_id": 1 },
+  { unique: true, name: "idx_candidate_id" }
+);
+
+// Create indexes for company_reputation (global)
+db.company_reputation.createIndex(
+  { "company_id": 1 },
+  { unique: true, name: "idx_company_id" }
+);
 ```
 
 ## Features Implemented
 
-### 1. **Company Match Score Calculation**
-Scores are calculated based on 4 weighted factors:
-- **40%** - Average internship match scores from company's internships
-- **30%** - Direct company interactions (like/dislike)
-- **20%** - User's company review rating
-- **10%** - Indirect internship feedback (interactions/reviews on company's internships)
+### 1. **Company Match Score Calculation (Personal)**
+The per-user company match score is computed by backend logic (`CompanyMatchScorer`) and cached in MongoDB.
 
-### 2. **Automatic Score Updates**
-Scores are automatically recalculated when users:
+Important: the exact weighting is not treated as a permanently fixed formula; it may evolve as more signals are added.
+
+### 2. **Automatic Updates**
+
+**Company match score (personal)** is recalculated for the current user when they:
 - Like/dislike a company
 - Review a company
 - Like/dislike an internship from that company
 - Review an internship from that company
 
-### 3. **Global Impact System**
-When users interact with companies, it affects other users' scores:
-- **Like**: +2 points to others
-- **Dislike**: -2 points to others
-- **Positive review (4-5 stars)**: +3 points to others
-- **Negative review (1-2 stars)**: -3 points to others
-- Impact decays based on total review count (prevents manipulation)
+**Company reputation (global)** is rebuilt when anyone likes/dislikes that company.
 
-### 4. **Frontend Display**
+### 3. **Global Impact System (Company Match Scores)**
+When a user likes/dislikes a company, the backend can also apply a small global adjustment to *other users’ cached company match scores* for that company:
+- Like: +2 points
+- Dislike: -2 points
+- Review: +3 / 0 / -3 depending on rating (with decay based on review volume)
+
+This is implemented in `CompanyMatchScorer.apply_global_impact(...)`.
+
+### 4. **Global Company Reputation**
+In addition to the cached per-user match score, the backend maintains a global `company_reputation` score (0–100, neutral ~50) built from aggregate like/dislike sentiment plus a small reason-tag nudge.
+
+This is implemented in `app/utils/company_reputation.py` and denormalized onto `companies` as:
+- `reputation_score`
+- `reputation_counts`
+- `reputation_updated_at`
+
+### 5. **Frontend Display**
 Match scores are displayed on:
 - **Company Detail Page**: Shows personalized match score badge
 - Badge includes green gradient background with match percentage
 
-### 5. **API Endpoints**
-New endpoints available:
+### 6. **API Endpoints**
+Endpoints available:
 - `GET /api/companies/<company_id>/match-score` - Get match score for a company
 - `POST /api/companies/<company_id>/recalculate-score` - Recalculate user's score
 - `POST /api/companies/<company_id>/recalculate-all` - Recalculate for all users
 - `POST /api/companies/match-scores/batch` - Get scores for multiple companies
 - `GET /api/companies/top-matches` - Get user's top matched companies
 
-### 6. **MyInteractionsPage UI Update**
+### 7. **MyInteractionsPage UI Update**
 - 2-column grid layout for interactions and reviews
 - "Load More" button for pagination (6 items at a time)
 - Responsive design (mobile-friendly)
@@ -131,6 +161,32 @@ npm start
     company_reviews: Number,
     internship_feedback: Number
   }
+}
+```
+
+### personal_preference_profiles
+```javascript
+{
+  candidate_id: String,
+  updated_at: DateTime,
+  counts: { likes: Number, dislikes: Number, total: Number },
+  strength: Number,            // 0..1
+  skills: { preferred: [[String, Number]], avoided: [[String, Number]] },
+  roles: { preferred: [[String, Number]], avoided: [[String, Number]] },
+  locations: { preferred: [[String, Number]], avoided: [[String, Number]] },
+  work_type: [[String, Number]],
+  seniority: [[String, Number]],
+  stipend: { min_preferred: Number|null, low_floor: Number|null }
+}
+```
+
+### company_reputation
+```javascript
+{
+  company_id: String,
+  updated_at: DateTime,
+  counts: { like: Number, dislike: Number, total: Number },
+  score: Number               // 0..100 (neutral ~50)
 }
 ```
 

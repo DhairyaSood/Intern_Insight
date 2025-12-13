@@ -84,10 +84,12 @@ Your project restructuring is **100% complete and successful**! You can now:
 python run.py
 
 # Or with virtual environment
-& "D:/College Work/Coding Prep/Intern-Insight/venv/Scripts/python.exe" run.py
+venv\Scripts\python.exe run.py
 
 # Application runs on: http://127.0.0.1:3000
-# Frontend available at: /frontend/pages/
+# Frontend:
+# - React dev server (when running `npm start`): http://localhost:3000
+# - Some deployments may also serve built assets via Flask under `/frontend/`
 # API available at: /api/
 ```
 

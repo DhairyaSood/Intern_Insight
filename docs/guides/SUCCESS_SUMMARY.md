@@ -55,7 +55,7 @@ python run.py --debug           # Enable debug mode
 
 #### **Method 2: With Virtual Environment** 
 ```bash
-"D:/College Work/Coding Prep/Intern-Insight/venv/Scripts/python.exe" run.py
+venv\Scripts\python.exe run.py
 ```
 
 #### **Method 3: Legacy Way** (Still works)

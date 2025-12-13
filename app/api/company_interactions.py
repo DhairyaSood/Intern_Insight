@@ -10,6 +10,7 @@ from app.utils.response_helpers import success_response, error_response
 from app.utils.error_handler import handle_errors
 from app.utils.jwt_auth import token_required, get_current_user
 from app.utils.company_match_scorer import CompanyMatchScorer
+from app.utils.company_reputation import rebuild_and_save_company_reputation
 from bson import ObjectId
 from datetime import datetime
 
@@ -65,6 +66,12 @@ def like_company(company_id):
             # Create new interaction
             interactions_collection.insert_one(interaction_data)
             message = "Company liked successfully"
+
+        # Update global company reputation (affects all users)
+        try:
+            rebuild_and_save_company_reputation(database, company_id)
+        except Exception as rep_err:
+            app_logger.warning(f"Error updating company reputation: {rep_err}")
         
         # Recalculate match score for this user-company pair
         try:
@@ -136,6 +143,12 @@ def dislike_company(company_id):
             # Create new interaction
             interactions_collection.insert_one(interaction_data)
             message = "Company disliked successfully"
+
+        # Update global company reputation (affects all users)
+        try:
+            rebuild_and_save_company_reputation(database, company_id)
+        except Exception as rep_err:
+            app_logger.warning(f"Error updating company reputation: {rep_err}")
         
         # Recalculate match score for this user-company pair
         try:
@@ -180,6 +193,12 @@ def remove_company_interaction(company_id):
         })
         
         if result.deleted_count > 0:
+            # Update global company reputation (affects all users)
+            try:
+                rebuild_and_save_company_reputation(database, company_id)
+            except Exception as rep_err:
+                app_logger.warning(f"Error updating company reputation: {rep_err}")
+
             # Recalculate match score for this user-company pair now that interaction is removed
             updated_match_score = None
             try:

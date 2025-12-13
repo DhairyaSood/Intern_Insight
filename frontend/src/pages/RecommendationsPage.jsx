@@ -8,6 +8,7 @@ import LoadingSpinner from '../components/Common/LoadingSpinner';
 import ErrorMessage from '../components/Common/ErrorMessage';
 import InternshipCard from '../components/Internship/InternshipCard';
 import { Sparkles, TrendingUp } from 'lucide-react';
+import { useMatchStore } from '../store/matchStore';
 
 const RecommendationsPage = () => {
   const { user } = useAuthStore();
@@ -17,6 +18,9 @@ const RecommendationsPage = () => {
   const [isLoadingProfile, setIsLoadingProfile] = useState(true);
   const [profileError, setProfileError] = useState(null);
   const [userProfile, setUserProfile] = useState(null);
+  const [isSimilarityMode, setIsSimilarityMode] = useState(false);
+  const primeInternshipMatches = useMatchStore((s) => s.primeInternshipMatches);
+  const refreshInternshipMatches = useMatchStore((s) => s.refreshInternshipMatches);
   const [bookmarkedIds, setBookmarkedIds] = useState(() => {
     if (!user?.username) return [];
     const bookmarkKey = `bookmarkedInternships_${user.username}`;
@@ -58,9 +62,11 @@ const RecommendationsPage = () => {
           // Show similar internships - still use findSimilarInternships for similarity scores
           const similar = findSimilarInternships(similarTo);
           setRecommendations(similar);
+          setIsSimilarityMode(true);
           setIsLoadingProfile(false);
           return;
         }
+        setIsSimilarityMode(false);
 
         // Fetch user profile
         const profile = await profileService.getByUsername(user.username);
@@ -71,6 +77,7 @@ const RecommendationsPage = () => {
           const recData = await internshipService.getRecommendations(profile.candidate_id);
           const backendRecs = recData.recommendations || [];
           setRecommendations(backendRecs);
+          primeInternshipMatches(backendRecs);
         } else {
           setProfileError('Please complete your profile to get personalized recommendations.');
           setRecommendations([]);
@@ -125,16 +132,31 @@ const RecommendationsPage = () => {
   const handleShowSimilar = (internship) => {
     const similar = findSimilarInternships(internship);
     setRecommendations(similar);
-    // Don't fight scroll restore after like/dislike-triggered reload.
-    try {
-      if (sessionStorage.getItem('__scroll_restore__')) {
-        return;
-      }
-    } catch {
-      // ignore
-    }
+    setIsSimilarityMode(true);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
+
+  useEffect(() => {
+    const cid = userProfile?.candidate_id || user?.candidate_id;
+    if (!cid || !Array.isArray(recommendations) || recommendations.length === 0) return;
+    const ids = recommendations.map((r) => r?.internship_id || r?._id).filter(Boolean);
+    if (ids.length === 0) return;
+    refreshInternshipMatches(cid, ids);
+  }, [userProfile, user, recommendations, refreshInternshipMatches]);
+
+  useEffect(() => {
+    const handler = (e) => {
+      const detail = e?.detail || {};
+      const cid = userProfile?.candidate_id || user?.candidate_id || detail?.candidate_id;
+      if (!cid) return;
+      const ids = (recommendations || []).map((r) => r?.internship_id || r?._id).filter(Boolean);
+      if (ids.length === 0) return;
+      refreshInternshipMatches(cid, ids);
+    };
+
+    window.addEventListener('internship-interaction-changed', handler);
+    return () => window.removeEventListener('internship-interaction-changed', handler);
+  }, [userProfile, user, recommendations, refreshInternshipMatches]);
 
   if (isLoading || isLoadingProfile) {
     return (
@@ -252,6 +274,7 @@ const RecommendationsPage = () => {
                 internship={internship}
                 onShowSimilar={handleShowSimilar}
                 showMatchScore={true}
+                preferStoreMatch={!isSimilarityMode}
                 isBookmarked={bookmarkedIds.includes(internshipId)}
                 onToggleBookmark={toggleBookmark}
                 hasApplied={hasApplied}

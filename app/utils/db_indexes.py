@@ -57,6 +57,72 @@ def create_company_match_score_indexes():
         }
 
 
+def create_personal_preference_profile_indexes():
+    """Create indexes for personal_preference_profiles collection."""
+    try:
+        db_manager = DatabaseManager()
+        db = db_manager.get_db()
+        collection = db.personal_preference_profiles
+
+        collection.create_index(
+            [("candidate_id", 1)],
+            unique=True,
+            name="idx_candidate_id",
+        )
+        app_logger.info("Created personal_preference_profiles index: candidate_id")
+
+        collection.create_index(
+            [("updated_at", -1)],
+            name="idx_updated_at",
+        )
+        app_logger.info("Created personal_preference_profiles index: updated_at")
+
+        return {
+            'success': True,
+            'message': 'All indexes created successfully'
+        }
+
+    except Exception as e:
+        app_logger.error(f"Error creating personal_preference_profiles indexes: {e}")
+        return {
+            'success': False,
+            'error': str(e)
+        }
+
+
+def create_company_reputation_indexes():
+    """Create indexes for company_reputation collection."""
+    try:
+        db_manager = DatabaseManager()
+        db = db_manager.get_db()
+        collection = db.company_reputation
+
+        collection.create_index(
+            [("company_id", 1)],
+            unique=True,
+            name="idx_company_id",
+        )
+        app_logger.info("Created company_reputation index: company_id")
+
+        collection.create_index(
+            [("updated_at", -1)],
+            name="idx_updated_at",
+        )
+        app_logger.info("Created company_reputation index: updated_at")
+
+        return {
+            'success': True,
+            'message': 'All indexes created successfully'
+        }
+
+    except Exception as e:
+        app_logger.error(f"Error creating company_reputation indexes: {e}")
+        return {
+            'success': False,
+            'error': str(e)
+        }
+
+
 def create_all_indexes():
     """
     Create all necessary database indexes
@@ -67,6 +133,18 @@ def create_all_indexes():
     result = create_company_match_score_indexes()
     results.append({
         'collection': 'company_match_scores',
+        'result': result
+    })
+
+    result = create_personal_preference_profile_indexes()
+    results.append({
+        'collection': 'personal_preference_profiles',
+        'result': result
+    })
+
+    result = create_company_reputation_indexes()
+    results.append({
+        'collection': 'company_reputation',
         'result': result
     })
     

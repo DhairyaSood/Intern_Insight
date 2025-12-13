@@ -2,10 +2,15 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { MapPin, Sparkles, Bookmark, CheckCircle } from 'lucide-react';
 import LikeDislikeButton from '../Company/LikeDislikeButton';
+import { useMatchStore } from '../../store/matchStore';
 
-const InternshipCard = ({ internship, onShowSimilar, showMatchScore = false, isBookmarked = false, onToggleBookmark, hasApplied = false }) => {
+const InternshipCard = ({ internship, onShowSimilar, showMatchScore = false, preferStoreMatch = true, isBookmarked = false, onToggleBookmark, hasApplied = false }) => {
   const navigate = useNavigate();
   const internshipId = internship.internship_id || internship._id;
+  const liveMatchScore = useMatchStore((s) => s.internshipMatchById[String(internshipId)]);
+  const displayMatchScore = preferStoreMatch
+    ? (liveMatchScore ?? (internship.match_score ?? internship.matchScore ?? 0))
+    : (internship.match_score ?? internship.matchScore ?? 0);
 
   const handleViewDetails = () => {
     navigate(`/internship/${internshipId}`);
@@ -59,7 +64,7 @@ const InternshipCard = ({ internship, onShowSimilar, showMatchScore = false, isB
         <div className="flex items-center justify-end gap-2 mb-2">
           {showMatchScore && (
             <div className="bg-green-500 text-white px-2 py-1 rounded-full text-xs font-semibold shadow-lg">
-              {Math.round(internship.match_score || internship.matchScore || 0)}% Match
+              {Math.round(displayMatchScore || 0)}% Match
             </div>
           )}
           {hasApplied && (
@@ -150,7 +155,7 @@ const InternshipCard = ({ internship, onShowSimilar, showMatchScore = false, isB
             <div className="flex flex-wrap gap-1.5 mb-2">
               {showMatchScore && (
                 <span className="bg-green-500 text-white px-2 py-0.5 rounded-full text-xs font-semibold">
-                  {Math.round(internship.match_score || internship.matchScore || 0)}%
+                  {Math.round(displayMatchScore || 0)}%
                 </span>
               )}
               {hasApplied && (

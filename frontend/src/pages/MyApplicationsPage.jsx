@@ -2,11 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 import { useInternshipStore } from '../store/internshipStore';
-import { internshipService } from '../services/internships';
 import { profileService } from '../services/profile';
 import InternshipCard from '../components/Internship/InternshipCard';
 import LoadingSpinner from '../components/Common/LoadingSpinner';
-import { FileText, Calendar, CheckCircle } from 'lucide-react';
+import { FileText, CheckCircle } from 'lucide-react';
+import { useMatchStore } from '../store/matchStore';
 
 const MyApplicationsPage = () => {
   const navigate = useNavigate();
@@ -15,6 +15,8 @@ const MyApplicationsPage = () => {
   const [appliedInternships, setAppliedInternships] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [fetchComplete, setFetchComplete] = useState(false);
+  const refreshInternshipMatches = useMatchStore((s) => s.refreshInternshipMatches);
+  const [candidateIdForMatches, setCandidateIdForMatches] = useState(null);
   const [bookmarkedIds, setBookmarkedIds] = useState(() => {
     if (!user?.username) return [];
     const bookmarkKey = `bookmarkedInternships_${user.username}`;
@@ -58,6 +60,28 @@ const MyApplicationsPage = () => {
     loadApplications();
   }, [user, navigate, fetchInternships]);
 
+  useEffect(() => {
+    let cancelled = false;
+    if (!user?.username) {
+      setCandidateIdForMatches(null);
+      return () => { cancelled = true; };
+    }
+    if (user?.candidate_id) {
+      setCandidateIdForMatches(user.candidate_id);
+      return () => { cancelled = true; };
+    }
+    profileService.getByUsername(user.username)
+      .then((p) => {
+        if (cancelled) return;
+        setCandidateIdForMatches(p?.candidate_id ?? null);
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setCandidateIdForMatches(null);
+      });
+    return () => { cancelled = true; };
+  }, [user]);
+
   // Separate effect to process internships when they load
   useEffect(() => {
     if (!user || !fetchComplete) return;
@@ -74,50 +98,19 @@ const MyApplicationsPage = () => {
           appliedIds.includes(internship.internship_id || internship._id)
         );
         
-        // Fetch recommendations to get match scores ONLY if we have username
-        if (user.username && applied.length > 0) {
+        setAppliedInternships(applied.map((internship) => ({ ...internship, match_score: internship.match_score ?? 0 })));
+
+        // Refresh accurate match scores for these applied internships (not top-N limited).
+        if (user?.username && applied.length > 0) {
           try {
-            // Fetch profile to get correct candidate_id
-            const profile = await profileService.getByUsername(user.username);
-            if (profile?.candidate_id) {
-              const recommendations = await internshipService.getRecommendations(profile.candidate_id);
-              const recWithScores = recommendations.recommendations || [];
-              
-              // Create a map of internship_id to match_score
-              const scoreMap = {};
-              recWithScores.forEach(rec => {
-                const id = rec.internship_id || rec._id;
-                scoreMap[id] = rec.match_score || rec.matchScore;
-              });
-              
-              // Add match scores to applied internships
-              const appliedWithScores = applied.map(internship => ({
-                ...internship,
-                match_score: scoreMap[internship.internship_id || internship._id] || 0
-              }));
-              
-              setAppliedInternships(appliedWithScores);
-            } else {
-              // No candidate_id in profile, set match scores to 0
-              setAppliedInternships(applied.map(internship => ({
-                ...internship,
-                match_score: 0
-              })));
+            const candidateId = user?.candidate_id || (await profileService.getByUsername(user.username))?.candidate_id;
+            if (candidateId) {
+              const ids = applied.map((i) => i.internship_id || i._id).filter(Boolean);
+              await refreshInternshipMatches(candidateId, ids);
             }
           } catch (err) {
-            console.warn('Could not fetch match scores:', err);
-            // Set 0 for match scores if fetch fails
-            setAppliedInternships(applied.map(internship => ({
-              ...internship,
-              match_score: 0
-            })));
+            console.warn('Could not refresh per-internship match scores:', err);
           }
-        } else {
-          // No username or no applications, set match scores to 0
-          setAppliedInternships(applied.map(internship => ({
-            ...internship,
-            match_score: 0
-          })));
         }
       } finally {
         setIsLoading(false);
@@ -126,6 +119,20 @@ const MyApplicationsPage = () => {
 
     processApplications();
   }, [user, internships, fetchComplete]);
+
+  useEffect(() => {
+    const handler = async (e) => {
+      const detail = e?.detail || {};
+      const cid = candidateIdForMatches || user?.candidate_id || detail?.candidate_id;
+      if (!cid) return;
+      const ids = (appliedInternships || []).map((i) => i?.internship_id || i?._id).filter(Boolean);
+      if (ids.length === 0) return;
+      refreshInternshipMatches(cid, ids);
+    };
+
+    window.addEventListener('internship-interaction-changed', handler);
+    return () => window.removeEventListener('internship-interaction-changed', handler);
+  }, [candidateIdForMatches, user, appliedInternships, refreshInternshipMatches]);
 
   if (isLoading) {
     return <LoadingSpinner message="Loading your applications..." />;

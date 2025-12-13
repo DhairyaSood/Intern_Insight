@@ -112,8 +112,10 @@ class CompanyMatchScorer:
     @staticmethod
     def _normalize_city_value(value: str) -> str:
         s = (value or '').strip().lower()
-        # take "City" from "City, Country" or "City (Region)"
-        s = re.split(r'[,\(]', s)[0].strip()
+        # take "City" from common compound formats
+        if ' - ' in s:
+            s = s.split(' - ', 1)[0].strip()
+        s = re.split(r'[\,\(\|/;]', s)[0].strip()
         return s
 
     @staticmethod

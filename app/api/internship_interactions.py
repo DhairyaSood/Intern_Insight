@@ -10,6 +10,7 @@ from app.utils.response_helpers import success_response, error_response
 from app.utils.error_handler import handle_errors
 from app.utils.jwt_auth import token_required, get_current_user
 from app.utils.company_match_scorer import CompanyMatchScorer
+from app.utils.preference_profile import rebuild_and_save_personal_preference_profile
 from bson import ObjectId
 from datetime import datetime
 import re
@@ -66,6 +67,12 @@ def like_internship(internship_id):
             # Create new interaction
             interactions_collection.insert_one(interaction_data)
             message = "Internship liked successfully"
+
+        # Rebuild personal preference profile for this candidate
+        try:
+            rebuild_and_save_personal_preference_profile(database, candidate_id)
+        except Exception as pref_err:
+            app_logger.warning(f"Error updating personal preference profile: {pref_err}")
         
         # Recalculate company match score (internship feedback affects company score)
         try:
@@ -166,6 +173,12 @@ def dislike_internship(internship_id):
             # Create new interaction
             interactions_collection.insert_one(interaction_data)
             message = "Internship disliked successfully"
+
+        # Rebuild personal preference profile for this candidate
+        try:
+            rebuild_and_save_personal_preference_profile(database, candidate_id)
+        except Exception as pref_err:
+            app_logger.warning(f"Error updating personal preference profile: {pref_err}")
         
         # Recalculate company match score (internship feedback affects company score)
         try:
@@ -236,6 +249,12 @@ def remove_internship_interaction(internship_id):
         })
         
         if result.deleted_count > 0:
+            # Rebuild personal preference profile for this candidate
+            try:
+                rebuild_and_save_personal_preference_profile(database, candidate_id)
+            except Exception as pref_err:
+                app_logger.warning(f"Error updating personal preference profile: {pref_err}")
+
             # Recalculate company match score (internship feedback affects company score)
             try:
                 internship = database.internships.find_one({'internship_id': internship_id})

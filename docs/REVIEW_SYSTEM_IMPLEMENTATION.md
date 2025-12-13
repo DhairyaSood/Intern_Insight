@@ -1,7 +1,7 @@
 # Review System Implementation
 
 ## Overview
-Complete implementation of the like/dislike/review system for companies and internships with intelligent ML-based pattern learning.
+Implementation of like/dislike/review for companies and internships, including reason-tag driven learning that feeds into dynamic, context-aware matching.
 
 ## ✅ Completed Features
 
@@ -21,6 +21,12 @@ Complete implementation of the like/dislike/review system for companies and inte
   
 - **internship_reviews**
   - Review data with tags, recommendations, experience type
+
+- **personal_preference_profiles**
+  - Per-user derived profile built from internship interactions (personal-only signal)
+
+- **company_reputation**
+  - Global derived reputation built from all company interactions (global signal)
 
 #### API Endpoints
 
@@ -48,37 +54,33 @@ Complete implementation of the like/dislike/review system for companies and inte
 
 ### 2. Machine Learning Intelligence
 
-#### 3-Tier Learning System
+#### Learning & Scoring (Dynamic)
 
-**Tier 1: Direct Internship Interactions**
-- Like: +20% boost
-- Dislike: -30% penalty
-- Applied to specific internships
+Matching is intentionally **not** a single hard-coded formula. The scorer adapts based on:
+- Available candidate data (resume/profile completeness)
+- Learned personal signals from internship interactions
+- Global company signal from aggregate company interactions
 
-**Tier 2: Company-Level Learning**
-- Like company: +15% boost to all company internships
-- Dislike company: -20% penalty to all company internships
+At a high level, the system learns from:
 
-**Tier 3: Pattern-Based Learning** (NEW)
-Analyzes dislike reasons to penalize similar internships:
+**Direct interactions**
+- Likes/dislikes bias future match scores for the same candidate.
 
-**Location Matching:**
-- Exact city match: -10% penalty
-- Nearby city (<100km using distance matrix): -5% penalty
-- Uses fuzzy string matching for city names
+**Reason-tag learning (patterns)**
+Reason tags guide what the system should learn (e.g., location/skills/role/stipend).
 
-**Sector Matching:**
-- Exact sector match: -15% penalty
+**Location learning (example):**
+- “Great location” / “Poor location” reasons update per-user location preferences.
+- Location comparisons normalize common compound formats (e.g., `"Bangalore / Remote"`).
 
-**Stipend Learning:**
-- Stipend at/below threshold: -8% penalty
-- Stipend within 10% above threshold: -4% penalty
-- Learns compensation expectations from dislikes
+**Sector learning (example):**
+- Sector-alignment can influence the match score when sector data exists.
 
-**Skills Matching:**
-- 50%+ skill overlap: -12% penalty
-- 30-50% skill overlap: -6% penalty
-- Intelligently detects unwanted skill combinations
+**Stipend learning (example):**
+- “Low stipend” / “Good stipend” reasons can shift inferred stipend preferences.
+
+**Skills / role learning (example):**
+- “Skills match well” / “Skills mismatch” and role-fit reasons bias future scores.
 
 #### Pattern Extraction Logic
 ```python
@@ -93,8 +95,13 @@ disliked_patterns = {
 Reason tags trigger pattern learning:
 - "Poor location" → Adds to locations list
 - "Wrong sector" → Adds to sectors list
-- "Stipend too low" → Sets stipend threshold
+- "Low stipend" → Adjusts stipend expectations
 - "Skills mismatch" → Adds to skills list
+
+#### Persisted Signals
+To keep scoring responsive without re-processing full histories on every request:
+- Internship interactions rebuild `personal_preference_profiles` for the candidate.
+- Company interactions rebuild `company_reputation` for the company (and denormalize onto `companies`).
 
 ### 3. Frontend Components
 

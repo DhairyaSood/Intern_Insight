@@ -11,7 +11,7 @@ Intern Insight is a professional-grade web application featuring a **modular Fla
 ### Backend Setup
 ```bash
 git clone <repository-url>
-   cd Intern-Insight
+cd <repo-folder>
 python -m venv venv
 venv\Scripts\activate  # Windows
 pip install -r requirements.txt
@@ -48,6 +48,7 @@ npm start
 ### 🏠 **Smart Internship Discovery**
 - **Advanced Search & Filtering**: Multi-criteria search across titles, companies, skills, and locations
 - **AI-Powered Recommendations**: ML-driven "Find Similar" functionality with personalized scoring
+- **Interaction-Driven Match Updates**: Like/dislike updates match % in-place (no full-page reloads) and reason tags can influence future scoring (e.g., location preferences)
 - **Real-time Results**: Live internship listings with instant search feedback
 - **Modern React UI**: Responsive design with dark/light theme toggle and persistent preferences
 - **Mobile-Optimized**: Dual-layout system with horizontal cards, scrollable filters, and touch-friendly controls
@@ -68,11 +69,10 @@ npm start
 - **Session Management**: Persistent login state with Zustand store
 
 ### 🤖 **Advanced AI Recommendation Engine**
-- **Multi-factor Scoring Algorithm**:
-  - Skills matching with fuzzy text matching (weighted up to 50 points)
-  - Geographic proximity with distance calculations (25 points)
-  - Sector alignment and field compatibility (20 points)
-  - Education level matching (5 points)
+- **Dynamic, Context-Aware Scoring**:
+   - Match % adapts based on available profile/resume signals (no single fixed formula)
+   - Learns personal preferences from internship likes/dislikes (persisted per-user profile)
+   - Uses global company reputation from aggregate company likes/dislikes as a light global nudge
 - **Intelligent Processing**: Skill normalization, synonym mapping (rapidfuzz)
 - **Model Rotation**: Random rotation through 11 AI models for reliability
 
@@ -177,12 +177,15 @@ Flask Backend (Port 3000)
 - `POST /api/auth/signup` - User registration with validation
 - `POST /api/auth/login` - JWT-based authentication
 - `POST /api/auth/logout` - Token invalidation
-- `GET /api/auth/me` - Get current user info
+- `GET /api/auth/status` - Check login status
 
 #### **Core API Endpoints**
 - `GET /api/internships` - Get internship listings with search/filter
 - `GET /api/recommendations/{candidate_id}` - Get personalized recommendations
 - `GET /api/recommendations/by_internship/{internship_id}` - Find similar internships
+- `GET /api/recommendations/{candidate_id}/match/{internship_id}` - Fetch match score for one internship (used for in-place UI updates)
+
+For how the no-reload match % updates work end-to-end, see `docs/guides/INTERACTION_DRIVEN_MATCH_UPDATES.md`.
 
 #### **Profile Management** (`/api/profile`)
 - `POST /api/profile` - Create/update user profiles
@@ -216,7 +219,7 @@ Flask Backend (Port 3000)
 1. **Clone the Repository**
    ```bash
    git clone https://github.com/DhairyaSood/Intern-Insight.git
-   cd Intern-Insight
+   cd <repo-folder>
    ```
 
 2. **Setup Python Environment**
@@ -241,7 +244,7 @@ Flask Backend (Port 3000)
    ```env
    # Database
    MONGO_URI=mongodb+srv://<user>:<pass>@<cluster>/pm_intern?retryWrites=true&w=majority
-   DB_NAME=pm_intern
+   DB_NAME=internships
    
    # Security
    SECRET_KEY=your-secure-secret-key
@@ -532,6 +535,8 @@ npm test
 - [ ] **Advanced ML**: Deep learning models for enhanced recommendation accuracy
 
 ## 📚 Documentation
+
+- **Interaction-driven match updates (no reload)**: `docs/guides/INTERACTION_DRIVEN_MATCH_UPDATES.md`
 
 ### **Complete Documentation Available**
 - 📖 **[Development Guide](docs/guides/DEVELOPMENT_GUIDE.md)**: Setup, workflows, and best practices

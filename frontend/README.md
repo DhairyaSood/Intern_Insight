@@ -90,6 +90,7 @@ frontend/
 - ✅ Country code selector for phone numbers
 - ✅ Internship listings with search/filter
 - ✅ Personalized recommendations
+- ✅ Match % updates without reload (event-driven + Zustand cache)
 - ✅ Beautiful loading states & animations
 - ✅ Error handling & user feedback
 - ✅ API integration with backend
