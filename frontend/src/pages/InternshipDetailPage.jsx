@@ -568,7 +568,7 @@ const InternshipDetailPage = () => {
                   <div className="pt-3 border-t border-purple-200 dark:border-purple-800">
                     <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">Match Score</p>
                     <p className="text-2xl font-bold text-purple-600 dark:text-purple-400">
-                      {ranking.score}/100
+                      {internship.match_score || 0}%
                     </p>
                   </div>
 
