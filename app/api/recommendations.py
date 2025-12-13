@@ -28,10 +28,49 @@ def get_candidate_recommendations(candidate_id):
         if not internships:
             return error_response("No internships available", 404)
         
+        # Load company interactions for this candidate
+        company_interactions = {}
+        company_ratings = {}
+        try:
+            db = db_manager.get_db()
+            
+            # Get user's company interactions (like/dislike)
+            interactions_collection = db['company_interactions']
+            user_interactions = list(interactions_collection.find({'candidate_id': candidate_id}))
+            for interaction in user_interactions:
+                company_id = interaction.get('company_id')
+                interaction_type = interaction.get('interaction_type')
+                if company_id and interaction_type:
+                    company_interactions[company_id] = interaction_type
+            
+            # Get company average ratings
+            reviews_collection = db['company_reviews']
+            pipeline = [
+                {'$group': {
+                    '_id': '$company_id',
+                    'average_rating': {'$avg': '$rating'}
+                }}
+            ]
+            rating_results = list(reviews_collection.aggregate(pipeline))
+            for result in rating_results:
+                company_id = result.get('_id')
+                avg_rating = result.get('average_rating')
+                if company_id and avg_rating:
+                    company_ratings[company_id] = round(avg_rating, 2)
+                    
+        except Exception as e:
+            app_logger.warning(f"Could not load company interactions/ratings: {e}")
+        
         # Generate recommendations using improved ML logic
         recommendations = []
         if ml_get_recommendations is not None:
-            ml_recs = ml_get_recommendations(candidate, internships, top_n=10)
+            ml_recs = ml_get_recommendations(
+                candidate, 
+                internships, 
+                top_n=10,
+                company_interactions=company_interactions,
+                company_ratings=company_ratings
+            )
             # Enrich with skills/description for UI compatibility
             by_id = {i.get("internship_id"): i for i in internships}
             for r in ml_recs:

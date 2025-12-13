@@ -221,12 +221,20 @@ def location_similarity(candidate_loc, intern_loc):
 # ----------------- Recommendations (keeps the original function name) -----------------
 def get_recommendations(candidate, internships, top_n=10,
                         skill_weight=0.5, loc_weight=0.25,
-                        sector_weight=0.15, misc_weight=0.10):
+                        sector_weight=0.15, misc_weight=0.10,
+                        company_interactions=None, company_ratings=None):
     """
     Lightweight, explainable recommendation function that is compatible with
     existing callers in your codebase.
     Returns a list of up to top_n internship dicts with match_score and reason.
+    
+    New parameters:
+    - company_interactions: dict of {company_id: 'like'|'dislike'} for candidate
+    - company_ratings: dict of {company_id: average_rating} from reviews
     """
+    company_interactions = company_interactions or {}
+    company_ratings = company_ratings or {}
+    
     cand_skills = _normalize_skill_list(candidate.get("skills_possessed", []))
     cand_skill_set = set(cand_skills)
     sector_interests = [s.lower() for s in candidate.get("sector_interests", []) or []]
@@ -234,10 +242,18 @@ def get_recommendations(candidate, internships, top_n=10,
     field_of_study = (candidate.get("field_of_study") or "").strip().lower()
     education_level = (candidate.get("education_level") or "").strip().lower()
     is_first_gen = bool(candidate.get("first_generation") or candidate.get("no_experience"))
+    
+    # Extract liked company sectors for sector preference boost
+    liked_sectors = set()
+    for company_id, interaction in company_interactions.items():
+        if interaction == 'like':
+            # This would need company data to get sector - will add in integration
+            pass
 
     scored = []
     for internship in internships or []:
         internship_skills = _normalize_skill_list(internship.get("skills_required", []))
+        company_id = internship.get("company_id") or internship.get("organization", "")
 
         skill_sim = skill_similarity(cand_skill_set, internship_skills)
         loc_sim, dist_km, loc_reason = location_similarity(location_pref, internship.get("location", ""))
@@ -246,6 +262,27 @@ def get_recommendations(candidate, internships, top_n=10,
         field_sim = 1.0 if field_of_study and field_of_study in sector else 0.0
         edu_sim = 1.0 if education_level and education_level in (internship.get("title") or "").lower() else 0.0
         fg_boost = 0.08 if is_first_gen and internship.get("is_beginner_friendly") else 0.0
+        
+        # --- NEW: Company interaction and rating factors ---
+        company_boost = 0.0
+        company_penalty = 0.0
+        rating_boost = 0.0
+        
+        # Like/Dislike boost/penalty
+        if company_id in company_interactions:
+            interaction = company_interactions[company_id]
+            if interaction == 'like':
+                company_boost = 0.15  # +15% boost
+            elif interaction == 'dislike':
+                company_penalty = 0.20  # -20% penalty
+        
+        # Company rating boost
+        if company_id in company_ratings:
+            avg_rating = company_ratings[company_id]
+            if avg_rating >= 4.5:
+                rating_boost = 0.05  # +5% for highly rated companies
+            elif avg_rating < 3.0:
+                company_penalty += 0.10  # Additional -10% for low-rated companies
 
         base_score = (
             skill_weight * skill_sim +
@@ -253,7 +290,9 @@ def get_recommendations(candidate, internships, top_n=10,
             sector_weight * sector_sim +
             misc_weight * (0.5 * field_sim + 0.5 * edu_sim)
         )
-        score = min(1.0, base_score + fg_boost)
+        # Apply company factors
+        score = base_score + fg_boost + company_boost + rating_boost - company_penalty
+        score = min(1.0, max(0.0, score))  # Clamp between 0 and 1
         score_pct = round(score * 100, 1)
 
         scored.append({
@@ -266,7 +305,10 @@ def get_recommendations(candidate, internships, top_n=10,
                 "sector_sim": sector_sim,
                 "field_sim": field_sim,
                 "edu_sim": edu_sim,
-                "fg_boost": fg_boost
+                "fg_boost": fg_boost,
+                "company_boost": company_boost,
+                "company_penalty": company_penalty,
+                "rating_boost": rating_boost
             }
         })
 
@@ -291,6 +333,10 @@ def get_recommendations(candidate, internships, top_n=10,
             reason.append("Sector match")
         if comps["fg_boost"]:
             reason.append("Good for beginners")
+        if comps["company_boost"]:
+            reason.append("You liked this company")
+        if comps["rating_boost"]:
+            reason.append("Highly rated company")
 
         results.append({
             "internship_id": item["internship"].get("internship_id") or item["internship"].get("id"),
