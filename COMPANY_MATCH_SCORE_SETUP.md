@@ -9,7 +9,7 @@ To ensure optimal performance, create the necessary MongoDB indexes:
 
 ### Method 1: Run the index creation script
 ```bash
-cd "d:\College Work\github projects\PM_Intern"
+cd "d:\College Work\github projects\Intern-Insight"
 python -m app.utils.db_indexes
 ```
 

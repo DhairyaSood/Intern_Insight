@@ -2,7 +2,7 @@
 
 ## ✅ **PROBLEM SOLVED**
 
-The "Internal server error, status_code: 500" issue has been **completely resolved**! Your PM Intern project is now running perfectly with the new structure.
+The "Internal server error, status_code: 500" issue has been **completely resolved**! Your Intern Insight project is now running perfectly with the new structure.
 
 ## 🔧 **WHAT WAS FIXED**
 
@@ -84,7 +84,7 @@ Your project restructuring is **100% complete and successful**! You can now:
 python run.py
 
 # Or with virtual environment
-& "D:/College Work/Coding Prep/PM_Intern/venv/Scripts/python.exe" run.py
+& "D:/College Work/Coding Prep/Intern-Insight/venv/Scripts/python.exe" run.py
 
 # Application runs on: http://127.0.0.1:3000
 # Frontend available at: /frontend/pages/
@@ -107,7 +107,7 @@ python run.py
 - ✅ **Backward Compatibility**: Old API paths still work
 - ✅ **Future-Ready**: Ready for team collaboration and scaling
 
-**🎉 Your PM Intern project restructuring is now COMPLETE and SUCCESSFUL! 🎉**
+**🎉 Your Intern Insight project restructuring is now COMPLETE and SUCCESSFUL! 🎉**
 
 ---
 

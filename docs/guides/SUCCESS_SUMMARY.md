@@ -2,7 +2,7 @@
 
 ## ✅ **SUCCESS SUMMARY**
 
-Your PM Intern project has been **successfully restructured** and is now running perfectly! 
+Your Intern Insight project has been **successfully restructured** and is now running perfectly! 
 
 ### 🚀 **WHAT'S WORKING**
 
@@ -28,7 +28,7 @@ Your PM Intern project has been **successfully restructured** and is now running
 ### 🎯 **NEW PROJECT STRUCTURE**
 
 ```
-PM_Intern/
+Intern-Insight/
 ├── 📁 app/                    # ✅ NEW: Core runtime application
 │   ├── main.py               # ✅ Modern Flask factory pattern
 │   ├── config.py             # ✅ Environment-based configuration
@@ -55,7 +55,7 @@ python run.py --debug           # Enable debug mode
 
 #### **Method 2: With Virtual Environment** 
 ```bash
-"D:/College Work/Coding Prep/PM_Intern/venv/Scripts/python.exe" run.py
+"D:/College Work/Coding Prep/Intern-Insight/venv/Scripts/python.exe" run.py
 ```
 
 #### **Method 3: Legacy Way** (Still works)
@@ -93,7 +93,7 @@ Your project is now ready for the next improvement priorities:
 
 ### 🏆 **PROJECT STATUS: PRODUCTION READY**
 
-Your PM Intern project is now:
+Your Intern Insight project is now:
 - ✅ **Professionally Structured**
 - ✅ **Highly Maintainable** 
 - ✅ **Team Collaboration Ready**

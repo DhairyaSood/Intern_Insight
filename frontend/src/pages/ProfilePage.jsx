@@ -31,6 +31,51 @@ const ProfilePage = () => {
     sector_interests: []
   });
 
+  const toText = (value) => {
+    if (value === null || value === undefined) return '';
+    if (typeof value === 'string') return value;
+    if (typeof value === 'number' || typeof value === 'boolean') return String(value);
+    if (Array.isArray(value)) {
+      // Flatten arrays of strings/objects into readable lines
+      return value
+        .flatMap((v) => {
+          if (v === null || v === undefined) return [];
+          if (typeof v === 'string') return [v];
+          if (typeof v === 'number' || typeof v === 'boolean') return [String(v)];
+          if (typeof v === 'object') {
+            // Common resume parse shape: { title/company/duration/description }
+            try {
+              const parts = [];
+              if (v.title) parts.push(String(v.title));
+              if (v.company) parts.push(String(v.company));
+              if (v.organization) parts.push(String(v.organization));
+              if (v.duration) parts.push(String(v.duration));
+              if (v.years) parts.push(String(v.years));
+              if (v.description) parts.push(String(v.description));
+              if (parts.length) return [parts.join(' - ')];
+              return [JSON.stringify(v)];
+            } catch {
+              return [];
+            }
+          }
+          return [];
+        })
+        .map((s) => String(s).trim())
+        .filter(Boolean)
+        .join('\n');
+    }
+    if (typeof value === 'object') {
+      try {
+        return JSON.stringify(value);
+      } catch {
+        return '';
+      }
+    }
+    return '';
+  };
+
+  const safeTrim = (value) => toText(value).trim();
+
   // Predefined sector options
   const AVAILABLE_SECTORS = [
     'Technology',
@@ -93,7 +138,7 @@ const ProfilePage = () => {
             phone: phoneNumber,
             location: profile.location_preference || profile.location || profile.city || '',
             education: profile.education_level || profile.education || '',
-            experience: profile.experience || '',
+            experience: toText(profile.experience || ''),
             skills: profile.skills_possessed || profile.skills || [],
             field_of_study: profile.field_of_study || '',
             sector_interests: profile.sector_interests || [],
@@ -189,7 +234,7 @@ const ProfilePage = () => {
       phone: phoneNumber || formData.phone,
       location: data.location || formData.location,
       education: data.education || formData.education,
-      experience: data.experience || formData.experience,
+      experience: toText(data.experience || formData.experience),
       skills: data.skills && data.skills.length > 0 ? data.skills : formData.skills,
       sector_interests: data.sector_interests && data.sector_interests.length > 0 ? data.sector_interests : formData.sector_interests,
     };
@@ -204,12 +249,13 @@ const ProfilePage = () => {
     setShowResumeUpload(false);
     
     // Auto-save profile after resume parsing
-    if (updatedData.name && updatedData.email && updatedData.skills.length > 0) {
+    // Backend requires: name, skills_possessed, location_preference, education_level
+    if (updatedData.name && updatedData.location && updatedData.education && updatedData.skills.length > 0) {
       try {
         setIsSaving(true);
         
         // Handle phone number with country code
-        let phoneWithCode = updatedData.phone.trim();
+        let phoneWithCode = safeTrim(updatedData.phone);
         if (detectedCountry && phoneWithCode) {
           const phoneWithoutCode = phoneWithCode.replace(/^\+\d+\s*/, '').trim();
           phoneWithCode = `${detectedCountry.code} ${phoneWithoutCode}`;
@@ -217,12 +263,12 @@ const ProfilePage = () => {
         
         const profileData = {
           candidate_id: user.candidate_id,
-          name: updatedData.name.trim(),
-          email: updatedData.email.trim(),
+          name: safeTrim(updatedData.name),
+          email: safeTrim(updatedData.email),
           phone: phoneWithCode,
-          location_preference: updatedData.location.trim(),
-          education_level: updatedData.education.trim(),
-          experience: updatedData.experience.trim(),
+          location_preference: safeTrim(updatedData.location),
+          education_level: safeTrim(updatedData.education),
+          experience: safeTrim(updatedData.experience),
           skills_possessed: updatedData.skills,
           sector_interests: updatedData.sector_interests || []
         };
@@ -261,7 +307,7 @@ const ProfilePage = () => {
       setIsSaving(true);
       
       // Handle phone number: if country code is selected, check if it's already in the number
-      let phoneWithCode = formData.phone.trim();
+      let phoneWithCode = safeTrim(formData.phone);
       if (selectedCountry && phoneWithCode) {
         // Remove existing country code if present (to avoid duplication)
         const phoneWithoutCode = phoneWithCode.replace(/^\+\d+\s*/, '').trim();
@@ -271,12 +317,12 @@ const ProfilePage = () => {
       
       const profileData = {
         candidate_id: user.candidate_id,
-        name: formData.name.trim(),
-        email: formData.email.trim(),
+        name: safeTrim(formData.name),
+        email: safeTrim(formData.email),
         phone: phoneWithCode,
-        location_preference: formData.location.trim(),
-        education_level: formData.education.trim(),
-        experience: formData.experience.trim(),
+        location_preference: safeTrim(formData.location),
+        education_level: safeTrim(formData.education),
+        experience: safeTrim(formData.experience),
         skills_possessed: formData.skills,
         sector_interests: formData.sector_interests || []
       };

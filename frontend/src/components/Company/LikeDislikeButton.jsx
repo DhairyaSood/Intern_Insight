@@ -28,8 +28,48 @@ const LikeDislikeButton = ({
   const [showReasonModal, setShowReasonModal] = useState(false);
   const [pendingAction, setPendingAction] = useState(null); // 'like' or 'dislike'
 
+  const persistInternshipDetailSidebarState = useCallback(() => {
+    try {
+      const container = document.getElementById('similar-opportunities-scroll');
+      if (!container) return;
+
+      let anchorId = null;
+      let anchorOffset = null;
+      try {
+        const containerRect = container.getBoundingClientRect();
+        const cards = container.querySelectorAll('[data-similar-id]');
+        for (const card of cards) {
+          const rect = card.getBoundingClientRect();
+          // First card that is visible (or closest to top).
+          if (rect.bottom > containerRect.top) {
+            const similarId = card.getAttribute('data-similar-id');
+            anchorId = similarId ? `similar-card-${similarId}` : (card.id || null);
+            anchorOffset = rect.top - containerRect.top;
+            break;
+          }
+        }
+      } catch {
+        // ignore
+      }
+
+      sessionStorage.setItem(
+        '__internship_detail_similar_scroll__',
+        JSON.stringify({
+          path: window.location.pathname,
+          scrollTop: container.scrollTop,
+          anchorId,
+          anchorOffset,
+          ts: Date.now(),
+        })
+      );
+    } catch {
+      // ignore
+    }
+  }, []);
+
   const dispatchInteractionChanged = useCallback((interactionType) => {
     if (!user?.candidate_id) return;
+    persistInternshipDetailSidebarState();
     if (entityType === 'internship') {
       window.dispatchEvent(new CustomEvent('internship-interaction-changed', {
         detail: { candidate_id: user.candidate_id, internship_id: entityId, interaction_type: interactionType }
@@ -39,7 +79,7 @@ const LikeDislikeButton = ({
         detail: { candidate_id: user.candidate_id, company_id: entityId, interaction_type: interactionType }
       }));
     }
-  }, [user, entityType, entityId]);
+  }, [user, entityType, entityId, persistInternshipDetailSidebarState]);
 
   const loadInteraction = useCallback(async () => {
     if (!user || !entityId) return;

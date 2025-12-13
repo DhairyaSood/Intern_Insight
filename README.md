@@ -1,4 +1,4 @@
-# Intern Insight 🎯
+# Intern Insight
 
 A sophisticated, production-ready internship recommendation system that connects students with personalized internship opportunities through advanced machine learning algorithms, intelligent matching, cloud-based AI parsing, and a modern React architecture.
 
@@ -11,7 +11,7 @@ Intern Insight is a professional-grade web application featuring a **modular Fla
 ### Backend Setup
 ```bash
 git clone <repository-url>
-cd PM_Intern
+   cd Intern-Insight
 python -m venv venv
 venv\Scripts\activate  # Windows
 pip install -r requirements.txt
@@ -80,7 +80,7 @@ npm start
 
 ### **Modern Full-Stack Structure**
 ```
-Intern_Insight/
+Intern Insight/
 ├── app/                     # 🚀 Flask Backend
 │   ├── main.py             # Flask app factory
 │   ├── config.py           # Environment config
@@ -215,8 +215,8 @@ Flask Backend (Port 3000)
 
 1. **Clone the Repository**
    ```bash
-   git clone https://github.com/DhairyaSood/Intern_Insight.git
-   cd Intern_Insight
+   git clone https://github.com/DhairyaSood/Intern-Insight.git
+   cd Intern-Insight
    ```
 
 2. **Setup Python Environment**

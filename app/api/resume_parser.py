@@ -321,7 +321,7 @@ DO NOT make up information - only extract what is clearly present in the resume 
             headers = {
                 "Authorization": f"Bearer {OPENROUTER_API_KEY}",
                 "Content-Type": "application/json",
-                "HTTP-Referer": "https://github.com/DhairyaSood/Intern_Insight",
+                "HTTP-Referer": "https://github.com/DhairyaSood/Intern-Insight",
                 "X-Title": "Resume Parser"
             }
             

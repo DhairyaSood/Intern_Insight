@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { internshipService } from '../services/internships';
 import { profileService } from '../services/profile';
@@ -34,6 +34,8 @@ import {
 } from 'lucide-react';
 
 const InternshipDetailPage = () => {
+  const similarScrollRef = useRef(null);
+  const SIMILAR_SCROLL_RESTORE_KEY = '__internship_detail_similar_scroll__';
   const { id } = useParams();
   const navigate = useNavigate();
   const { user } = useAuthStore();
@@ -166,13 +168,15 @@ const InternshipDetailPage = () => {
       let internshipData = data.internship;
       
       // Fetch match score from backend recommendations if user is logged in
+      let candidateIdForMatches = null;
       if (user?.username) {
         try {
           // Prefer authenticated candidate_id (faster); fall back to profile lookup
           const candidateId = user?.candidate_id || (await profileService.getByUsername(user.username))?.candidate_id;
-          if (candidateId) {
+          candidateIdForMatches = candidateId || null;
+          if (candidateIdForMatches) {
             const currentId = internshipData.internship_id || internshipData._id;
-            const match = await internshipService.getInternshipMatch(candidateId, currentId);
+            const match = await internshipService.getInternshipMatch(candidateIdForMatches, currentId);
             internshipData = {
               ...internshipData,
               match_score: match?.match_score ?? internshipData.match_score ?? 0,
@@ -193,7 +197,26 @@ const InternshipDetailPage = () => {
       // Fetch similar internships
       try {
         const similarData = await internshipService.getSimilar(id);
-        const similar = similarData.recommendations || [];
+        let similar = similarData.recommendations || [];
+
+        // If logged in, replace similarity scores with the user's match scores so
+        // reason-based nudges apply immediately after refresh.
+        if (candidateIdForMatches && Array.isArray(similar) && similar.length) {
+          const scored = await Promise.allSettled(
+            similar.map(async (s) => {
+              const simId = s.internship_id || s._id;
+              if (!simId) return s;
+              try {
+                const match = await internshipService.getInternshipMatch(candidateIdForMatches, simId);
+                return { ...s, match_score: match?.match_score ?? s.match_score ?? 0 };
+              } catch {
+                return { ...s, match_score: s.match_score ?? 0 };
+              }
+            })
+          );
+          similar = scored.map((r, idx) => (r.status === 'fulfilled' ? r.value : (similar[idx] || {})));
+        }
+
         setSimilarInternships(similar);
         
         // Initialize bookmark state for similar internships
@@ -218,6 +241,65 @@ const InternshipDetailPage = () => {
       setIsLoading(false);
     }
   };
+
+  useEffect(() => {
+    // Restore Similar Opportunities scroll position after interaction-triggered reload.
+    if (!similarScrollRef.current) return;
+    if (!Array.isArray(similarInternships) || similarInternships.length === 0) return;
+
+    try {
+      const raw = sessionStorage.getItem(SIMILAR_SCROLL_RESTORE_KEY);
+      if (!raw) return;
+      const data = JSON.parse(raw);
+      if (data?.path && data.path !== window.location.pathname) {
+        sessionStorage.removeItem(SIMILAR_SCROLL_RESTORE_KEY);
+        return;
+      }
+      if (typeof data?.ts === 'number' && Date.now() - data.ts > 10_000) {
+        sessionStorage.removeItem(SIMILAR_SCROLL_RESTORE_KEY);
+        return;
+      }
+      const scrollTop = typeof data?.scrollTop === 'number' ? data.scrollTop : 0;
+      const anchorId = typeof data?.anchorId === 'string' ? data.anchorId : null;
+      const anchorOffset = typeof data?.anchorOffset === 'number' ? data.anchorOffset : null;
+      const el = similarScrollRef.current;
+
+      const restore = () => {
+        try {
+          if (anchorId && anchorOffset !== null) {
+            const target = document.getElementById(anchorId);
+            if (target && el.contains(target)) {
+              // Align the anchored card to the same vertical offset within the scroll container.
+              const targetTop = target.offsetTop;
+              const next = Math.max(0, targetTop - anchorOffset);
+              el.scrollTop = next;
+              return;
+            }
+          }
+          el.scrollTop = scrollTop;
+        } catch {
+          // ignore
+        }
+      };
+
+      requestAnimationFrame(() => {
+        restore();
+        requestAnimationFrame(restore);
+        setTimeout(restore, 50);
+        setTimeout(restore, 250);
+      });
+
+      setTimeout(() => {
+        try {
+          sessionStorage.removeItem(SIMILAR_SCROLL_RESTORE_KEY);
+        } catch {
+          // ignore
+        }
+      }, 800);
+    } catch {
+      // ignore
+    }
+  }, [similarInternships]);
 
   // NOTE: Interaction updates now trigger a full page reload (see App.jsx).
 
@@ -729,7 +811,11 @@ const InternshipDetailPage = () => {
                   <Sparkles className="h-5 w-5 text-primary-600 dark:text-primary-400" />
                   Similar Opportunities
                 </h3>
-                <div className="space-y-3 max-h-[663px] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-gray-400 dark:scrollbar-thumb-gray-600 scrollbar-track-gray-200 dark:scrollbar-track-gray-800">
+                <div
+                  id="similar-opportunities-scroll"
+                  ref={similarScrollRef}
+                  className="space-y-3 max-h-[663px] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-gray-400 dark:scrollbar-thumb-gray-600 scrollbar-track-gray-200 dark:scrollbar-track-gray-800"
+                >
                   {similarInternships.map((similar, idx) => {
                     const similarId = similar.internship_id || similar._id;
                     const isSimilarBookmarked = similarBookmarks[similarId] || false;
@@ -737,6 +823,8 @@ const InternshipDetailPage = () => {
                     return (
                     <div
                       key={idx}
+                      id={similarId ? `similar-card-${similarId}` : undefined}
+                      data-similar-id={similarId ? String(similarId) : undefined}
                       className="relative p-3 bg-gray-50 dark:bg-gray-800 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors border border-gray-200 dark:border-gray-700"
                     >
                       {/* Action Buttons */}

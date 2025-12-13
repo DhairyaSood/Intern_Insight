@@ -23,6 +23,36 @@ except Exception:
 def _normalize_city(name: str) -> str:
     return (name or "").strip().lower()
 
+def _city_only(value: str) -> str:
+    s = (value or "").strip()
+    if not s:
+        return ""
+    # Take "City" from "City, State" or "City (Region)"
+    s = re.split(r"[,\(]", s)[0].strip()
+    return s
+
+def _safe_normalize_city(value: str) -> str:
+    base = _city_only(value)
+    if not base:
+        return ""
+    try:
+        return normalize_city_name(base)
+    except Exception:
+        return _normalize_city(base)
+
+def _distance_decay(dist_km: float, half_life_km: float = 150.0) -> float:
+    """Return 0..1 decay with 1 at 0km and ~0.5 at half_life_km."""
+    try:
+        d = float(dist_km)
+    except Exception:
+        return 0.0
+    if not math.isfinite(d) or d < 0:
+        return 0.0
+    if half_life_km <= 0:
+        return 0.0
+    # exp(-ln(2) * d / half_life)
+    return math.exp(-0.6931471805599453 * d / half_life_km)
+
 def _get_distance_between_cities(city1: str, city2: str) -> float:
     """Get distance between two cities using hardcoded distance matrix (via get_distance)."""
     if not city1 or not city2:
@@ -193,12 +223,10 @@ def location_similarity(candidate_loc, intern_loc):
     """
     if not candidate_loc or not intern_loc:
         return 0.0, None, "no location info"
-    try:
-        c_norm = normalize_city_name(candidate_loc)
-        i_norm = normalize_city_name(intern_loc)
-    except Exception:
-        c_norm = (candidate_loc or "").strip().lower()
-        i_norm = (intern_loc or "").strip().lower()
+    c_norm = _safe_normalize_city(candidate_loc)
+    i_norm = _safe_normalize_city(intern_loc)
+    if not c_norm or not i_norm:
+        return 0.0, None, "no location info"
 
     if c_norm == i_norm:
         return 1.0, 0.0, "same city"
@@ -225,6 +253,7 @@ def get_recommendations(candidate, internships, top_n=10,
                         company_interactions=None, company_ratings=None,
                         internship_interactions=None,
                         company_interaction_stats=None,
+                        company_reason_stats=None,
                         dedupe_org=True,
                         min_score=0.0):
     """
@@ -244,6 +273,7 @@ def get_recommendations(candidate, internships, top_n=10,
     company_ratings = company_ratings or {}
     internship_interactions = internship_interactions or {}
     company_interaction_stats = company_interaction_stats or {}
+    company_reason_stats = company_reason_stats or {}
     
     cand_skills = _normalize_skill_list(candidate.get("skills_possessed", []))
     cand_skill_set = set(cand_skills)
@@ -258,15 +288,63 @@ def get_recommendations(candidate, internships, top_n=10,
     
     # Analyze internships to learn user preferences from interactions
     disliked_patterns = {
-        'locations': [],        # Cities/regions to avoid
+        'locations': [],        # Cities to avoid
         'sectors': [],          # Sectors to penalize
         'low_stipend': None,    # Stipend threshold (if user dislikes low stipend roles)
-        'skills': []            # Skills user wants to avoid
+        'skills': [],           # Skills user wants to avoid
+        'duration_buckets': [], # Short/medium/long buckets to avoid
+        'complexity': [],       # basic/medium/advanced to avoid
+        'learning': 0           # dislike count for learning-related reasons
     }
 
     liked_patterns = {
-        'locations': []  # Cities/regions the user prefers (e.g. liked for "Great location")
+        'locations': [],        # Cities the user prefers
+        'sectors': [],          # Sectors to prefer
+        'skills': [],           # Skills the user tends to like
+        'min_stipend': None,    # Preferred minimum stipend
+        'learning': 0,          # like count for learning-related reasons
+        'reputable': 0,         # likes due to reputable company
+        'career': 0,            # likes due to career relevance / role fit
+        'skills_focus': 0       # likes due to skills fit
     }
+
+    def _duration_bucket(v):
+        if v is None:
+            return None
+        months = None
+        if isinstance(v, (int, float)):
+            months = int(v)
+        elif isinstance(v, str):
+            m = re.search(r"(\d+)", v)
+            if m:
+                months = int(m.group(1))
+        if months is None or months <= 0:
+            return None
+        if months <= 2:
+            return 'short'
+        if months <= 4:
+            return 'medium'
+        return 'long'
+
+    def _complexity_label(intern):
+        try:
+            skill_count = len(_normalize_skill_list(intern.get('skills_required', [])))
+        except Exception:
+            skill_count = 0
+        beginner = bool(intern.get('is_beginner_friendly'))
+        if beginner or skill_count <= 3:
+            return 'basic'
+        if (not beginner) and skill_count >= 6:
+            return 'advanced'
+        return 'medium'
+
+    def _learning_proxy(intern):
+        if intern.get('is_beginner_friendly'):
+            return True
+        desc = (intern.get('description') or '')
+        if isinstance(desc, str) and re.search(r"\b(learn|learning|training|mentor|mentorship)\b", desc.lower()):
+            return True
+        return False
     
     for internship_id, interaction in internship_interactions.items():
         if not isinstance(interaction, dict):
@@ -280,35 +358,76 @@ def get_recommendations(candidate, internships, top_n=10,
 
         if interaction_type == 'dislike':
             # Learn location patterns to avoid
-            if 'Poor location' in reason_tags or 'Location doesn\'t work for me' in reason_tags:
-                loc = (base_internship.get('location') or '').strip().lower()
+            if 'Poor location' in reason_tags:
+                loc = _safe_normalize_city(base_internship.get('location') or '')
                 if loc:
                     disliked_patterns['locations'].append(loc)
 
             # Learn sector patterns to avoid
-            if 'Wrong sector/industry' in reason_tags or 'Not interested in this sector' in reason_tags:
+            if 'Not interested in sector' in reason_tags:
                 sector = (base_internship.get('sector') or '').strip().lower()
                 if sector:
                     disliked_patterns['sectors'].append(sector)
 
             # Learn stipend expectations
-            if 'Stipend too low' in reason_tags or 'Low compensation' in reason_tags:
+            if 'Low stipend' in reason_tags:
                 stipend = base_internship.get('stipend')
                 if stipend and isinstance(stipend, (int, float)):
                     if disliked_patterns['low_stipend'] is None or stipend > disliked_patterns['low_stipend']:
                         disliked_patterns['low_stipend'] = stipend
 
             # Learn skills to avoid
-            if 'Skills mismatch' in reason_tags or 'Required skills don\'t match' in reason_tags:
-                skills = base_internship.get('skills_required', [])
-                disliked_patterns['skills'].extend([s.lower() for s in skills])
+            if 'Skills mismatch' in reason_tags:
+                skills = _normalize_skill_list(base_internship.get('skills_required', []))
+                disliked_patterns['skills'].extend(skills)
+
+            if 'Duration issues' in reason_tags:
+                bucket = _duration_bucket(base_internship.get('duration'))
+                if bucket:
+                    disliked_patterns['duration_buckets'].append(bucket)
+
+            if 'Too advanced/basic' in reason_tags:
+                disliked_patterns['complexity'].append(_complexity_label(base_internship))
+
+            if 'Limited learning' in reason_tags:
+                disliked_patterns['learning'] += 1
+
+            if 'Role doesn\'t fit' in reason_tags:
+                sector = (base_internship.get('sector') or '').strip().lower()
+                if sector:
+                    disliked_patterns['sectors'].append(sector)
 
         if interaction_type == 'like':
-            # Learn preferred locations
-            if 'Great location' in reason_tags or 'Perfect location' in reason_tags:
-                loc = (base_internship.get('location') or '').strip().lower()
+            # Location preference
+            if 'Great location' in reason_tags:
+                loc = _safe_normalize_city(base_internship.get('location') or '')
                 if loc:
                     liked_patterns['locations'].append(loc)
+
+            # Skills and role fit
+            if 'Skills match well' in reason_tags:
+                liked_patterns['skills_focus'] += 1
+                skills = _normalize_skill_list(base_internship.get('skills_required', []))
+                liked_patterns['skills'].extend(skills)
+            if 'Perfect role fit' in reason_tags or 'Career relevant' in reason_tags:
+                liked_patterns['career'] += 1
+                sector = (base_internship.get('sector') or '').strip().lower()
+                if sector:
+                    liked_patterns['sectors'].append(sector)
+
+            # Compensation preference
+            if 'Good stipend' in reason_tags:
+                stipend = base_internship.get('stipend')
+                if isinstance(stipend, (int, float)):
+                    liked_patterns['min_stipend'] = max(float(liked_patterns['min_stipend'] or 0), float(stipend))
+
+            # Learning preference
+            if 'Learning opportunity' in reason_tags:
+                liked_patterns['learning'] += 1
+
+            # Reputation preference (use global ratings/sentiment as proxy later)
+            if 'Reputable company' in reason_tags:
+                liked_patterns['reputable'] += 1
     
     # Extract liked company sectors for sector preference boost
     liked_sectors = set()
@@ -366,6 +485,65 @@ def get_recommendations(candidate, internships, top_n=10,
                         company_penalty += abs(impact)
         except Exception:
             pass
+
+        # Global company reason-tag signal (all users): small extra nudge based on why
+        # people like/dislike the company.
+        try:
+            rs = company_reason_stats.get(company_key)
+            if not rs and isinstance(company_key, str):
+                rs = company_reason_stats.get(company_key.strip().lower())
+            if isinstance(rs, dict):
+                like_map = rs.get('like') or {}
+                dislike_map = rs.get('dislike') or {}
+
+                reason_weights = {
+                    # positive
+                    'Great company culture': 1.0,
+                    'Excellent benefits': 0.8,
+                    'Good work-life balance': 1.0,
+                    'Strong reputation': 1.0,
+                    'Innovation focused': 0.7,
+                    'Learning opportunities': 0.9,
+                    'Career growth potential': 0.9,
+                    'Good management': 0.8,
+                    # negative
+                    'Poor work culture': -1.0,
+                    'Inadequate benefits': -0.8,
+                    'Bad work-life balance': -1.0,
+                    'Negative reviews': -0.9,
+                    'Limited growth': -0.8,
+                    'Poor management': -0.9,
+                    'Low compensation': -0.7,
+                    'Toxic environment': -1.2,
+                }
+
+                weighted = 0.0
+                total = 0.0
+                for tag, cnt in (like_map or {}).items():
+                    w = float(reason_weights.get(tag, 0.3))
+                    c = float(cnt or 0)
+                    if c <= 0:
+                        continue
+                    weighted += abs(w) * c
+                    total += abs(w) * c
+                for tag, cnt in (dislike_map or {}).items():
+                    w = float(reason_weights.get(tag, -0.3))
+                    c = float(cnt or 0)
+                    if c <= 0:
+                        continue
+                    weighted -= abs(w) * c
+                    total += abs(w) * c
+
+                if total > 0:
+                    # Normalize into [-1, 1], then cap to a small magnitude.
+                    s = max(-1.0, min(1.0, weighted / total))
+                    extra = max(-0.02, min(0.02, s * 0.02))
+                    if extra >= 0:
+                        company_boost += extra
+                    else:
+                        company_penalty += abs(extra)
+        except Exception:
+            pass
         
         # Company rating boost (global)
         if company_id in company_ratings:
@@ -382,43 +560,52 @@ def get_recommendations(candidate, internships, top_n=10,
         pattern_boost = 0.0    # Boost from learned patterns
         
         # Check if this internship matches disliked patterns
-        current_location = (internship.get('location') or '').strip().lower()
+        current_location = _safe_normalize_city(internship.get('location') or '')
         current_sector = (internship.get('sector') or '').strip().lower()
         current_stipend = internship.get('stipend')
-        current_skills = [s.lower() for s in internship.get('skills_required', [])]
+        current_skills = internship_skills
         
-        # Location-based penalty (fuzzy matching for nearby cities)
-        for disliked_loc in disliked_patterns['locations']:
-            if disliked_loc in current_location or current_location in disliked_loc:
-                pattern_penalty += 0.10  # -10% for similar location
-                break
-            # Check if cities are close (within 100km) using distance matrix
+        # Location-based preference: smooth decay via distance matrix
+        if current_location:
             try:
-                dist = _get_distance_between_cities(disliked_loc, current_location)
-                if dist != float('inf') and dist < 100:  # Within 100km
-                    pattern_penalty += 0.05  # -5% for nearby location
-                    break
-            except:
+                max_like = 0.0
+                for liked_loc in liked_patterns['locations']:
+                    if not liked_loc:
+                        continue
+                    if liked_loc == current_location:
+                        max_like = 1.0
+                        break
+                    d = _get_distance_between_cities(liked_loc, current_location)
+                    if math.isfinite(d) and d >= 0:
+                        max_like = max(max_like, _distance_decay(d, half_life_km=150.0))
+                if max_like > 0:
+                    pattern_boost += 0.08 * max_like
+            except Exception:
                 pass
 
-        # Location-based boost (preferred locations; fuzzy/nearby supported)
-        for liked_loc in liked_patterns['locations']:
-            if not liked_loc:
-                continue
-            if liked_loc in current_location or current_location in liked_loc:
-                pattern_boost += 0.08  # +8% for preferred location
-                break
             try:
-                dist = _get_distance_between_cities(liked_loc, current_location)
-                if dist != float('inf') and dist < 100:
-                    pattern_boost += 0.04  # +4% for nearby preferred location
-                    break
+                max_dislike = 0.0
+                for disliked_loc in disliked_patterns['locations']:
+                    if not disliked_loc:
+                        continue
+                    if disliked_loc == current_location:
+                        max_dislike = 1.0
+                        break
+                    d = _get_distance_between_cities(disliked_loc, current_location)
+                    if math.isfinite(d) and d >= 0:
+                        max_dislike = max(max_dislike, _distance_decay(d, half_life_km=150.0))
+                if max_dislike > 0:
+                    pattern_penalty += 0.10 * max_dislike
             except Exception:
                 pass
         
         # Sector-based penalty (exact match)
         if current_sector and current_sector in disliked_patterns['sectors']:
             pattern_penalty += 0.15  # -15% for disliked sector
+
+        # Sector-based boost from likes
+        if current_sector and liked_patterns['sectors'] and current_sector in set(liked_patterns['sectors']):
+            pattern_boost += 0.06
         
         # Stipend-based penalty (if current stipend is at or below disliked threshold)
         if disliked_patterns['low_stipend'] is not None and current_stipend:
@@ -430,15 +617,61 @@ def get_recommendations(candidate, internships, top_n=10,
         
         # Skills-based penalty (if significant overlap with disliked skills)
         if disliked_patterns['skills']:
-            disliked_skill_set = set(disliked_patterns['skills'])
+            disliked_skill_set = set(_normalize_skill_list(disliked_patterns['skills']))
             current_skill_set = set(current_skills)
-            overlap = disliked_skill_set.intersection(current_skill_set)
+            overlap = disliked_skill_set & current_skill_set
             if overlap:
                 overlap_ratio = len(overlap) / max(len(current_skill_set), 1)
                 if overlap_ratio >= 0.5:  # 50%+ skills are disliked
                     pattern_penalty += 0.12  # -12% for high skill overlap
                 elif overlap_ratio >= 0.3:  # 30-50% overlap
                     pattern_penalty += 0.06  # -6% for moderate skill overlap
+
+        # Skills-based boost from likes (nudge towards similar skill stacks)
+        if liked_patterns['skills']:
+            liked_skill_set = set(_normalize_skill_list(liked_patterns['skills']))
+            current_skill_set = set(current_skills)
+            overlap = liked_skill_set & current_skill_set
+            if overlap:
+                overlap_ratio = len(overlap) / max(len(current_skill_set), 1)
+                pattern_boost += min(0.06, 0.06 * overlap_ratio)
+
+        # Duration and complexity nudges
+        try:
+            if disliked_patterns['duration_buckets']:
+                b = _duration_bucket(internship.get('duration'))
+                if b and b in set(disliked_patterns['duration_buckets']):
+                    pattern_penalty += 0.04
+        except Exception:
+            pass
+
+        try:
+            if disliked_patterns['complexity']:
+                cplx = _complexity_label(internship)
+                if cplx in set(disliked_patterns['complexity']):
+                    pattern_penalty += 0.04
+        except Exception:
+            pass
+
+        # Learning preference nudges (proxy-based)
+        try:
+            if liked_patterns.get('learning', 0) > 0 and _learning_proxy(internship):
+                pattern_boost += 0.04
+            if disliked_patterns.get('learning', 0) > 0 and (not _learning_proxy(internship)):
+                pattern_penalty += 0.04
+        except Exception:
+            pass
+
+        # Compensation preference: if they liked "Good stipend", prefer roles >= that level
+        try:
+            pref = liked_patterns.get('min_stipend')
+            if pref and isinstance(current_stipend, (int, float)):
+                if current_stipend >= float(pref):
+                    pattern_boost += 0.04
+                elif current_stipend >= float(pref) * 0.9:
+                    pattern_boost += 0.02
+        except Exception:
+            pass
         
         # Direct internship interaction (overrides pattern penalties if explicitly liked/disliked)
         
@@ -450,13 +683,13 @@ def get_recommendations(candidate, internships, top_n=10,
             if interaction_type == 'like':
                 internship_boost = 0.20  # +20% boost for liked internships (personal)
                 # Additional boost based on reason tags
-                if 'Role fits my skills' in reason_tags or 'Skills match perfectly' in reason_tags:
-                    internship_boost += 0.05  # Extra boost if they liked it for skills
+                if 'Skills match well' in reason_tags or 'Perfect role fit' in reason_tags:
+                    internship_boost += 0.05
             elif interaction_type == 'dislike':
                 internship_penalty = 0.30  # -30% penalty for disliked internships (strong personal signal)
                 # Don't show if explicitly disliked
-                if 'Role doesn\'t fit my career goals' in reason_tags:
-                    internship_penalty = 1.0  # Effectively remove from recommendations
+                if 'Role doesn\'t fit' in reason_tags:
+                    internship_penalty = 1.0
 
         base_score = (
             skill_weight * skill_sim +

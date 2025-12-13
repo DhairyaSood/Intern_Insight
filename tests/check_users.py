@@ -1,5 +1,7 @@
 import sys
-sys.path.insert(0, 'D:\\College Work\\github projects\\PM_Intern')
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from pymongo import MongoClient
 import os

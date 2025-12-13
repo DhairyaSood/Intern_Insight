@@ -4,7 +4,7 @@
 
 ### **Legacy Version (Before Restructuring)**
 ```
-PM_Intern/
+Intern-Insight/
 ├── backend/
 │   ├── app.py                 # ❌ MONOLITHIC: All routes, logic, and data handling
 │   ├── db.py                  # ❌ BASIC: Simple database operations
@@ -21,7 +21,7 @@ PM_Intern/
 
 ### **New Version (After Restructuring)**
 ```
-PM_Intern/
+Intern-Insight/
 ├── app/                       # ✅ ORGANIZED: Runtime application code
 │   ├── main.py               # ✅ MODERN: Flask factory pattern
 │   ├── config.py             # ✅ CENTRALIZED: Environment configuration

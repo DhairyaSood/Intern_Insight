@@ -1,6 +1,6 @@
 # Documentation Index
 
-This folder contains comprehensive documentation for the PM Intern Recommender project.
+This folder contains comprehensive documentation for the Intern Insight project.
 
 ## 📁 Documentation Structure
 

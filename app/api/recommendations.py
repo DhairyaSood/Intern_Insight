@@ -47,6 +47,7 @@ def get_candidate_recommendations(candidate_id):
         company_ratings = {}
         internship_interactions = {}
         company_interaction_stats = {}
+        company_reason_stats = {}
         try:
             db = db_manager.get_db()
             
@@ -129,6 +130,48 @@ def get_candidate_recommendations(candidate_id):
                     pass
             except Exception as e:
                 app_logger.warning(f"Could not compute global company interaction stats: {e}")
+
+            # Global company reason-tag stats (affects all users)
+            try:
+                rows = list(db['company_interactions'].aggregate([
+                    {'$match': {'reason_tags': {'$exists': True, '$ne': []}}},
+                    {'$unwind': '$reason_tags'},
+                    {'$group': {
+                        '_id': {
+                            'company_id': '$company_id',
+                            'interaction_type': '$interaction_type',
+                            'reason_tag': '$reason_tags'
+                        },
+                        'count': {'$sum': 1}
+                    }}
+                ]))
+                tmp_reason = {}
+                for row in rows:
+                    key = row.get('_id') or {}
+                    cid = key.get('company_id')
+                    it = key.get('interaction_type')
+                    tag = key.get('reason_tag')
+                    if not cid or not it or not tag:
+                        continue
+                    tmp_reason.setdefault(cid, {'like': {}, 'dislike': {}})
+                    if it == 'like':
+                        tmp_reason[cid]['like'][tag] = tmp_reason[cid]['like'].get(tag, 0) + int(row.get('count') or 0)
+                    elif it == 'dislike':
+                        tmp_reason[cid]['dislike'][tag] = tmp_reason[cid]['dislike'].get(tag, 0) + int(row.get('count') or 0)
+
+                company_reason_stats = dict(tmp_reason)
+                # Also expose by normalized company name for string-only internships
+                try:
+                    companies = list(db['companies'].find({}, {'company_id': 1, 'name': 1}))
+                    for c in companies:
+                        cid = c.get('company_id')
+                        name = (c.get('name') or '').strip().lower()
+                        if cid in tmp_reason and name:
+                            company_reason_stats[name] = tmp_reason[cid]
+                except Exception:
+                    pass
+            except Exception as e:
+                app_logger.warning(f"Could not compute global company reason stats: {e}")
                     
         except Exception as e:
             app_logger.warning(f"Could not load company/internship interactions/ratings: {e}")
@@ -144,6 +187,7 @@ def get_candidate_recommendations(candidate_id):
                 company_ratings=company_ratings,
                 internship_interactions=internship_interactions,
                 company_interaction_stats=company_interaction_stats,
+                company_reason_stats=company_reason_stats,
                 dedupe_org=dedupe_org,
                 # min_score is percent; ML expects percent threshold too.
                 min_score=min_score,
@@ -188,6 +232,7 @@ def get_candidate_internship_match(candidate_id, internship_id):
 
         # Global company stats to keep scores consistent with list endpoint
         company_interaction_stats = {}
+        company_reason_stats = {}
         try:
             db = db_manager.get_db()
             if db is not None:
@@ -222,6 +267,47 @@ def get_candidate_internship_match(candidate_id, internship_id):
                             company_interaction_stats[name] = tmp[cid]
                 except Exception:
                     pass
+
+                # Global company reason-tag stats
+                try:
+                    rows = list(db['company_interactions'].aggregate([
+                        {'$match': {'reason_tags': {'$exists': True, '$ne': []}}},
+                        {'$unwind': '$reason_tags'},
+                        {'$group': {
+                            '_id': {
+                                'company_id': '$company_id',
+                                'interaction_type': '$interaction_type',
+                                'reason_tag': '$reason_tags'
+                            },
+                            'count': {'$sum': 1}
+                        }}
+                    ]))
+                    tmp_reason = {}
+                    for row in rows:
+                        key = row.get('_id') or {}
+                        cid = key.get('company_id')
+                        it = key.get('interaction_type')
+                        tag = key.get('reason_tag')
+                        if not cid or not it or not tag:
+                            continue
+                        tmp_reason.setdefault(cid, {'like': {}, 'dislike': {}})
+                        if it == 'like':
+                            tmp_reason[cid]['like'][tag] = tmp_reason[cid]['like'].get(tag, 0) + int(row.get('count') or 0)
+                        elif it == 'dislike':
+                            tmp_reason[cid]['dislike'][tag] = tmp_reason[cid]['dislike'].get(tag, 0) + int(row.get('count') or 0)
+
+                    company_reason_stats = dict(tmp_reason)
+                    try:
+                        companies = list(db['companies'].find({}, {'company_id': 1, 'name': 1}))
+                        for c in companies:
+                            cid = c.get('company_id')
+                            name = (c.get('name') or '').strip().lower()
+                            if cid in tmp_reason and name:
+                                company_reason_stats[name] = tmp_reason[cid]
+                    except Exception:
+                        pass
+                except Exception:
+                    pass
         except Exception:
             pass
 
@@ -229,24 +315,72 @@ def get_candidate_internship_match(candidate_id, internship_id):
         recommendation = None
 
         if ml_get_recommendations is not None:
+            # IMPORTANT: The ML model learns "reason" preferences from prior internship interactions.
+            # When scoring a single internship, we still need to include the interacted internships
+            # in the input list so it can learn location/skills/etc. patterns.
+            scoring_pool = [internship]
+            try:
+                interacted_ids = [str(i) for i in (internship_interactions or {}).keys() if i]
+                interacted_ids = list(dict.fromkeys(interacted_ids))
+                if interacted_ids:
+                    db = db_manager.get_db()
+                    if db is not None:
+                        interacted_docs = list(db['internships'].find(
+                            {'internship_id': {'$in': interacted_ids}},
+                            {
+                                'internship_id': 1,
+                                '_id': 1,
+                                'title': 1,
+                                'organization': 1,
+                                'company_id': 1,
+                                'location': 1,
+                                'sector': 1,
+                                'stipend': 1,
+                                'skills_required': 1,
+                                'description': 1,
+                                'is_beginner_friendly': 1,
+                                'duration': 1,
+                            }
+                        ))
+                        # Avoid duplicate of the target internship
+                        target_key = str(internship.get('internship_id') or '')
+                        for doc in interacted_docs:
+                            if doc.get('_id') is not None:
+                                doc['_id'] = str(doc['_id'])
+                            if doc.get('internship_id') and str(doc.get('internship_id')) == target_key:
+                                continue
+                            scoring_pool.append(doc)
+            except Exception:
+                pass
+
             ml_recs = ml_get_recommendations(
                 candidate,
-                [internship],
-                top_n=1,
+                scoring_pool,
+                top_n=None,
                 company_interactions=company_interactions,
                 company_ratings=company_ratings,
                 internship_interactions=internship_interactions,
                 company_interaction_stats=company_interaction_stats,
+                company_reason_stats=company_reason_stats,
                 dedupe_org=False,
                 min_score=0.0,
             )
-            if ml_recs:
-                r = ml_recs[0]
-                match_score = r.get("match_score", r.get("matchScore", 0)) or 0
+
+            # Find the target internship in results
+            target_id = str(internship.get('internship_id') or internship_id)
+            picked = None
+            for r in ml_recs or []:
+                rid = str(r.get('internship_id') or '')
+                if rid == target_id:
+                    picked = r
+                    break
+
+            if picked:
+                match_score = picked.get("match_score", picked.get("matchScore", 0)) or 0
                 recommendation = {
-                    **r,
-                    "skills_required": internship.get("skills_required", r.get("skills_required", [])),
-                    "description": internship.get("description", r.get("description", "")),
+                    **picked,
+                    "skills_required": internship.get("skills_required", picked.get("skills_required", [])),
+                    "description": internship.get("description", picked.get("description", "")),
                 }
         else:
             # Fallback: simple overlap

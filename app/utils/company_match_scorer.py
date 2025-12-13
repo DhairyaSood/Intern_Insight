@@ -7,6 +7,19 @@ from app.core.database import DatabaseManager
 from bson import ObjectId
 import re
 
+# ----------------- distance imports (robust) -----------------
+try:
+    from app.core.distance_matrix import get_distance, normalize_city_name
+except Exception:  # pragma: no cover
+    try:
+        from .distance_matrix import get_distance, normalize_city_name
+    except Exception:  # pragma: no cover
+        def normalize_city_name(x):
+            return (x or '').strip().lower()
+
+        def get_distance(a, b):
+            return float('inf')
+
 
 class CompanyMatchScorer:
     """
@@ -104,6 +117,19 @@ class CompanyMatchScorer:
         return s
 
     @staticmethod
+    def _distance_decay(dist_km: float, half_life_km: float = 150.0) -> float:
+        """Return 0..1 decay with 1 at 0km and ~0.5 at half_life_km."""
+        try:
+            d = float(dist_km)
+        except Exception:
+            return 0.0
+        if d < 0 or d == float('inf'):
+            return 0.0
+        if half_life_km <= 0:
+            return 0.0
+        return float(__import__('math').exp(-0.6931471805599453 * d / half_life_km))
+
+    @staticmethod
     def _get_company_location_preference_adjustment(db, candidate_id, company_id):
         """Small +/- adjustment based on internship like/dislike reasons about location.
 
@@ -116,7 +142,11 @@ class CompanyMatchScorer:
                 return 0.0
 
             hq = company.get('headquarters') or company.get('location') or ''
-            hq_city = CompanyMatchScorer._normalize_city_value(str(hq))
+            hq_city_raw = CompanyMatchScorer._normalize_city_value(str(hq))
+            try:
+                hq_city = normalize_city_name(hq_city_raw)
+            except Exception:
+                hq_city = hq_city_raw
             if not hq_city:
                 return 0.0
 
@@ -138,7 +168,13 @@ class CompanyMatchScorer:
                 return 0.0
 
             internship_docs = list(db.internships.find({'internship_id': {'$in': internship_ids}}, {'internship_id': 1, 'location': 1}))
-            loc_by_id = {str(d.get('internship_id')): CompanyMatchScorer._normalize_city_value(str(d.get('location') or '')) for d in internship_docs}
+            loc_by_id = {}
+            for d in internship_docs:
+                raw = CompanyMatchScorer._normalize_city_value(str(d.get('location') or ''))
+                try:
+                    loc_by_id[str(d.get('internship_id'))] = normalize_city_name(raw)
+                except Exception:
+                    loc_by_id[str(d.get('internship_id'))] = raw
 
             liked_cities = set()
             disliked_cities = set()
@@ -155,11 +191,45 @@ class CompanyMatchScorer:
                 if itype == 'dislike' and ('Poor location' in tags):
                     disliked_cities.add(city)
 
-            if hq_city in liked_cities:
-                return 5.0
-            if hq_city in disliked_cities:
-                return -5.0
-            return 0.0
+            # Smooth distance-decay around liked/disliked locations (small nudges)
+            max_like = 0.0
+            max_dislike = 0.0
+
+            for city in liked_cities:
+                if not city:
+                    continue
+                if city == hq_city:
+                    max_like = 1.0
+                    break
+                try:
+                    dist = get_distance(hq_city, city)
+                    if dist is None:
+                        continue
+                    max_like = max(max_like, CompanyMatchScorer._distance_decay(dist, half_life_km=150.0))
+                except Exception:
+                    continue
+
+            for city in disliked_cities:
+                if not city:
+                    continue
+                if city == hq_city:
+                    max_dislike = 1.0
+                    break
+                try:
+                    dist = get_distance(hq_city, city)
+                    if dist is None:
+                        continue
+                    max_dislike = max(max_dislike, CompanyMatchScorer._distance_decay(dist, half_life_km=150.0))
+                except Exception:
+                    continue
+
+            # Keep the magnitude the same as before (max +/- 5), just smoother.
+            adj = (5.0 * max_like) - (5.0 * max_dislike)
+            if adj > 5.0:
+                adj = 5.0
+            if adj < -5.0:
+                adj = -5.0
+            return float(adj)
         except Exception:
             return 0.0
     

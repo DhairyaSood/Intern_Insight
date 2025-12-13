@@ -2,12 +2,12 @@
 
 ## 🎯 **RESTRUCTURING COMPLETED**
 
-Your PM Intern project has been successfully restructured for better organization, maintainability, and scalability.
+Your Intern Insight project has been successfully restructured for better organization, maintainability, and scalability.
 
 ## 📁 **NEW PROJECT STRUCTURE**
 
 ```
-PM_Intern/
+Intern-Insight/
 ├── 📁 app/                          # ✅ CORE APPLICATION (Runtime)
 │   ├── 📁 api/                      # API endpoints (future modular structure)
 │   ├── 📁 core/                     # Core business logic

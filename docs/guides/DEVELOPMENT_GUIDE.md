@@ -16,8 +16,8 @@ Complete guide for developing and contributing to Intern Insight.
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/DhairyaSood/Intern_Insight.git
-   cd Intern_Insight
+   git clone https://github.com/DhairyaSood/Intern-Insight.git
+   cd Intern-Insight
    ```
 
 2. **Backend Setup**
@@ -112,7 +112,7 @@ curl http://127.0.0.1:3000/api/admin/db-stats
 ## Project Structure
 
 ```
-Intern_Insight/
+Intern-Insight/
 ├── app/                      # 🚀 Flask Backend
 │   ├── main.py              # Flask app factory
 │   ├── config.py            # Environment configuration
