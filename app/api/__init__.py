@@ -14,6 +14,15 @@ from app.api.admin import db_stats
 from app.api.resume_parser import parse_resume
 from app.api.candidate_ranking import get_candidate_ranking
 from app.api.companies import get_companies, get_company, get_company_by_name, get_sectors, get_company_stats
+from app.api.company_interactions import (
+    like_company, dislike_company, remove_company_interaction,
+    get_company_interaction, get_user_interactions
+)
+from app.api.reviews import (
+    create_company_review, create_internship_review,
+    get_company_reviews, get_internship_reviews,
+    mark_review_helpful, delete_review
+)
 
 # Create API blueprint
 api_bp = Blueprint('api', __name__, url_prefix='/api')
@@ -126,3 +135,60 @@ def company_sectors_endpoint():
 def company_stats_endpoint():
     """Get overall company statistics"""
     return get_company_stats()
+
+# Company interaction routes
+@api_bp.route('/companies/<company_id>/like', methods=['POST'])
+def company_like_endpoint(company_id):
+    """Like a company"""
+    return like_company(company_id)
+
+@api_bp.route('/companies/<company_id>/dislike', methods=['POST'])
+def company_dislike_endpoint(company_id):
+    """Dislike a company"""
+    return dislike_company(company_id)
+
+@api_bp.route('/companies/<company_id>/interaction', methods=['DELETE'])
+def company_interaction_delete_endpoint(company_id):
+    """Remove interaction with a company"""
+    return remove_company_interaction(company_id)
+
+@api_bp.route('/companies/<company_id>/interaction', methods=['GET'])
+def company_interaction_get_endpoint(company_id):
+    """Get user's interaction with a company"""
+    return get_company_interaction(company_id)
+
+@api_bp.route('/companies/interactions/user', methods=['GET'])
+def user_company_interactions_endpoint():
+    """Get all company interactions for current user"""
+    return get_user_interactions()
+
+# Review routes
+@api_bp.route('/companies/<company_id>/reviews', methods=['POST'])
+def create_company_review_endpoint(company_id):
+    """Create a review for a company"""
+    return create_company_review(company_id)
+
+@api_bp.route('/companies/<company_id>/reviews', methods=['GET'])
+def get_company_reviews_endpoint(company_id):
+    """Get all reviews for a company"""
+    return get_company_reviews(company_id)
+
+@api_bp.route('/internships/<internship_id>/reviews', methods=['POST'])
+def create_internship_review_endpoint(internship_id):
+    """Create a review for an internship"""
+    return create_internship_review(internship_id)
+
+@api_bp.route('/internships/<internship_id>/reviews', methods=['GET'])
+def get_internship_reviews_endpoint(internship_id):
+    """Get all reviews for an internship"""
+    return get_internship_reviews(internship_id)
+
+@api_bp.route('/reviews/<review_id>/helpful', methods=['POST'])
+def mark_review_helpful_endpoint(review_id):
+    """Mark a review as helpful"""
+    return mark_review_helpful(review_id)
+
+@api_bp.route('/reviews/<review_id>', methods=['DELETE'])
+def delete_review_endpoint(review_id):
+    """Delete a review"""
+    return delete_review(review_id)
