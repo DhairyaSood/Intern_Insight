@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useInternshipStore } from '../store/internshipStore';
 import { useAuthStore } from '../store/authStore';
 import { useMatchStore } from '../store/matchStore';
@@ -202,9 +202,9 @@ const Home = () => {
             <p className="text-gray-600 dark:text-gray-400 mb-4">
               Sign in to get AI-powered internship recommendations based on your profile, skills, and preferences.
             </p>
-            <a href="/login" className="btn-primary inline-block">
+            <Link to="/login" className="btn-primary inline-block">
               Sign In to Get Started
-            </a>
+            </Link>
           </div>
         )}
       </div>

@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, useNavigate } from 'react-router-dom';
 import { useThemeStore } from './store/themeStore';
+import { useAuthStore } from './store/authStore';
 import Navbar from './components/Common/Navbar';
 import Footer from './components/Common/Footer';
 import ScrollToTop from './components/Common/ScrollToTop';
@@ -19,6 +20,22 @@ import MyApplicationsPage from './pages/MyApplicationsPage';
 import MyInteractionsPage from './pages/MyInteractionsPage';
 import NotFound from './pages/NotFound';
 
+function AuthExpiryHandler() {
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const handleAuthExpired = () => {
+      useAuthStore.getState().forceLogout();
+      navigate('/login', { replace: true });
+    };
+
+    window.addEventListener('auth:expired', handleAuthExpired);
+    return () => window.removeEventListener('auth:expired', handleAuthExpired);
+  }, [navigate]);
+
+  return null;
+}
+
 function App() {
   const { initTheme } = useThemeStore();
 
@@ -29,6 +46,7 @@ function App() {
 
   return (
     <Router>
+      <AuthExpiryHandler />
       <ScrollToTop />
       <div className="flex flex-col min-h-screen">
         <Navbar />

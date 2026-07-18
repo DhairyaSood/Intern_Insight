@@ -37,10 +37,7 @@ api.interceptors.response.use(
       localStorage.removeItem('jwt_token');
       localStorage.removeItem('username');
       localStorage.removeItem('candidate_id');
-      
-      if (window.location.pathname !== '/login' && window.location.pathname !== '/signup') {
-        window.location.href = '/login';
-      }
+      window.dispatchEvent(new Event('auth:expired'));
     }
     return Promise.reject(error);
   }

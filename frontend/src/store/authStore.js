@@ -57,6 +57,15 @@ export const useAuthStore = create(
         }
       },
 
+      // Clear auth state without calling the API, used for expired tokens
+      forceLogout: () => {
+        set({
+          user: null,
+          isAuthenticated: false,
+          error: null,
+        });
+      },
+
       // Check auth status with JWT
       checkAuth: async () => {
         const token = authService.getToken();
